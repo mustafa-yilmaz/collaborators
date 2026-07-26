@@ -42,6 +42,7 @@ import {
   useHeadings,
   useSaveDoc,
   useShortcuts,
+  useTableDragImage,
   useUploadFile,
   useUploadStatus,
 } from '../hook';
@@ -264,6 +265,8 @@ export const BlockNoteEditor = ({ doc, provider }: BlockNoteEditorProps) => {
   useShortcuts(editor, refEditorContainer.current);
 
   useUploadStatus(editor);
+
+  useTableDragImage(editor);
 
   useEffect(() => {
     setEditor(editor);

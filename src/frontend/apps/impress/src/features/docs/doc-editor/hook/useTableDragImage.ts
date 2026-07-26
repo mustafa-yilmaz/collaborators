@@ -23,6 +23,11 @@ const cloneCellWithSize = (cell: Element): HTMLElement => {
   // our table CSS is scoped to, so its cell borders need to be set inline.
   clone.style.border =
     '1.5px solid var(--c--contextuals--background--semantic--brand--primary)';
+  // Same reason as the border above: regular cells lose the real table's
+  // padding once detached, leaving text flush against the left edge.
+  if (clone.tagName === 'TD') {
+    clone.style.paddingLeft = '16px';
+  }
   return clone;
 };
 

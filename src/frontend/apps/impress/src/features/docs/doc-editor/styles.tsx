@@ -280,6 +280,78 @@ export const DocsEditorStyle = createGlobalStyle`
       border-radius: 4px;
     }
 
+    /**
+    * Tables
+    * Loop/Notion-style card look: rounded outer border, muted header row,
+    * hairline internal grid and a hover highlight instead of the default
+    * harsh black grid lines.
+    */
+    .bn-editor [data-content-type='table'] table {
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid var(--c--contextuals--border--surface--primary);
+      border-radius: var(--c--globals--spacings--xs);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
+    .bn-editor [data-content-type='table'] th,
+    .bn-editor [data-content-type='table'] td {
+      border: none;
+      border-right: 1px solid var(--c--contextuals--border--surface--primary);
+      border-bottom: 1px solid var(--c--contextuals--border--surface--primary);
+      padding: 10px 16px;
+      transition: background-color 0.15s ease;
+    }
+    .bn-editor [data-content-type='table'] th:last-child,
+    .bn-editor [data-content-type='table'] td:last-child {
+      border-right: none;
+    }
+    .bn-editor [data-content-type='table'] tr:last-child th,
+    .bn-editor [data-content-type='table'] tr:last-child td {
+      border-bottom: none;
+    }
+    .bn-editor [data-content-type='table'] th {
+      background-color: var(
+        --c--contextuals--background--semantic--neutral--tertiary
+      );
+      color: var(--c--contextuals--content--semantic--neutral--secondary);
+      font-weight: 600;
+      font-size: 0.8125em;
+      letter-spacing: 0.01em;
+    }
+    .bn-editor [data-content-type='table'] tr:hover > td {
+      background-color: var(
+        --c--contextuals--background--semantic--neutral--secondary-hover
+      );
+    }
+    .bn-editor [data-content-type='table'] .selectedCell:after {
+      background: var(--c--contextuals--background--semantic--brand--tertiary);
+      opacity: 0.6;
+    }
+
+    /**
+    * Row/column reordering: make the dragged row/column and the drop
+    * target clearly distinguishable from one another and from a plain
+    * hover/selection.
+    */
+    .bn-editor [data-content-type='table'] tr.bn-table-drag-source-row > td,
+    .bn-editor [data-content-type='table'] tr.bn-table-drag-source-row > th,
+    .bn-editor [data-content-type='table'] td.bn-table-drag-source-col,
+    .bn-editor [data-content-type='table'] th.bn-table-drag-source-col {
+      background-color: var(
+        --c--contextuals--background--semantic--brand--tertiary
+      );
+      outline: 1.5px dashed
+        var(--c--contextuals--border--semantic--brand--tertiary);
+      outline-offset: -1.5px;
+    }
+    .bn-editor [data-content-type='table'] .bn-table-drop-cursor {
+      background-color: var(
+        --c--contextuals--background--semantic--brand--primary
+      );
+      border-radius: 2px;
+    }
+
     @media screen and (width <= 768px) {
       & .bn-editor {
         padding-right: 36px;
@@ -328,5 +400,25 @@ export const DocsEditorStyle = createGlobalStyle`
         font-size: 14px;
       }
     }
+  }
+
+  /**
+  * Table row/column drag handles and add-row/add-column buttons.
+  * Kept outside the .bn-root nesting above and scoped to .bn-mantine,
+  * matching the selectors BlockNote itself uses for these elements.
+  */
+  .bn-mantine .bn-table-handle,
+  .bn-mantine .bn-table-cell-handle {
+    border-radius: var(--c--globals--spacings--4xs);
+  }
+  .bn-mantine .bn-table-handle:hover,
+  .bn-mantine .bn-table-handle-dragging,
+  .bn-mantine .bn-table-cell-handle:hover,
+  .bn-mantine .bn-extend-button:hover,
+  .bn-mantine .bn-extend-button-editing {
+    background-color: var(
+      --c--contextuals--background--semantic--brand--tertiary-hover
+    );
+    color: var(--c--contextuals--content--semantic--brand--tertiary);
   }
 `;

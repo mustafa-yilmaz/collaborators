@@ -66,6 +66,8 @@
     "luxon": "3.7.2",
     "next": "16.2.11",
     "posthog-js": "1.399.5",
+    "prosemirror-state": "^1.4.4",
+    "prosemirror-view": "^1.41.4",
     "react": "*",
     "react-aria-components": "1.19.0",
     "react-dom": "*",

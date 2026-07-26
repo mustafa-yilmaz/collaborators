@@ -59,6 +59,7 @@ const AIMenuController = BlockNoteAI?.AIMenuController;
 const useAI = BlockNoteAI?.useAI;
 const localesBNAI = BlockNoteAI?.localesAI || {};
 import { InterlinkingLinkInlineContent } from './custom-inline-content';
+import { TableDragSourceExtension } from './tableDragSourceExtension';
 import XLMultiColumn from './xl-multi-column';
 
 const localesBNMultiColumn = XLMultiColumn?.locales;
@@ -227,6 +228,7 @@ export const BlockNoteEditor = ({ doc, provider }: BlockNoteEditorProps) => {
       },
       extensions: [
         CommentsExtension({ threadStore, resolveUsers }),
+        TableDragSourceExtension(),
         ...(aiExtension ? [aiExtension] : []),
       ],
       visualMedia: {

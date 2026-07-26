@@ -19,6 +19,10 @@ const cloneCellWithSize = (cell: Element): HTMLElement => {
   clone.style.width = `${rect.width}px`;
   clone.style.height = `${rect.height}px`;
   clone.style.boxSizing = 'border-box';
+  // This clone is detached from the `[data-content-type='table']` subtree
+  // our table CSS is scoped to, so its cell borders need to be set inline.
+  clone.style.border =
+    '1.5px solid var(--c--contextuals--background--semantic--brand--primary)';
   return clone;
 };
 

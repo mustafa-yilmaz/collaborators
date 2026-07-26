@@ -28,6 +28,11 @@ const cloneCellWithSize = (cell: Element): HTMLElement => {
   if (clone.tagName === 'TD') {
     clone.style.paddingLeft = '16px';
   }
+  // Header cells lose their muted background for the same reason; copy the
+  // real, already-rendered color instead of guessing which token backs it.
+  if (clone.tagName === 'TH') {
+    clone.style.backgroundColor = getComputedStyle(cell).backgroundColor;
+  }
   return clone;
 };
 

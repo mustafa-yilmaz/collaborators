@@ -28,6 +28,7 @@ export const ConfigProvider = ({ children }: PropsWithChildren) => {
   const { i18n } = useTranslation();
   const languageSynchronized = useRef(false);
   const favicon = conf?.theme_customization?.favicon;
+  const singleLanguage = conf?.theme_customization?.single_language;
 
   useEffect(() => {
     if (!user || languageSynchronized.current) {
@@ -35,12 +36,28 @@ export const ConfigProvider = ({ children }: PropsWithChildren) => {
     }
 
     const targetLanguage =
-      user?.language ?? i18n.resolvedLanguage ?? i18n.language;
+      singleLanguage ??
+      user?.language ??
+      i18n.resolvedLanguage ??
+      i18n.language;
 
     void changeLanguageSynchronized(targetLanguage, user).then(() => {
       languageSynchronized.current = true;
     });
-  }, [user, i18n.resolvedLanguage, i18n.language, changeLanguageSynchronized]);
+  }, [
+    user,
+    singleLanguage,
+    i18n.resolvedLanguage,
+    i18n.language,
+    changeLanguageSynchronized,
+  ]);
+
+  // Signed-out visitors too get the single language, if there is one
+  useEffect(() => {
+    if (singleLanguage && i18n.language !== singleLanguage) {
+      void i18n.changeLanguage(singleLanguage);
+    }
+  }, [singleLanguage, i18n]);
 
   useEffect(() => {
     if (!conf?.theme_customization?.translations) {

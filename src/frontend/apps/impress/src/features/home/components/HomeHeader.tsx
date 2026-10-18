@@ -21,6 +21,7 @@ export const HomeHeader = () => {
 
   const icon = config?.theme_customization?.header?.icon;
   const logo = config?.theme_customization?.header?.logo;
+  const singleLanguage = config?.theme_customization?.single_language;
 
   return (
     <Box
@@ -77,7 +78,7 @@ export const HomeHeader = () => {
         $gap={!isSmallMobile ? '1rem' : undefined}
         $align="center"
       >
-        <LanguagePickerLegacy />
+        {!singleLanguage && <LanguagePickerLegacy />}
         <Waffle />
       </Box>
     </Box>

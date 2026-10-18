@@ -10,14 +10,10 @@ import { useCunninghamTheme } from '@/cunningham';
 import { ProConnectButton, gotoLogin } from '@/features/auth';
 import { useResponsiveStore } from '@/stores';
 
-import banner from '../assets/banner.jpg';
-
-import { getHeaderHeight } from './HomeHeader';
-
 export default function HomeBanner() {
   const { t } = useTranslation();
   const { spacingsTokens } = useCunninghamTheme();
-  const { isMobile, isSmallMobile } = useResponsiveStore();
+  const { isMobile } = useResponsiveStore();
   const { data: config } = useConfig();
   const withProConnect = config?.theme_customization?.home?.['with-proconnect'];
   const icon = config?.theme_customization?.home?.['icon-banner'];
@@ -28,8 +24,8 @@ export default function HomeBanner() {
       $width="100%"
       $justify="space-around"
       $align="center"
-      $height="100vh"
-      $margin={{ top: `-${getHeaderHeight(isSmallMobile)}px` }}
+      $height="100%"
+      $padding={{ vertical: 'md' }}
       $position="relative"
       className="--docs--home-banner"
     >
@@ -40,8 +36,7 @@ export default function HomeBanner() {
         $position="relative"
         $direction={!isMobile ? 'row' : 'column'}
         $gap="1rem"
-        $overflow="auto"
-        $css="flex-basis: 70%;"
+        $height="100%"
       >
         <Box
           $width={!isMobile ? '50%' : '100%'}
@@ -62,31 +57,27 @@ export default function HomeBanner() {
               {...icon}
             />
           )}
-          {!icon?.src && <Title as="span" $size="2.5rem" $weight="bold" />}
+          {!icon?.src && (
+            <Title
+              as="span"
+              $size={isMobile ? '1.75rem' : '2.5rem'}
+              $weight="bold"
+            />
+          )}
           <Text
             as="h2"
-            $size={!isMobile ? 'xs-alt' : '2.3rem'}
-            $weight="bold"
+            $size={!isMobile ? '1.5rem' : '1.25rem'}
+            $weight="400"
             $textAlign="center"
             $margin="none"
+            $variation="secondary"
             $css={css`
-              line-height: ${!isMobile ? '56px' : '45px'};
+              line-height: 1.35;
             `}
           >
-            {t('Collaborative writing, Simplified.', {
+            {t('Collaborative proposal idea development for projects', {
               description: 'Main headline of the home page',
             })}
-          </Text>
-          <Text
-            $size="lg"
-            $textAlign="center"
-            $margin={{ bottom: 'small' }}
-            $variation="secondary"
-          >
-            {t(
-              'Collaborate and write in real time, without layout constraints.',
-              { description: 'Subtitle of the home page headline' },
-            )}
           </Text>
           {withProConnect ? (
             <ProConnectButton />
@@ -95,7 +86,7 @@ export default function HomeBanner() {
               onClick={() => gotoLogin()}
               icon={<Icon iconName="bolt" $color="white" />}
             >
-              {t('Start Writing', {
+              {t('Start collaborating', {
                 description: 'Call-to-action button of the home page',
               })}
             </Button>
@@ -103,37 +94,21 @@ export default function HomeBanner() {
         </Box>
         {!isMobile && (
           <Image
-            src={banner}
+            src="/assets/home-collaborators.svg"
             alt={t('Banner image', {
               description: 'Alt text of the home page banner',
             })}
+            width={560}
+            height={420}
             priority
             style={{
               width: 'auto',
-              maxWidth: '100%',
-              height: 'fit-content',
-              overflow: 'auto',
-              maxHeight: '100%',
+              maxWidth: '50%',
+              height: 'auto',
+              maxHeight: 'min(420px, 100%)',
             }}
           />
         )}
-      </Box>
-      <Box $css="bottom: 3rem" $position="absolute">
-        <Button
-          color="brand"
-          variant="secondary"
-          icon={<Icon $color="inherit" iconName="expand_more" />}
-          onClick={(e) => {
-            e.preventDefault();
-            document
-              .querySelector('#docs-app-info')
-              ?.scrollIntoView({ behavior: 'smooth' });
-          }}
-        >
-          {t('Show more', {
-            description: 'Button revealing more of the home page',
-          })}
-        </Button>
       </Box>
     </Box>
   );

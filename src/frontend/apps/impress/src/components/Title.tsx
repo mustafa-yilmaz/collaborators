@@ -11,7 +11,10 @@ const EMOJI = /(\p{Extended_Pictographic}\uFE0F?)/u;
  * them would distort them in browsers that synthesize the italic.
  */
 const Wordmark = ({ text }: { text: string }) => (
-  <span aria-hidden="true" style={{ fontStyle: 'italic', fontWeight: 800 }}>
+  <span
+    aria-hidden="true"
+    style={{ fontStyle: 'italic', fontWeight: 800, whiteSpace: 'nowrap' }}
+  >
     {text
       .split(EMOJI)
       .filter(Boolean)

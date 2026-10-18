@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 420" fill="none">
+  <!-- Background shape -->
+  <path d="M84 120C110 52 196 26 282 34c92 9 170 40 204 108 33 67 9 152-58 196-70 46-170 52-256 30C88 346 30 290 34 224c3-42 30-62 50-104Z" fill="#EEEEFB"/>
+
+  <!-- Connections from collaborators to the proposal -->
+  <g stroke="#B9B9EC" stroke-width="2" stroke-dasharray="5 6" stroke-linecap="round">
+    <path d="M96 118C130 130 150 140 176 150"/>
+    <path d="M462 104C430 118 410 128 384 140"/>
+    <path d="M86 312C120 300 146 292 176 284"/>
+    <path d="M470 318C440 306 412 298 384 290"/>
+  </g>
+
+  <!-- Proposal document -->
+  <rect x="176" y="70" width="208" height="270" rx="14" fill="#FFFFFF" stroke="#D9D9F3" stroke-width="2"/>
+  <rect x="198" y="94" width="112" height="12" rx="6" fill="#4747A3"/>
+  <rect x="198" y="116" width="164" height="7" rx="3.5" fill="#D9D9F3"/>
+  <rect x="198" y="130" width="140" height="7" rx="3.5" fill="#D9D9F3"/>
+
+  <!-- Loop-style table inside the proposal -->
+  <rect x="198" y="152" width="164" height="108" rx="8" fill="#FAFAFF" stroke="#D9D9F3" stroke-width="1.5"/>
+  <path d="M198 174h164M198 202h164M198 230h164M250 152v108M312 152v108" stroke="#E4E4F7" stroke-width="1.5"/>
+  <rect x="208" y="160" width="30" height="7" rx="3.5" fill="#9C9CDD"/>
+  <rect x="260" y="160" width="34" height="7" rx="3.5" fill="#9C9CDD"/>
+  <rect x="322" y="160" width="28" height="7" rx="3.5" fill="#9C9CDD"/>
+  <rect x="208" y="185" width="34" height="6" rx="3" fill="#CFCFEE"/>
+  <rect x="208" y="213" width="28" height="6" rx="3" fill="#CFCFEE"/>
+  <rect x="208" y="241" width="32" height="6" rx="3" fill="#CFCFEE"/>
+  <circle cx="268" cy="188" r="7" fill="#F06A5E"/>
+  <circle cx="268" cy="216" r="7" fill="#3BB273"/>
+  <circle cx="268" cy="244" r="7" fill="#6E6EDB"/>
+  <rect x="320" y="182" width="34" height="12" rx="6" fill="#DFF3E7"/>
+  <rect x="320" y="210" width="34" height="12" rx="6" fill="#FDF0D6"/>
+  <rect x="320" y="238" width="34" height="12" rx="6" fill="#E4E4FA"/>
+
+  <rect x="198" y="276" width="150" height="7" rx="3.5" fill="#D9D9F3"/>
+  <rect x="198" y="290" width="120" height="7" rx="3.5" fill="#D9D9F3"/>
+  <rect x="198" y="304" width="136" height="7" rx="3.5" fill="#D9D9F3"/>
+
+  <!-- Idea light bulb -->
+  <g transform="translate(372 40)">
+    <circle cx="26" cy="26" r="24" fill="#FDF0D6"/>
+    <path d="M26 12a11 11 0 0 0-6.6 19.8c1.2.9 1.9 2.2 1.9 3.6V37h9.4v-1.6c0-1.4.7-2.7 1.9-3.6A11 11 0 0 0 26 12Z" fill="#F5B83D"/>
+    <rect x="21.5" y="38.5" width="9" height="4" rx="2" fill="#C98E1C"/>
+  </g>
+
+  <!-- Comment bubble -->
+  <g transform="translate(110 186)">
+    <rect width="58" height="40" rx="12" fill="#4747A3"/>
+    <path d="M40 40l10 12-1-12" fill="#4747A3"/>
+    <rect x="12" y="13" width="34" height="5" rx="2.5" fill="#FFFFFF" opacity=".9"/>
+    <rect x="12" y="23" width="24" height="5" rx="2.5" fill="#FFFFFF" opacity=".6"/>
+  </g>
+
+  <!-- Collaborators -->
+  <g>
+    <circle cx="78" cy="110" r="26" fill="#6E6EDB"/>
+    <circle cx="78" cy="102" r="9" fill="#FFFFFF"/>
+    <path d="M62 126a16 14 0 0 1 32 0" fill="#FFFFFF"/>
+  </g>
+  <g>
+    <circle cx="482" cy="96" r="26" fill="#3BB273"/>
+    <circle cx="482" cy="88" r="9" fill="#FFFFFF"/>
+    <path d="M466 112a16 14 0 0 1 32 0" fill="#FFFFFF"/>
+  </g>
+  <g>
+    <circle cx="68" cy="318" r="26" fill="#F06A5E"/>
+    <circle cx="68" cy="310" r="9" fill="#FFFFFF"/>
+    <path d="M52 334a16 14 0 0 1 32 0" fill="#FFFFFF"/>
+  </g>
+  <g>
+    <circle cx="490" cy="324" r="26" fill="#4747A3"/>
+    <circle cx="490" cy="316" r="9" fill="#FFFFFF"/>
+    <path d="M474 340a16 14 0 0 1 32 0" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Writing pen -->
+  <g transform="translate(392 214) rotate(35)">
+    <rect x="0" y="0" width="14" height="70" rx="4" fill="#4747A3"/>
+    <rect x="0" y="0" width="14" height="14" rx="4" fill="#9C9CDD"/>
+    <path d="M0 66h14l-7 16Z" fill="#F5B83D"/>
+    <path d="M5 77h4l-2 5Z" fill="#2B2B66"/>
+  </g>
+
+  <!-- Sparkles -->
+  <path d="M150 58l4 10 10 4-10 4-4 10-4-10-10-4 10-4Z" fill="#9C9CDD"/>
+  <path d="M420 372l3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" fill="#F5B83D"/>
+</svg>

@@ -45,6 +45,11 @@ interface ThemeCustomization {
    * (header, footer, home). Screen readers still read the product name.
    */
   wordmark?: string;
+  /**
+   * Run the app in this one language: the language pickers are hidden and
+   * every collaborator gets this language, whatever their browser says.
+   */
+  single_language?: string;
 }
 
 export interface ConfigResponse {

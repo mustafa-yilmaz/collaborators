@@ -4,6 +4,7 @@ import { createGlobalStyle } from 'styled-components';
 
 import { Box } from '@/components';
 import { Waffle } from '@/components/Waffle';
+import { useConfig } from '@/core';
 import { ButtonLogin, gotoLogout, useAuth } from '@/features/auth';
 import { HelpMenu } from '@/features/help';
 import { LanguagePicker } from '@/features/language/components/LanguagePicker';
@@ -21,6 +22,8 @@ type FooterActionsProps = {
 export const FooterActions = ({ withLogin }: FooterActionsProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { data: config } = useConfig();
+  const singleLanguage = config?.theme_customization?.single_language;
 
   const userMenu = user || {
     full_name: t('Guest', {
@@ -44,7 +47,7 @@ export const FooterActions = ({ withLogin }: FooterActionsProps) => {
           <UserMenu
             user={userMenu}
             logout={user ? gotoLogout : undefined}
-            actions={<LanguagePicker />}
+            actions={singleLanguage ? undefined : <LanguagePicker />}
             withMobileView={false}
           />
           <Waffle />

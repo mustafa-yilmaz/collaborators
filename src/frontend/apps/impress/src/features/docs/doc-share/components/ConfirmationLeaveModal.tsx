@@ -265,7 +265,7 @@ const useGetMyAccess = (docId: string) => {
     docId,
   });
   const access = useMemo(() => {
-    return accesses?.find((access) => access.user.id === user?.id);
+    return accesses?.find((access) => access.user?.id === user?.id);
   }, [accesses, user]);
 
   return { access, isLoading, isError };

@@ -7,6 +7,11 @@ import { Doc } from '@/features/docs/doc-management';
 import { useDocStore } from '@/features/docs/doc-management/stores/useDocStore';
 import { DocTree } from '@/features/docs/doc-tree/components/DocTree';
 import { TreeSkeleton } from '@/features/skeletons/components/TreeSkeleton';
+import {
+  SpaceList,
+  WorkspaceSwitcher,
+  useWorkspaceStore,
+} from '@/features/workspaces';
 
 import { LeftPanelTargetFilters } from './LefPanelTargetFilters';
 
@@ -14,20 +19,30 @@ export const LeftPanelContent = () => {
   const router = useRouter();
   const isHome = router.pathname === '/';
   const isDoc = router.pathname === '/docs/[id]';
+  const isWorkspacePage = router.pathname.startsWith('/workspaces/');
+  const { currentWorkspaceId } = useWorkspaceStore();
 
-  if (isHome) {
+  if (isHome || isWorkspacePage) {
     return (
       <>
         <Box
           $width="100%"
+          $gap="sm"
+          $padding={{ top: 'xs' }}
           $css={css`
-            flex: 0 0 auto;
+            flex: 1 1 auto;
+            overflow-y: auto;
           `}
           className="--docs--home-left-panel-content"
         >
-          <SeparatedSection showSeparator={false}>
-            <LeftPanelTargetFilters />
-          </SeparatedSection>
+          <WorkspaceSwitcher />
+          <SpaceList />
+          {/* Independent pages live outside workspaces */}
+          {!currentWorkspaceId && (
+            <SeparatedSection showSeparator={true}>
+              <LeftPanelTargetFilters />
+            </SeparatedSection>
+          )}
         </Box>
       </>
     );

@@ -394,3 +394,28 @@ def test_api_document_accesses_show_team_labels():
 
     labels = {a["team_label"] for a in accesses.json() if a["team"]}
     assert labels == {"Q4 Launch (Acme)"}
+
+
+def test_api_groups_grantable_teams_leave_out_granted_ones():
+    """Teams that already have a role on the document are not offered again."""
+    owner = factories.UserFactory()
+    workspace = make_workspace(owner)
+    group = models.Group.objects.create(workspace=workspace, name="Q4 Launch")
+    space_id = (
+        client_for(owner)
+        .post(
+            "/api/v1.0/spaces/",
+            {
+                "title": "S",
+                "workspace_id": str(workspace.id),
+                "visibility": "workspace",
+            },
+            format="json",
+        )
+        .json()["id"]
+    )
+
+    results = client_for(owner).get(f"/api/v1.0/groups/?document_id={space_id}")
+
+    # "All members of Acme" already reads the space
+    assert [r["team"] for r in results.json()] == [group.team]

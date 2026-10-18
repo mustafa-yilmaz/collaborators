@@ -520,6 +520,8 @@ class GrantableTeamsView(APIView):
             space_links__space=root, accesses__user=request.user
         ).distinct()
         query = (request.query_params.get("q") or "").strip().lower()
+        # Teams that already have a role on the document itself are left out
+        granted = set(document.accesses.exclude(team="").values_list("team", flat=True))
 
         results = []
         for workspace in workspaces:
@@ -545,7 +547,9 @@ class GrantableTeamsView(APIView):
                 }
                 for group in groups[:20]
             )
-        return drf.response.Response(results)
+        return drf.response.Response(
+            [result for result in results if result["team"] not in granted]
+        )
 
 
 class SpaceViewSet(

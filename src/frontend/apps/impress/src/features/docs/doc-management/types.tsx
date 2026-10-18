@@ -6,7 +6,10 @@ export interface Access {
   role: Role;
   max_role: Role;
   team: string;
-  user: User;
+  /** Name of the group or workspace a team access is granted to. */
+  team_label?: string | null;
+  /** Unset when the access is granted to a team. */
+  user?: User | null;
   document: {
     id: string;
     path: string;
@@ -70,6 +73,10 @@ export interface Doc {
   numchild: number;
   updated_at: string;
   user_role: Role;
+  /** A page, or a space: the root of a tree of pages. */
+  kind?: 'page' | 'space';
+  /** For a space, the workspace that owns it. */
+  home_workspace?: { id: string; name: string; slug: string } | null;
   abilities: {
     accesses_manage: boolean;
     accesses_view: boolean;

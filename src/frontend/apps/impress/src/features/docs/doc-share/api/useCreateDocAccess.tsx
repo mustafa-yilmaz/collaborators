@@ -12,6 +12,7 @@ import { User } from '@/features/auth';
 import { useBroadcastStore } from '@/stores/useBroadcastStore';
 
 import { OptionType } from '../types';
+import { teamFromMemberId } from '../utils';
 
 import { KEY_LIST_DOC_ACCESSES } from './useDocAccesses';
 import { KEY_LIST_USER } from './useUsers';
@@ -19,6 +20,7 @@ import { KEY_LIST_USER } from './useUsers';
 interface CreateDocAccessParams {
   role: Role;
   docId: Doc['id'];
+  /** A user id, or a team marked with TEAM_MEMBER_PREFIX (see utils). */
   memberId: User['id'];
 }
 
@@ -27,12 +29,10 @@ export const createDocAccess = async ({
   role,
   docId,
 }: CreateDocAccessParams): Promise<Access> => {
+  const team = teamFromMemberId(memberId);
   const response = await fetchAPI(`documents/${docId}/accesses/`, {
     method: 'POST',
-    body: JSON.stringify({
-      user_id: memberId,
-      role,
-    }),
+    body: JSON.stringify(team ? { team, role } : { user_id: memberId, role }),
   });
 
   if (!response.ok) {

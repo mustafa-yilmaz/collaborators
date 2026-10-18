@@ -108,6 +108,14 @@ const ConfirmationLeaveModal = dynamic(
   { ssr: false },
 );
 
+const MoveSpaceModal = dynamic(
+  () =>
+    import('@/features/workspaces/components/MoveSpaceModal').then((mod) => ({
+      default: mod.MoveSpaceModal,
+    })),
+  { ssr: false },
+);
+
 const ModalExport = dynamic(
   () =>
     import('@/docs/doc-export/components/ModalExport').then((mod) => ({
@@ -157,6 +165,8 @@ const DocToolBoxComponent = ({
   const [isModalHistoryOpen, setIsModalHistoryOpen] = useState(false);
   const [isModalLeaveOpen, setIsModalLeaveOpen] = useState(false);
   const [isModalMoveOpen, setIsModalMoveOpen] = useState(false);
+  const [isModalMoveSpaceOpen, setIsModalMoveSpaceOpen] = useState(false);
+  const isSpace = doc.kind === 'space';
   const { onClick: onButtonClick, ...buttonPropsLeft } = buttonProps || {};
   const { isFeatureFlagActivated } = useAnalytics();
   const { data: conf } = useConfig();
@@ -365,7 +375,19 @@ const DocToolBoxComponent = ({
       callback: () => {
         setIsModalMoveOpen(true);
       },
-      isHidden: !doc.abilities.move,
+      // A space is always a root: only the pages inside it move
+      isHidden: !doc.abilities.move || isSpace,
+    },
+    {
+      label: t('Move to a workspace', {
+        description: 'Menu action moving an independent space into a workspace',
+      }),
+      icon: <DocMoveInIcon width={18} height={18} aria-hidden="true" />,
+      callback: () => {
+        setIsModalMoveSpaceOpen(true);
+      },
+      isHidden:
+        !isSpace || !!doc.home_workspace || doc.user_role !== Role.OWNER,
     },
     { type: 'separator' },
     {
@@ -451,6 +473,12 @@ const DocToolBoxComponent = ({
         />
       </DropdownMenu>
 
+      {isModalMoveSpaceOpen && (
+        <MoveSpaceModal
+          space={doc}
+          onClose={() => setIsModalMoveSpaceOpen(false)}
+        />
+      )}
       {isModalExportOpen && (
         <ModalExport
           onClose={() => {

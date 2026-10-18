@@ -57,7 +57,7 @@ export const HomeHeader = () => {
           $position="relative"
           $height="fit-content"
         >
-          {icon && (
+          {icon?.src && (
             <Image
               data-testid="header-icon-docs"
               width={0}
@@ -70,7 +70,7 @@ export const HomeHeader = () => {
               {...(({ withTitle: _, ...rest }) => rest)(icon)}
             />
           )}
-          {icon?.withTitle && <Title />}
+          {(!icon?.src || icon.withTitle) && <Title />}
         </Box>
       </Box>
       <Box

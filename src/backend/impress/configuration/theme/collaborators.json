@@ -186,29 +186,36 @@
   "footer": {
     "default": {
       "logo": {
-        "withTitle": true
-      },
-      "externalLinks": [
-        {
-          "label": "collaborators.community",
-          "href": "https://collaborators.community"
-        },
-        {
-          "label": "Built on La Suite Docs",
-          "href": "https://github.com/suitenumerique/docs"
-        },
-        {
-          "label": "BlockNote.js",
-          "href": "https://www.blocknotejs.org/"
+        "withTitle": true,
+        "titleZoom": 1.1,
+        "link": {
+          "label": "http://collaborators.community",
+          "href": "http://collaborators.community"
         }
-      ],
+      },
       "bottomInformation": {
         "label": "Unless otherwise stated, all content on this site is under",
         "link": {
           "label": "licence MIT",
           "href": "https://github.com/suitenumerique/docs/blob/main/LICENSE"
         }
-      }
+      },
+      "credits": [
+        {
+          "text": "Built on open source projects "
+        },
+        {
+          "label": "Docs",
+          "href": "https://github.com/suitenumerique/docs"
+        },
+        {
+          "text": " (by La Suite Numérique) and "
+        },
+        {
+          "label": "BlockNote.js",
+          "href": "https://github.com/TypeCellOS/BlockNote"
+        }
+      ]
     },
     "en": {
       "legalLinks": [

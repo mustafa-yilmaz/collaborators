@@ -15,6 +15,7 @@ import {
 import { useConfig } from '@/core';
 import { Doc } from '@/docs/doc-management';
 import { User } from '@/features/auth';
+import { useGrantableTeams } from '@/features/workspaces/api';
 import { useResponsiveStore } from '@/stores';
 import { isValidEmail } from '@/utils';
 
@@ -26,6 +27,7 @@ import {
   useDocAccesses,
   useUsers,
 } from '../api';
+import { teamAsUser } from '../utils';
 
 import { DocInheritedShareContent } from './DocInheritedShareContent';
 import {
@@ -110,6 +112,16 @@ export const DocShareModal = ({ doc, onClose, isRootDoc = true }: Props) => {
   const { data: membersQuery } = useDocAccesses({
     docId: doc.id,
   });
+
+  // Groups of the workspaces the doc's space belongs to
+  const { data: grantableTeams = [] } = useGrantableTeams(
+    canShare ? doc.id : '',
+    userQuery,
+  );
+  const selectedIds = selectedUsers.map((user) => user.id);
+  const groupMembers = grantableTeams
+    .map(teamAsUser)
+    .filter((group) => !selectedIds.includes(group.id));
 
   const searchUsersQuery = useUsers(
     { query: userQuery, docId: doc.id },
@@ -319,6 +331,7 @@ export const DocShareModal = ({ doc, onClose, isRootDoc = true }: Props) => {
 
                   {!showMemberSection && canShare && (
                     <QuickSearchInviteInputSection
+                      groups={groupMembers}
                       searchUsersRawData={searchUsersQuery.data}
                       onSelect={onSelect}
                       userQuery={userQuery}
@@ -340,6 +353,7 @@ export const DocShareModal = ({ doc, onClose, isRootDoc = true }: Props) => {
 };
 
 interface QuickSearchInviteInputSectionProps {
+  groups: User[];
   onSelect: (usr: User) => void;
   searchUsersRawData: User[] | undefined;
   userQuery: string;
@@ -347,6 +361,7 @@ interface QuickSearchInviteInputSectionProps {
 }
 
 const QuickSearchInviteInputSection = ({
+  groups,
   onSelect,
   searchUsersRawData,
   userQuery,
@@ -423,6 +438,18 @@ const QuickSearchInviteInputSection = ({
         onSelect={onSelect}
         renderElement={(user) => <DocShareModalInviteUserRow user={user} />}
       />
+      {groups.length > 0 && (
+        <QuickSearchGroup
+          group={{
+            groupName: t('Groups', {
+              description: 'Heading of a list of groups',
+            }),
+            elements: groups,
+          }}
+          onSelect={onSelect}
+          renderElement={(group) => <DocShareModalInviteUserRow user={group} />}
+        />
+      )}
     </Box>
   );
 };

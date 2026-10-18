@@ -7,6 +7,7 @@ import { QuickSearchData } from '@/components/quick-search';
 import { QuickSearchGroup } from '@/components/quick-search/QuickSearchGroup';
 import { useCunninghamTheme } from '@/cunningham';
 import { Access, Doc, Role } from '@/docs/doc-management/';
+import { User } from '@/features/auth';
 import { useToast } from '@/hooks';
 
 import { useDocAccesses, useUpdateDocAccess } from '../api';
@@ -67,15 +68,25 @@ export const DocShareMemberItem = ({
 
   const canUpdate = isInherited ? false : !!doc?.abilities.accesses_manage;
 
+  // A team access (a group, or all members of a workspace) is shown like a
+  // member, named after the team, with "Group" in place of an email.
+  const member: User = access.user ?? {
+    id: access.team,
+    email: t('Group', { description: 'Shown under the name of a group' }),
+    full_name: access.team_label || access.team,
+    short_name: access.team_label || access.team,
+    is_first_connection: false,
+  };
+
   return (
     <Box
       $width="100%"
-      data-testid={`doc-share-member-row-${access.user.email}`}
+      data-testid={`doc-share-member-row-${access.user?.email ?? access.team}`}
       className="--docs--doc-share-member-item"
     >
       <SearchUserRow
         alwaysShowRight={true}
-        user={access.user}
+        user={member}
         right={
           <Box $direction="row" $align="center" $gap={spacingsTokens['2xs']}>
             <DocRoleDropdown
@@ -89,7 +100,7 @@ export const DocShareMemberItem = ({
               doc={doc}
               ariaLabel={t('Change role for {{name}}', {
                 description: 'Accessible name of the role dropdown of a member',
-                name: access.user.full_name || access.user.email,
+                name: member.full_name || member.email,
               })}
             />
           </Box>

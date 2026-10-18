@@ -40,6 +40,10 @@ export const Footer = () => {
       langData && 'externalLinks' in langData
         ? langData?.externalLinks
         : footerJson?.default?.externalLinks;
+    innerContent.credits =
+      langData && 'credits' in langData
+        ? langData?.credits
+        : footerJson?.default?.credits;
     innerContent.bottomInformation =
       langData && 'bottomInformation' in langData
         ? langData?.bottomInformation
@@ -48,7 +52,8 @@ export const Footer = () => {
     setContent(innerContent);
   }, [footerJson, resolvedLanguage]);
 
-  const { logo, legalLinks, externalLinks, bottomInformation } = content || {};
+  const { logo, legalLinks, externalLinks, credits, bottomInformation } =
+    content || {};
 
   if (!footerJson || (!legalLinks && !externalLinks && !bottomInformation)) {
     return null;
@@ -70,7 +75,7 @@ export const Footer = () => {
           $justify="space-between"
           $css="flex-wrap: wrap;"
         >
-          <Box className="--docs--footer-logo">
+          <Box className="--docs--footer-logo" $gap="2xs" $align="center">
             <Box $align="center" $gap="6rem" $direction="row">
               {logo && (
                 <Box
@@ -85,17 +90,45 @@ export const Footer = () => {
                       priority
                       width={0}
                       height={0}
-                      {...(({ withTitle: _, ...rest }) => rest)(logo)}
+                      {...(({
+                        withTitle: _withTitle,
+                        titleZoom: _titleZoom,
+                        link: _link,
+                        ...rest
+                      }) => rest)(logo)}
                     />
                   )}
                   {logo?.withTitle && (
-                    <Box $css="zoom:1.4;">
+                    <Box $css={`zoom: ${logo.titleZoom ?? 1.4};`}>
                       <Title />
                     </Box>
                   )}
                 </Box>
               )}
             </Box>
+            {logo?.link && (
+              <StyledLink
+                href={logo.link.href}
+                target="__blank"
+                className="--docs--footer-logo-link"
+                $css={css`
+                  gap: 0.2rem;
+                  align-items: center;
+                  width: fit-content;
+                  &:hover {
+                    box-shadow: 0px 1px 0 0
+                      var(
+                        --c--contextuals--content--semantic--neutral--secondary
+                      );
+                  }
+                `}
+              >
+                <Text $size="sm" $variation="secondary">
+                  {logo.link.label}
+                </Text>
+                <IconLink width={14} />
+              </StyledLink>
+            )}
           </Box>
           <Box
             $direction="row"
@@ -127,78 +160,125 @@ export const Footer = () => {
                   <IconLink width={18} />
                 </StyledLink>
               ))}
+            {credits && (
+              <Text
+                as="p"
+                $margin="none"
+                $display="inline"
+                className="--docs--footer-credits"
+              >
+                {credits.map((part, index) =>
+                  'href' in part ? (
+                    <StyledLink
+                      key={index}
+                      href={part.href}
+                      target="__blank"
+                      $css={css`
+                        display: inline-flex;
+                        gap: 0.2rem;
+                        font-weight: bold;
+                        box-shadow: 0px 1px 0 0
+                          var(
+                            --c--contextuals--content--semantic--neutral--secondary
+                          );
+                      `}
+                    >
+                      <Text>{part.label}</Text>
+                      <IconLink width={14} />
+                    </StyledLink>
+                  ) : (
+                    <span key={index}>{part.text}</span>
+                  ),
+                )}
+              </Text>
+            )}
           </Box>
         </Box>
+        {/* Legal links on the left, the licence on the right, in one row */}
         <Box
           $direction="row"
+          $align="center"
+          $justify="space-between"
           $margin={{ top: 'big' }}
           $padding={{ top: 'tiny' }}
           $css={`
             flex-wrap: wrap;
-            border-top: 1px solid var(--c--globals--colors--gray-200); 
+            border-top: 1px solid var(--c--globals--colors--gray-200);
+            column-gap: 2rem;
+            row-gap: .5rem;
+          `}
+          className="--docs--footer-bottom-row"
+        >
+          <Box
+            $direction="row"
+            $css={`
+            flex-wrap: wrap;
             column-gap: 1rem;
             row-gap: .5rem;
           `}
-          className="--docs--footer-internal-links"
-        >
-          {legalLinks &&
-            legalLinks.map(({ label, href }) => (
-              <StyledLink
-                key={label}
-                href={href}
-                $css={css`
-                  padding-right: 1rem;
-                  &:not(:last-child) {
-                    box-shadow: inset -1px 0px 0px 0px
-                      var(--c--globals--colors--gray-200);
-                  }
-                `}
-              >
-                <Text
-                  $size="s"
-                  $variation="secondary"
-                  $transition="box-shadow 0.3s"
+            className="--docs--footer-internal-links"
+          >
+            {legalLinks &&
+              legalLinks.map(({ label, href }) => (
+                <StyledLink
+                  key={label}
+                  href={href}
                   $css={css`
-                    &:hover {
-                      box-shadow: 0px 2px 0 0
-                        var(
-                          --c--contextuals--content--semantic--neutral--secondary
-                        );
+                    padding-right: 1rem;
+                    &:not(:last-child) {
+                      box-shadow: inset -1px 0px 0px 0px
+                        var(--c--globals--colors--gray-200);
                     }
                   `}
                 >
-                  {label}
-                </Text>
-              </StyledLink>
-            ))}
+                  <Text
+                    $size="s"
+                    $variation="secondary"
+                    $transition="box-shadow 0.3s"
+                    $css={css`
+                      &:hover {
+                        box-shadow: 0px 2px 0 0
+                          var(
+                            --c--contextuals--content--semantic--neutral--secondary
+                          );
+                      }
+                    `}
+                  >
+                    {label}
+                  </Text>
+                </StyledLink>
+              ))}
+          </Box>
+          {bottomInformation && (
+            <Text
+              as="p"
+              $size="s"
+              $margin="none"
+              $variation="secondary"
+              $display="inline"
+              className="--docs--footer-licence"
+            >
+              {bottomInformation.label}{' '}
+              {bottomInformation.link && (
+                <StyledLink
+                  href={bottomInformation.link.href}
+                  target="__blank"
+                  $css={css`
+                    display: inline-flex;
+                    box-shadow: 0px 1px 0 0
+                      var(
+                        --c--contextuals--content--semantic--neutral--secondary
+                      );
+                    gap: 0.2rem;
+                  `}
+                >
+                  <Text>{bottomInformation.link.label}</Text>
+                  <IconLink width={14} />
+                </StyledLink>
+              )}
+            </Text>
+          )}
         </Box>
-        {bottomInformation && (
-          <Text
-            as="p"
-            $size="s"
-            $margin={{ top: 'big' }}
-            $variation="secondary"
-            $display="inline"
-            className="--docs--footer-licence"
-          >
-            {bottomInformation.label}{' '}
-            {bottomInformation.link && (
-              <StyledLink
-                href={bottomInformation.link.href}
-                target="__blank"
-                $css={css`
-                  display: inline-flex;
-                  box-shadow: 0px 1px 0 0
-                    var(--c--contextuals--content--semantic--neutral--secondary);
-                  gap: 0.2rem;
-                `}
-              >
-                <Text>{bottomInformation.link.label}</Text>
-                <IconLink width={14} />
-              </StyledLink>
-            )}
-          </Text>
-        )}
       </Box>
     </Box>
   );

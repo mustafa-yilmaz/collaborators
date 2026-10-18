@@ -12,7 +12,7 @@ export const useWhoAmI = (access?: Access) => {
     };
   }
 
-  const isMyself = user?.id === access.user.id;
+  const isMyself = !!access.user && user?.id === access.user.id;
   const rolesAllowed = access.abilities.set_role_to;
 
   const isLastOwner =

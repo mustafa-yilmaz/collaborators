@@ -16,9 +16,9 @@ PYTHONPATH=/app
 # impress settings
 
 # Mail
-DJANGO_EMAIL_BRAND_NAME="La Suite Numérique"
+DJANGO_EMAIL_BRAND_NAME="CO✍️✍️ABORATORS"
 DJANGO_EMAIL_HOST="mailcatcher"
-DJANGO_EMAIL_LOGO_IMG="http://localhost:3000/assets/logo-suite-numerique.png"
+DJANGO_EMAIL_LOGO_IMG=""
 DJANGO_EMAIL_PORT=1025
 DJANGO_EMAIL_URL_APP="http://localhost:3000"
 
@@ -93,6 +93,8 @@ DOCSPEC_API_URL=http://docspec:3000/conversion
 
 # Theme customization
 THEME_CUSTOMIZATION_CACHE_TIMEOUT=15
+# Collaborators branding (name, logo, footer)
+THEME_CUSTOMIZATION_FILE_PATH=/app/impress/configuration/theme/collaborators.json
 
 # Indexer (disabled by default)
 # SEARCH_INDEXER_CLASS=core.services.search_indexers.FindDocumentIndexer

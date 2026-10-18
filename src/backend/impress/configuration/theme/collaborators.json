@@ -1,0 +1,341 @@
+{
+  "translations": {
+    "br": {
+      "translation": {
+        "Docs": "Collaborators",
+        "Docs Logo": "Collaborators",
+        "Docs is already available, log in to use it now.": "Collaborators a zo hegerz dija, kevreit evit ober gantañ.",
+        "Docs makes real-time collaboration simple. Invite collaborators - public officials or external partners - with one click to see their changes live, while maintaining precise access control for data security.": "Collaborators a aesa ar c'henlabour en amzer wirion. Pedit kenlabourerien - ajantoù publik pe kevelerien diavaez - dindan ur c'hlik gwelit o cheñchamantoù war-eeun, en ur virout ur c'hontrol resis war ar monedoù evit surentez ar roadennoù.",
+        "Docs offers an intuitive writing experience. Its minimalist interface favors content over layout, while offering the essentials: media import, offline mode and keyboard shortcuts for greater efficiency.": "Collaborators a ginnig ur skiant-prenet skrivañ hag a sant diouzh an nen. E etrefas minimel a brivilaj an endalc'had war ar bajennaozañ, en ur ginnig ar pep retañ: emporzhiañ médiaoù, mod ezlinenn ha berradennoù klavier evit bezañ efedusoc'h.",
+        "Docs transforms your documents into knowledge bases thanks to subpages, powerful search and the ability to pin your important documents.": "Collaborators a dreuzfurm ho restroù e diazezoù gouiziegezh gant sikour an ispajennoù, enklaskoù galloudus hag an tu da spilhenniñ ho restroù a-bouez.",
+        "Docs: Your new companion to collaborate on documents efficiently, intuitively, and securely.": "Collaborators: Ho kompagnun nevez evit kenlabourat war restroù en un doare efedus, dre santout diouzh an nen hag e surentez penn-da-benn.",
+        "To facilitate the circulation of documents, Docs allows you to export your content to the most common formats: PDF, Word or OpenDocument.": "Evit aesaat tremen-distremen ar restroù, Collaborators a ro an tu da ezporzhiañ hoc'h endalc'hadoù war-zu ar stummoù implijetañ: PDF, Word pe OpenDocument."
+      }
+    },
+    "de": {
+      "translation": {
+        "Docs": "Collaborators",
+        "Docs Logo": "Collaborators",
+        "Docs is already available, log in to use it now.": "Collaborators ist bereits verfügbar. Melden Sie sich an, um es jetzt zu nutzen.",
+        "Docs makes real-time collaboration simple. Invite collaborators - public officials or external partners - with one click to see their changes live, while maintaining precise access control for data security.": "Collaborators macht die Zusammenarbeit in Echtzeit einfach. Laden Sie Mitarbeiter — Beamte oder externe Partner — mit einem Klick ein, um ihre Änderungen live zu sehen und dabei die genaue Zugangskontrolle zwecks Datensicherheit beizubehalten.",
+        "Docs offers an intuitive writing experience. Its minimalist interface favors content over layout, while offering the essentials: media import, offline mode and keyboard shortcuts for greater efficiency.": "Collaborators bietet ein intuitives Schreiberlebnis. Seine minimalistische Oberfläche bevorzugt Inhalte über Layout, bietet aber das Wesentliche: Medien-Import, Offline-Modus und Tastaturkürzel für mehr Effizienz.",
+        "Docs transforms your documents into knowledge bases thanks to subpages, powerful search and the ability to pin your important documents.": "Dank Unterseiten, leistungsstarker Suche und der Möglichkeit, wichtige Dokumente zu fixieren, verwandelt Collaborators Ihre Dokumente in Wissensdatenbanken.",
+        "Docs: Your new companion to collaborate on documents efficiently, intuitively, and securely.": "Collaborators: Ihr neuer Begleiter für eine effiziente, intuitive und sichere Zusammenarbeit bei Dokumenten.",
+        "To facilitate the circulation of documents, Docs allows you to export your content to the most common formats: PDF, Word or OpenDocument.": "Collaborators erleichtert die Verbreitung von Dokumenten, da es den Export in die gängigsten Formate unterstützt: PDF, Word und OpenDocument."
+      }
+    },
+    "el": {
+      "translation": {
+        "Discover Docs": "Ανακαλύψτε τα Έγγραφα",
+        "Docs": "Collaborators",
+        "Docs Logo": "Collaborators",
+        "Docs is already available, log in to use it now.": "Τα έγγραφα είναι ήδη διαθέσιμα, συνδεθείτε για να τα χρησιμοποιήσετε τώρα.",
+        "Docs makes real-time collaboration simple. Invite collaborators - public officials or external partners - with one click to see their changes live, while maintaining precise access control for data security.": "Τα Έγγραφα απλοποιούν τη συνεργασία σε πραγματικό χρόνο. Προσκαλέστε συνεργάτες με ένα κλικ για να δείτε τις αλλαγές τους ζωντανά, διατηρώντας τον απόλυτο έλεγχο πρόσβασης για την ασφάλεια των δεδομένων.",
+        "Docs offers an intuitive writing experience. Its minimalist interface favors content over layout, while offering the essentials: media import, offline mode and keyboard shortcuts for greater efficiency.": "Τα Έγγραφα προσφέρουν μια διαισθητική εμπειρία γραφής. Η μινιμαλιστική διεπαφή του δίνει προτεραιότητα στο περιεχόμενο, προσφέροντας τα απαραίτητα: εισαγωγή πολυμέσων, λειτουργία εκτός σύνδεσης και συντομεύσεις πληκτρολογίου.",
+        "Docs transforms your documents into knowledge bases thanks to subpages, powerful search and the ability to pin your important documents.": "Τα Έγγραφα μετατρέπουν τα έγγραφά σας σε βάσεις γνώσης χάρη στις υποσελίδες, την ισχυρή αναζήτηση και τη δυνατότητα καρφιτσώματος των σημαντικών εγγράφων σας.",
+        "Docs: Your new companion to collaborate on documents efficiently, intuitively, and securely.": "Έγγραφα: Ο νέος σας συνεργάτης για αποτελεσματική, διαισθητική και ασφαλή συνεργασία σε έγγραφα.",
+        "To facilitate the circulation of documents, Docs allows you to export your content to the most common formats: PDF, Word or OpenDocument.": "Για τη διευκόλυνση της διακίνησης εγγράφων, τα Έγγραφα σας επιτρέπουν να εξάγετε το περιεχόμενό σας στις πιο κοινές μορφές: PDF, Word ή OpenDocument."
+      }
+    },
+    "en": {
+      "translation": {
+        "Docs": "Collaborators",
+        "Docs Logo": "Collaborators",
+        "Docs is already available, log in to use it now.": "Collaborators is already available, log in to use it now.",
+        "Docs makes real-time collaboration simple. Invite collaborators - public officials or external partners - with one click to see their changes live, while maintaining precise access control for data security.": "Collaborators makes real-time collaboration simple. Invite collaborators - public officials or external partners - with one click to see their changes live, while maintaining precise access control for data security.",
+        "Docs offers an intuitive writing experience. Its minimalist interface favors content over layout, while offering the essentials: media import, offline mode and keyboard shortcuts for greater efficiency.": "Collaborators offers an intuitive writing experience. Its minimalist interface favors content over layout, while offering the essentials: media import, offline mode and keyboard shortcuts for greater efficiency.",
+        "Docs transforms your documents into knowledge bases thanks to subpages, powerful search and the ability to pin your important documents.": "Collaborators transforms your documents into knowledge bases thanks to subpages, powerful search and the ability to pin your important documents.",
+        "Docs: Your new companion to collaborate on documents efficiently, intuitively, and securely.": "Collaborators: Your new companion to collaborate on documents efficiently, intuitively, and securely.",
+        "To facilitate the circulation of documents, Docs allows you to export your content to the most common formats: PDF, Word or OpenDocument.": "To facilitate the circulation of documents, Collaborators allows you to export your content to the most common formats: PDF, Word or OpenDocument.",
+        "Discover Docs": "Discover Collaborators"
+      }
+    },
+    "es": {
+      "translation": {
+        "Docs": "Collaborators",
+        "Docs Logo": "Collaborators",
+        "Docs is already available, log in to use it now.": "Collaborators ya está disponible, inicia sesión para empezar a usarlo.",
+        "Docs makes real-time collaboration simple. Invite collaborators - public officials or external partners - with one click to see their changes live, while maintaining precise access control for data security.": "Collaborators simplifica la colaboración en tiempo real. Invitar colaboradores - funcionarios públicos o socios externos - con un solo clic para ver sus cambios en vivo, manteniendo un control de acceso preciso para la seguridad de los datos.",
+        "Docs offers an intuitive writing experience. Its minimalist interface favors content over layout, while offering the essentials: media import, offline mode and keyboard shortcuts for greater efficiency.": "Collaborators ofrece una experiencia de escritura intuitiva. Su interfaz minimalista favorece el contenido sobre el diseño, mientras ofrece lo esencial: importación de medios, modo sin conexión y atajos de teclado para una mayor eficiencia.",
+        "Docs transforms your documents into knowledge bases thanks to subpages, powerful search and the ability to pin your important documents.": "Collaborators transforma sus documentos en bases de conocimiento gracias a las subpáginas, una potente herramienta de  búsqueda y la capacidad de marcar como favorito sus documentos más importantes.",
+        "Docs: Your new companion to collaborate on documents efficiently, intuitively, and securely.": "Collaborators: su nuevo compañero para colaborar en documentos de forma eficiente, intuitiva y segura.",
+        "To facilitate the circulation of documents, Docs allows you to export your content to the most common formats: PDF, Word or OpenDocument.": "Para facilitar la circulación de documentos, Collaborators le permite exportar su contenido a los formatos más comunes: PDF, Word o OpenDocument."
+      }
+    },
+    "fr": {
+      "translation": {
+        "Discover Docs": "Découvrez Collaborators",
+        "Docs": "Collaborators",
+        "Docs Logo": "Collaborators",
+        "Docs is already available, log in to use it now.": "Collaborators est déjà disponible, connectez-vous pour l’utiliser dès maintenant.",
+        "Docs makes real-time collaboration simple. Invite collaborators - public officials or external partners - with one click to see their changes live, while maintaining precise access control for data security.": "Collaborators simplifie la collaboration en temps réel. Invitez des collaborateurs - agents publics ou partenaires externes - d'un clic pour voir leurs modifications en direct, tout en gardant un contrôle précis des accès pour la sécurité des données.",
+        "Docs offers an intuitive writing experience. Its minimalist interface favors content over layout, while offering the essentials: media import, offline mode and keyboard shortcuts for greater efficiency.": "Collaborators propose une expérience d'écriture intuitive. Son interface minimaliste privilégie le contenu sur la mise en page, tout en offrant l'essentiel : import de médias, mode hors-ligne et raccourcis clavier pour plus d'efficacité.",
+        "Docs transforms your documents into knowledge bases thanks to subpages, powerful search and the ability to pin your important documents.": "Collaborators transforme vos documents en bases de connaissances grâce aux sous-pages, une recherche performante et la possibilité d'épingler vos documents importants.",
+        "Docs: Your new companion to collaborate on documents efficiently, intuitively, and securely.": "Collaborators : Votre nouveau compagnon pour collaborer sur des documents efficacement, intuitivement et en toute sécurité.",
+        "To facilitate the circulation of documents, Docs allows you to export your content to the most common formats: PDF, Word or OpenDocument.": "Pour faciliter la circulation des documents, Collaborators permet d'exporter vos contenus vers les formats les plus courants : PDF, Word ou OpenDocument."
+      }
+    },
+    "it": {
+      "translation": {
+        "Docs": "Collaborators",
+        "Docs Logo": "Collaborators",
+        "Docs is already available, log in to use it now.": "Collaborators è già disponibile, accedi per usarlo ora.",
+        "Docs makes real-time collaboration simple. Invite collaborators - public officials or external partners - with one click to see their changes live, while maintaining precise access control for data security.": "Collaborators rende semplice la collaborazione in tempo reale. Invita collaboratori - funzionari pubblici o partner esterni - con un clic per vedere i loro cambiamenti dal vivo, mantenendo un controllo preciso dell'accesso per la sicurezza dei dati.",
+        "Docs offers an intuitive writing experience. Its minimalist interface favors content over layout, while offering the essentials: media import, offline mode and keyboard shortcuts for greater efficiency.": "Collaborators offre un'esperienza di scrittura intuitiva. La sua interfaccia minimalista favorisce il contenuto rispetto al layout, offrendo gli elementi essenziali: importazione multimediale, modalità offline e scorciatoie da tastiera per una maggiore efficienza.",
+        "Docs transforms your documents into knowledge bases thanks to subpages, powerful search and the ability to pin your important documents.": "Collaborators trasforma i tuoi documenti in piattaforme di conoscenza grazie alle sotto-pagine, alla ricerca potente e alla capacità di fissare i tuoi documenti importanti.",
+        "Docs: Your new companion to collaborate on documents efficiently, intuitively, and securely.": "Collaborators: Il tuo nuovo compagno di collaborare sui documenti in modo efficiente, intuitivo e sicuro.",
+        "To facilitate the circulation of documents, Docs allows you to export your content to the most common formats: PDF, Word or OpenDocument.": "Per facilitare la circolazione dei documenti, Collaborators te consente di esportare i contenuti nei formati più comuni: PDF, Word o OpenDocument."
+      }
+    },
+    "nl": {
+      "translation": {
+        "Discover Docs": "Ontdek Collaborators",
+        "Docs": "Collaborators",
+        "Docs Logo": "Collaborators",
+        "Docs is already available, log in to use it now.": "Collaborators is beschikbaar, log in om het te gebruiken.",
+        "Docs makes real-time collaboration simple. Invite collaborators - public officials or external partners - with one click to see their changes live, while maintaining precise access control for data security.": "Collaborators maakt real-time samenwerking eenvoudig. Nodig medewerkers - ambtenaren of externe partners - uit met één klik om hun veranderingen live te zien, terwijl de toegangscontrole voor de gegevensbeveiliging wordt gehandhaafd.",
+        "Docs offers an intuitive writing experience. Its minimalist interface favors content over layout, while offering the essentials: media import, offline mode and keyboard shortcuts for greater efficiency.": "Collaborators biedt een intuïtieve schrijfervaring. De minimalistische interface geeft voorrang aan de inhoud boven de lay-out, terwijl essentiële zaken worden aangeboden: importeren van media, offline-modus en sneltoetsen voor grotere efficiëntie.",
+        "Docs transforms your documents into knowledge bases thanks to subpages, powerful search and the ability to pin your important documents.": "Documentatie transformeert uw documenten in een kennisbank, dankzij subpagina's, krachtig zoeken en de mogelijkheid om uw belangrijke documenten vast te zetten.",
+        "Docs: Your new companion to collaborate on documents efficiently, intuitively, and securely.": "Collaborators: Je nieuwe partner om efficiënt, intuïtief en veilig samen te werken aan documenten.",
+        "To facilitate the circulation of documents, Docs allows you to export your content to the most common formats: PDF, Word or OpenDocument.": "Om het circuleren van documenten te vergemakkelijken, kan Collaborators je inhoud exporteren naar de meest voorkomende formaten: PDF, Word of OpenDocument."
+      }
+    },
+    "pl": {
+      "translation": {
+        "Discover Docs": "Odkryj Collaborators",
+        "Docs": "Collaborators",
+        "Docs Logo": "Collaborators",
+        "Docs is already available, log in to use it now.": "Aplikacja Collaborators jest już dostępna. Zaloguj się, aby zacząć z niej korzystać.",
+        "Docs makes real-time collaboration simple. Invite collaborators - public officials or external partners - with one click to see their changes live, while maintaining precise access control for data security.": "Collaborators ułatwia współpracę w czasie rzeczywistym. Zaproś współpracowników - urzędników lub partnerów zewnętrznych - jednym kliknięciem, aby na bieżąco widzieć ich zmiany, zachowując precyzyjną kontrolę dostępu dla bezpieczeństwa danych.",
+        "Docs offers an intuitive writing experience. Its minimalist interface favors content over layout, while offering the essentials: media import, offline mode and keyboard shortcuts for greater efficiency.": "Collaborators zapewnia intuicyjne środowisko do pisania. Jego minimalistyczny interfejs stawia treść ponad układem, oferując jednocześnie podstawowe funkcje: import multimediów, tryb offline i skróty klawiszowe zwiększające wydajność.",
+        "Docs transforms your documents into knowledge bases thanks to subpages, powerful search and the ability to pin your important documents.": "Collaborators przekształca dokumenty w bazy wiedzy dzięki podstronom, zaawansowanemu wyszukiwaniu i możliwości przypinania ważnych dokumentów.",
+        "Docs: Your new companion to collaborate on documents efficiently, intuitively, and securely.": "Collaborators: Twój nowy towarzysz efektywnej, intuicyjnej i bezpiecznej współpracy nad dokumentami.",
+        "To facilitate the circulation of documents, Docs allows you to export your content to the most common formats: PDF, Word or OpenDocument.": "Aby ułatwić obieg dokumentów, Collaborators umożliwia eksportowanie treści do najpopularniejszych formatów: PDF, Word lub OpenDocument."
+      }
+    },
+    "pt": {
+      "translation": {
+        "Docs": "Collaborators",
+        "Docs Logo": "Collaborators"
+      }
+    },
+    "ru": {
+      "translation": {
+        "Discover Docs": "Откройте для себя Collaborators",
+        "Docs": "Collaborators",
+        "Docs Logo": "Collaborators",
+        "Docs is already available, log in to use it now.": "Collaborators уже доступен, просто войдите в свою учётную запись.",
+        "Docs makes real-time collaboration simple. Invite collaborators - public officials or external partners - with one click to see their changes live, while maintaining precise access control for data security.": "Collaborators упрощает совместную работу в режиме реального времени. Пригласите соавторов — государственных служащих или внешних партнёров — одним щелчком мыши, чтобы они могли видеть свои изменения в режиме реального времени, при этом сохраняя чёткий контроль доступа для обеспечения безопасности данных.",
+        "Docs offers an intuitive writing experience. Its minimalist interface favors content over layout, while offering the essentials: media import, offline mode and keyboard shortcuts for greater efficiency.": "Collaborators предлагает интуитивно понятную работу с документом. Благодаря минималистскому интерфейсу вы сможете найти всё необходимое для большей эффективности: импорт медиа, автономный режим и горячие клавиши.",
+        "Docs transforms your documents into knowledge bases thanks to subpages, powerful search and the ability to pin your important documents.": "Collaborators преобразует ваши документы в базы знаний благодаря вложенным страницам, мощному поиску и возможности закреплять важные документы.",
+        "Docs: Your new companion to collaborate on documents efficiently, intuitively, and securely.": "Collaborators: Ваш новый помощник для эффективной, интуитивной и безопасной совместной работы над документами.",
+        "To facilitate the circulation of documents, Docs allows you to export your content to the most common formats: PDF, Word or OpenDocument.": "Для облегчения документооборота Collaborators позволяет экспортировать ваши документы в наиболее распространенные форматы: PDF, Word или OpenDocument."
+      }
+    },
+    "sl": {
+      "translation": {
+        "Docs": "Collaborators",
+        "Docs Logo": "Collaborators"
+      }
+    },
+    "sv": {
+      "translation": {
+        "Docs": "Collaborators",
+        "Docs Logo": "Collaborators"
+      }
+    },
+    "tr": {
+      "translation": {
+        "Docs": "Collaborators",
+        "Docs Logo": "Collaborators"
+      }
+    },
+    "uk": {
+      "translation": {
+        "Discover Docs": "Відкрийте для себе Collaborators",
+        "Docs": "Collaborators",
+        "Docs Logo": "Collaborators",
+        "Docs is already available, log in to use it now.": "Collaborators вже доступний, увійдіть до нього зараз.",
+        "Docs makes real-time collaboration simple. Invite collaborators - public officials or external partners - with one click to see their changes live, while maintaining precise access control for data security.": "Collaborators спрощує співпрацю в реальному часі. Запросіть співавторів - державних службовців або зовнішніх партнерів - одним натисканням, щоб побачити зміни у документі, що вони роблять, зберігаючи точний контроль доступу для безпеки даних.",
+        "Docs offers an intuitive writing experience. Its minimalist interface favors content over layout, while offering the essentials: media import, offline mode and keyboard shortcuts for greater efficiency.": "Collaborators пропонує інтуїтивно зрозумілий процес написання текстів. Його мінімалістичний інтерфейс надає перевагу вмісту над оформленням, пропонуючи при цьому найнеобхідніші функції: імпорт медіафайлів, офлайн-режим та комбінації клавіш для більшої ефективності.",
+        "Docs transforms your documents into knowledge bases thanks to subpages, powerful search and the ability to pin your important documents.": "Collaborators перетворює ваші документи у бази знань завдяки вкладеним сторінкам, потужному пошуку та можливості закріпити ваші важливі документи.",
+        "Docs: Your new companion to collaborate on documents efficiently, intuitively, and securely.": "Collaborators: ваш новий супутник для ефективної співпраці з документами, інтуїтивно та надійно.",
+        "To facilitate the circulation of documents, Docs allows you to export your content to the most common formats: PDF, Word or OpenDocument.": "Для полегшення обміну документами Collaborators дозволяє експортувати вміст документів у найпоширеніші формати: PDF, Word або OpenDocument."
+      }
+    },
+    "zh-cn": {
+      "translation": {
+        "Discover Docs": "探索 Collaborators",
+        "Docs": "Collaborators",
+        "Docs Logo": "Collaborators",
+        "Docs is already available, log in to use it now.": "Collaborators 已上线，立即登录使用。",
+        "Docs makes real-time collaboration simple. Invite collaborators - public officials or external partners - with one click to see their changes live, while maintaining precise access control for data security.": "Collaborators 让实时协作变得简单：一键即可邀请协作者（公职人员或外部合作伙伴），实时查看彼此的修改，同时通过精细的权限管控保障数据安全。",
+        "Docs offers an intuitive writing experience. Its minimalist interface favors content over layout, while offering the essentials: media import, offline mode and keyboard shortcuts for greater efficiency.": "Collaborators 提供直观的写作体验。极简界面让你专注于内容而非排版，同时提供核心功能：媒体导入、离线模式以及提升效率的快捷键。",
+        "Docs transforms your documents into knowledge bases thanks to subpages, powerful search and the ability to pin your important documents.": "凭借子文档、强大的搜索以及置顶重要文档的能力，Collaborators 能将你的文档变成知识库。",
+        "Docs: Your new companion to collaborate on documents efficiently, intuitively, and securely.": "Collaborators：你高效、直观、安全的文档协作新伙伴",
+        "To facilitate the circulation of documents, Docs allows you to export your content to the most common formats: PDF, Word or OpenDocument.": "为方便文档流转，Collaborators 支持将内容导出为主流格式：PDF、Word 或 OpenDocument。"
+      }
+    },
+    "zh-tw": {
+      "translation": {
+        "Docs": "Collaborators",
+        "Docs Logo": "Collaborators"
+      }
+    }
+  },
+  "footer": {
+    "default": {
+      "logo": {
+        "withTitle": true
+      },
+      "externalLinks": [
+        {
+          "label": "collaborators.community",
+          "href": "https://collaborators.community"
+        },
+        {
+          "label": "Built on La Suite Docs",
+          "href": "https://github.com/suitenumerique/docs"
+        },
+        {
+          "label": "BlockNote.js",
+          "href": "https://www.blocknotejs.org/"
+        }
+      ],
+      "bottomInformation": {
+        "label": "Unless otherwise stated, all content on this site is under",
+        "link": {
+          "label": "licence MIT",
+          "href": "https://github.com/suitenumerique/docs/blob/main/LICENSE"
+        }
+      }
+    },
+    "en": {
+      "legalLinks": [
+        {
+          "label": "Legal Notice",
+          "href": "#"
+        },
+        {
+          "label": "Personal data and cookies",
+          "href": "#"
+        },
+        {
+          "label": "Accessibility",
+          "href": "#"
+        }
+      ],
+      "bottomInformation": {
+        "label": "Unless otherwise stated, all content on this site is under",
+        "link": {
+          "label": "licence MIT",
+          "href": "https://github.com/suitenumerique/docs/blob/main/LICENSE"
+        }
+      }
+    },
+    "fr": {
+      "legalLinks": [
+        {
+          "label": "Mentions légales",
+          "href": "#"
+        },
+        {
+          "label": "Données personnelles et cookies",
+          "href": "#"
+        },
+        {
+          "label": "Accessibilité",
+          "href": "#"
+        }
+      ],
+      "bottomInformation": {
+        "label": "Sauf mention contraire, tout le contenu de ce site est sous",
+        "link": {
+          "label": "licence MIT",
+          "href": "https://github.com/suitenumerique/docs/blob/main/LICENSE"
+        }
+      }
+    },
+    "de": {
+      "legalLinks": [
+        {
+          "label": "Impressum",
+          "href": "#"
+        },
+        {
+          "label": "Personenbezogene Daten und Cookies",
+          "href": "#"
+        },
+        {
+          "label": "Barrierefreiheit",
+          "href": "#"
+        }
+      ],
+      "bottomInformation": {
+        "label": "Sofern nicht anders angegeben, steht der gesamte Inhalt dieser Website unter",
+        "link": {
+          "label": "licence MIT",
+          "href": "https://github.com/suitenumerique/docs/blob/main/LICENSE"
+        }
+      }
+    },
+    "nl": {
+      "legalLinks": [
+        {
+          "label": "Wettelijke bepalingen",
+          "href": "#"
+        },
+        {
+          "label": "Persoonlijke gegevens en cookies",
+          "href": "#"
+        },
+        {
+          "label": "Toegankelijkheid",
+          "href": "#"
+        }
+      ],
+      "bottomInformation": {
+        "label": "Tenzij anders vermeld, is alle inhoud van deze site ondergebracht onder",
+        "link": {
+          "label": "licence MIT",
+          "href": "https://github.com/suitenumerique/docs/blob/main/LICENSE"
+        }
+      }
+    }
+  },
+  "home": {
+    "with-proconnect": false
+  },
+  "header": {
+    "logo": {},
+    "icon": {
+      "withTitle": true
+    }
+  },
+  "favicon": {
+    "light": {
+      "href": "/assets/favicon-collaborators.svg",
+      "type": "image/svg+xml"
+    },
+    "dark": {
+      "href": "/assets/favicon-collaborators.svg",
+      "type": "image/svg+xml"
+    }
+  },
+  "onboarding": {
+    "enabled": true,
+    "learn_more_url": "",
+    "ready_template_url": ""
+  },
+  "help": {
+    "documentation_url": "",
+    "support_mailto": "",
+    "legal_links": {
+      "personal_data": "",
+      "terms_of_use": "",
+      "accessibility_statement": "",
+      "legal_notice": ""
+    }
+  },
+  "wordmark": "CO✍️✍️ABORATORS"
+}

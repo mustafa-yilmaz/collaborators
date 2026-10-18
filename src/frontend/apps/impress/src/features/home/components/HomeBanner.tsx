@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import { Box, Icon, Text } from '@/components';
+import { Title } from '@/components/Title';
 import { useConfig } from '@/core';
 import { useCunninghamTheme } from '@/cunningham';
 import { ProConnectButton, gotoLogin } from '@/features/auth';
@@ -61,6 +62,7 @@ export default function HomeBanner() {
               {...icon}
             />
           )}
+          {!icon?.src && <Title as="span" $size="2.5rem" $weight="bold" />}
           <Text
             as="h2"
             $size={!isMobile ? 'xs-alt' : '2.3rem'}

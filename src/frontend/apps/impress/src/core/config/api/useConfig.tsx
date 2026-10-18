@@ -40,6 +40,11 @@ interface ThemeCustomization {
   };
   translations?: Resource;
   waffle?: LaGaufreV2Props;
+  /**
+   * Text logo shown instead of the product name wherever the logo appears
+   * (header, footer, home). Screen readers still read the product name.
+   */
+  wordmark?: string;
 }
 
 export interface ConfigResponse {

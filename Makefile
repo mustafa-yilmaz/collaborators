@@ -368,6 +368,10 @@ migrate-yhub:  ## create or upgrade the collaboration server (yhub) schema.
 	@$(COMPOSE_RUN) --no-deps yhub yarn init-db
 .PHONY: migrate-yhub
 
+sso-providers: ## configure Google and Microsoft sign-in in the dev Keycloak
+	@bin/setup-sso-providers.sh
+.PHONY: sso-providers
+
 superuser: ## Create an admin superuser with password "admin"
 	@echo "$(BOLD)Creating a Django superuser$(RESET)"
 	@$(MANAGE) createsuperuser --email admin@example.com --password admin

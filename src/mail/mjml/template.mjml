@@ -10,13 +10,16 @@
     <mj-wrapper css-class="wrapper" padding="5px 25px 0px 25px">
       <mj-section css-class="wrapper-logo">
         <mj-column>
-          <mj-image
-            align="center"
-            src="{{logo_img}}"
-            width="320px"
+          <mj-text
             align="left"
-            alt="{%trans 'Logo email' %}"
-          />
+            font-family="Inter, sans-serif"
+            font-size="28px"
+            font-weight="800"
+            font-style="italic"
+            color="#4747A3"
+          >
+            {{brandname}}
+          </mj-text>
         </mj-column>
       </mj-section>
       <mj-section mj-class="bg--white-100" padding="0px 20px 60px 20px">
@@ -47,7 +50,7 @@
           />
           <mj-text font-family="Inter, sans-serif">
             {% blocktrans %}
-              Docs, your new essential tool for organizing, sharing and collaborating on your documents as a team.
+              Collaborators, where teams write, organise and share knowledge together.
             {% endblocktrans %}
           </mj-text>
           <!-- Signature -->

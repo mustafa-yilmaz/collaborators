@@ -40,7 +40,7 @@ export const HeaderLogoLink = ({ headingLevel }: HeaderLogoLinkProps) => {
         $height="fit-content"
         $margin={{ top: 'auto' }}
       >
-        {icon && (
+        {icon?.src && (
           <Image
             data-testid="header-icon-docs"
             width={0}
@@ -51,7 +51,7 @@ export const HeaderLogoLink = ({ headingLevel }: HeaderLogoLinkProps) => {
         )}
         <Title
           as={headingLevel ?? 'span'}
-          className={icon?.withTitle ? undefined : 'sr-only'}
+          className={!icon?.src || icon.withTitle ? undefined : 'sr-only'}
           $size="1.7rem"
           $weight="bold"
         />

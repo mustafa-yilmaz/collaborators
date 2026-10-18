@@ -1,0 +1,18 @@
+# Social sign-in providers for the development Keycloak.
+#
+# Copy this file to "sso.local" (gitignored), fill in the values, then run
+# "make sso-providers". See documentation/collaborators/sso-setup.md for how to
+# create the Google and Microsoft apps. Leave a client id empty to skip it.
+
+# Google: OAuth client of type "Web application"
+# Redirect URI: http://localhost:8083/realms/impress/broker/google/endpoint
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# Microsoft: Entra ID app registration, "Accounts in any organizational
+# directory and personal Microsoft accounts"
+# Redirect URI (Web): http://localhost:8083/realms/impress/broker/microsoft/endpoint
+MICROSOFT_CLIENT_ID=
+MICROSOFT_CLIENT_SECRET=
+# "common" = personal and work/school accounts. Put a tenant id to restrict.
+MICROSOFT_TENANT_ID=common

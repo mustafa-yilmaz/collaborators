@@ -15,6 +15,7 @@ import {
   DocsStyleSchema,
   docsBlockNoteSchema,
 } from '@/blockSpecs';
+import { expandLoopTables } from '@/blockSpecs/LoopTable';
 import { logger } from '@/utils';
 
 interface ErrorResponse {
@@ -104,7 +105,10 @@ const readers: InputReader[] = [
       const ydoc = new Y.Doc();
       try {
         Y.applyUpdate(ydoc, data);
-        return editor.yDocToBlocks(ydoc, 'document-store');
+        return expandLoopTables(
+          editor.yDocToBlocks(ydoc, 'document-store'),
+          ydoc,
+        );
       } finally {
         ydoc.destroy();
       }

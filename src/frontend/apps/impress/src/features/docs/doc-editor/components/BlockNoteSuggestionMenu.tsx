@@ -24,6 +24,7 @@ import {
   getCalloutReactSlashMenuItems,
   getPdfReactSlashMenuItems,
 } from './custom-blocks';
+import { getLoopTableReactSlashMenuItems } from './custom-blocks/loop-table/LoopTableBlock';
 import { useGetInterlinkingMenuItems } from './custom-inline-content';
 import XLMultiColumn from './xl-multi-column';
 
@@ -59,6 +60,7 @@ export const BlockNoteSuggestionMenu = ({
       getMultiColumnSlashMenuItems?.(editor) || [],
       getPdfReactSlashMenuItems(editor, t, fileBlocksName),
       getCalloutReactSlashMenuItems(editor, t, basicBlocksName),
+      getLoopTableReactSlashMenuItems(editor, t, basicBlocksName),
       getMathSlashMenuItems(editor),
       getDiagramSlashMenuItems(editor),
       aiAllowed && getAISlashMenuItems ? getAISlashMenuItems(editor) : [],

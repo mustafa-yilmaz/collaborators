@@ -23,11 +23,84 @@ def base64_yjs_to_xml(base64_string):
     return yjs_to_xml(base64.b64decode(base64_string))
 
 
-def yjs_to_text(update):
-    """Extract text from a raw yjs update."""
+# Loop tables keep their data next to the document fragment, see
+# frontend .../custom-blocks/loop-table/model.ts
+LOOP_TABLES_KEY = "loop-tables"
+BUILTIN_LABELS = {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "not-started": "Not started",
+    "in-progress": "In progress",
+    "done": "Done",
+}
 
-    soup = BeautifulSoup(yjs_to_xml(update), "lxml-xml")
-    return soup.get_text(separator=" ", strip=True)
+
+def _loop_table_labels(table):
+    """Label option ids of a table mapped to their names."""
+    labels = dict(BUILTIN_LABELS)
+    groups = table.get("labelGroups")
+    if isinstance(groups, pycrdt.Map):
+        for group in groups.values():
+            for option in group.get("options") or []:
+                labels[option.get("id")] = option.get("label", "")
+    return labels
+
+
+def _loop_cell_texts(value, column_type, labels):
+    """Yield the searchable texts of one cell."""
+    if isinstance(value, pycrdt.Text):
+        yield str(value)
+    elif column_type == "label" and value:
+        yield labels.get(value, "")
+    elif column_type == "person" and isinstance(value, (list, tuple)):
+        yield from (str(person.get("label", "")) for person in value)
+    elif isinstance(value, (str, int, float)) and value != "":
+        yield str(value)
+
+
+def _loop_table_texts(table):
+    """Yield the searchable texts of a Loop table: column names and values."""
+    labels = _loop_table_labels(table)
+    columns = table.get("columns")
+    column_types = {}
+    if isinstance(columns, pycrdt.Array):
+        for column in columns:
+            column_types[column.get("id")] = column.get("type")
+            yield str(column.get("name") or "")
+
+    rows = table.get("rows")
+    if not isinstance(rows, pycrdt.Array):
+        return
+    for row in rows:
+        cells = row.get("cells")
+        if isinstance(cells, pycrdt.Map):
+            for column_id, value in cells.items():
+                yield from _loop_cell_texts(value, column_types.get(column_id), labels)
+
+
+def loop_tables_text(doc):
+    """The text of every Loop table of a pycrdt document."""
+    tables = doc.get(LOOP_TABLES_KEY, type=pycrdt.Map)
+    return " ".join(
+        text
+        for table in tables.values()
+        if isinstance(table, pycrdt.Map)
+        for text in _loop_table_texts(table)
+        if text
+    )
+
+
+def yjs_to_text(update):
+    """Extract text from a raw yjs update, Loop tables included."""
+
+    doc = pycrdt.Doc()
+    doc.apply_update(update)
+    xml = str(doc.get("document-store", type=pycrdt.XmlFragment))
+    soup = BeautifulSoup(xml, "lxml-xml")
+    text = soup.get_text(separator=" ", strip=True)
+    tables_text = loop_tables_text(doc)
+    return f"{text} {tables_text}".strip() if tables_text else text
 
 
 def base64_yjs_to_text(base64_string):

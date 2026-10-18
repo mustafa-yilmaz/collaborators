@@ -5,6 +5,8 @@ import {
 } from '@blocknote/math-block/odt-exporter';
 import { odtDefaultSchemaMappings } from '@blocknote/xl-odt-exporter';
 
+import { withLoopTableMapping } from '@/docs/doc-editor/components/custom-blocks/loop-table/export';
+
 import {
   blockMappingCalloutODT,
   blockMappingImageODT,
@@ -19,28 +21,29 @@ const baseInlineMappings =
 
 export const getOdtDocsSchemaMappings = (
   interlinkTitles: Map<string, string>,
-): DocsExporterODT['mappings'] => ({
-  ...odtDefaultSchemaMappings,
-  blockMapping: {
-    ...odtDefaultSchemaMappings.blockMapping,
-    callout: blockMappingCalloutODT,
-    image: blockMappingImageODT,
-    // We're reusing the file block mapping for PDF blocks
-    // The types don't match exactly but the implementation is compatible
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    pdf: odtDefaultSchemaMappings.blockMapping.file as any,
-    uploadLoader: blockMappingUploadLoaderODT,
-    // Renders the LaTeX as a native (editable) ODF formula object.
-    mathBlock: mathBlockMapping,
-    // Renders the Mermaid source to a PNG in the browser (async mapping).
-    diagram: diagramBlockMapping,
-  },
+): DocsExporterODT['mappings'] =>
+  withLoopTableMapping<DocsExporterODT['mappings']>({
+    ...odtDefaultSchemaMappings,
+    blockMapping: {
+      ...odtDefaultSchemaMappings.blockMapping,
+      callout: blockMappingCalloutODT,
+      image: blockMappingImageODT,
+      // We're reusing the file block mapping for PDF blocks
+      // The types don't match exactly but the implementation is compatible
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      pdf: odtDefaultSchemaMappings.blockMapping.file as any,
+      uploadLoader: blockMappingUploadLoaderODT,
+      // Renders the LaTeX as a native (editable) ODF formula object.
+      mathBlock: mathBlockMapping,
+      // Renders the Mermaid source to a PNG in the browser (async mapping).
+      diagram: diagramBlockMapping,
+    },
 
-  inlineContentMapping: {
-    ...baseInlineMappings,
-    interlinkingLinkInline:
-      createInlineContentMappingInterlinkingLinkODT(interlinkTitles),
-    // Renders inline math as a native (editable) ODF formula object.
-    math: inlineMathMapping,
-  },
-});
+    inlineContentMapping: {
+      ...baseInlineMappings,
+      interlinkingLinkInline:
+        createInlineContentMappingInterlinkingLinkODT(interlinkTitles),
+      // Renders inline math as a native (editable) ODF formula object.
+      math: inlineMathMapping,
+    },
+  });

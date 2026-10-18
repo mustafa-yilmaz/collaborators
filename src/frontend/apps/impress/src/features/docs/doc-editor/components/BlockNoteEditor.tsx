@@ -69,6 +69,8 @@ import { BlockNoteSuggestionMenu } from './BlockNoteSuggestionMenu';
 import { BlockNoteToolbar } from './BlockNoteToolBar/BlockNoteToolbar';
 import { DocsSideMenu } from './DocsSideMenu/DocsSideMenu';
 import { CalloutBlock, PdfBlock, UploadLoaderBlock } from './custom-blocks';
+import { LoopTableBlock } from './custom-blocks/loop-table/LoopTableBlock';
+import { LoopTableDocContext } from './custom-blocks/loop-table/LoopTableContext';
 const AIMenu = BlockNoteAI?.AIMenu;
 const AIMenuController = BlockNoteAI?.AIMenuController;
 const useAI = BlockNoteAI?.useAI;
@@ -92,6 +94,7 @@ const baseBlockNoteSchema = withPageBreak(
       image: ReactImageBlock(),
       video: ReactVideoBlock(),
       callout: CalloutBlock(),
+      loopTable: LoopTableBlock(),
       codeBlock: createSafeCodeBlockSpec(),
       diagram: createReactDiagramBlockSpec(),
       mathBlock: createReactMathBlockSpec(),
@@ -351,45 +354,49 @@ export const BlockNoteEditor = ({ doc, provider }: BlockNoteEditorProps) => {
   }, [setEditor, editor]);
 
   return (
-    <Box ref={refEditorContainer} $height="100%">
-      <DocsEditorStyle />
-      <DocsCommentsStyle
-        canSeeComment={canSeeComment}
-        currentUserAvatarUrl={currentUserAvatarUrl}
-      />
-      <DocsFindReplaceStyle />
-      <BlockNoteView
-        className="--docs--main-editor"
-        editor={editor}
-        formattingToolbar={false}
-        slashMenu={false}
-        sideMenu={false}
-        theme="light"
-        comments={false}
-        aria-label={t('Document editor', {
-          description: 'Accessible name of the editor area',
-        })}
-        // To not clipped the floating part in the editor area
-        portalElements={{ default: null }}
-      >
-        {aiBlockNoteAllowed && AIMenuController && AIMenu && (
-          <AIMenuController aiMenu={AIMenu} />
-        )}
-        <BlockNoteSuggestionMenu aiAllowed={aiBlockNoteAllowed} />
-        <BlockNoteToolbar aiAllowed={aiBlockNoteAllowed} />
-        <DocsSideMenu />
-        {showComments && <FloatingComposerController />}
-        {showComments && !isCommentSideBarOpen && <FloatingThreadController />}
-        {threadsSidebarTarget &&
-          createPortal(
-            <ThreadsSidebar
-              filter={threadsSidebarFilter}
-              sort="recent-activity"
-            />,
-            threadsSidebarTarget,
+    <LoopTableDocContext.Provider value={provider.doc}>
+      <Box ref={refEditorContainer} $height="100%">
+        <DocsEditorStyle />
+        <DocsCommentsStyle
+          canSeeComment={canSeeComment}
+          currentUserAvatarUrl={currentUserAvatarUrl}
+        />
+        <DocsFindReplaceStyle />
+        <BlockNoteView
+          className="--docs--main-editor"
+          editor={editor}
+          formattingToolbar={false}
+          slashMenu={false}
+          sideMenu={false}
+          theme="light"
+          comments={false}
+          aria-label={t('Document editor', {
+            description: 'Accessible name of the editor area',
+          })}
+          // To not clipped the floating part in the editor area
+          portalElements={{ default: null }}
+        >
+          {aiBlockNoteAllowed && AIMenuController && AIMenu && (
+            <AIMenuController aiMenu={AIMenu} />
           )}
-      </BlockNoteView>
-    </Box>
+          <BlockNoteSuggestionMenu aiAllowed={aiBlockNoteAllowed} />
+          <BlockNoteToolbar aiAllowed={aiBlockNoteAllowed} />
+          <DocsSideMenu />
+          {showComments && <FloatingComposerController />}
+          {showComments && !isCommentSideBarOpen && (
+            <FloatingThreadController />
+          )}
+          {threadsSidebarTarget &&
+            createPortal(
+              <ThreadsSidebar
+                filter={threadsSidebarFilter}
+                sort="recent-activity"
+              />,
+              threadsSidebarTarget,
+            )}
+        </BlockNoteView>
+      </Box>
+    </LoopTableDocContext.Provider>
   );
 };
 
@@ -451,20 +458,22 @@ export const BlockNoteReader = ({
   useScrollToBlockAnchor();
 
   return (
-    <Box>
-      <DocsEditorStyle />
-      <DocsCommentsStyle canSeeComment={false} />
-      <BlockNoteView
-        className="--docs--main-editor"
-        editor={editor}
-        editable={false}
-        theme="light"
-        formattingToolbar={false}
-        slashMenu={false}
-        comments={false}
-      >
-        <BlockNoteToolbar aiAllowed={false} />
-      </BlockNoteView>
-    </Box>
+    <LoopTableDocContext.Provider value={initialContent.doc}>
+      <Box>
+        <DocsEditorStyle />
+        <DocsCommentsStyle canSeeComment={false} />
+        <BlockNoteView
+          className="--docs--main-editor"
+          editor={editor}
+          editable={false}
+          theme="light"
+          formattingToolbar={false}
+          slashMenu={false}
+          comments={false}
+        >
+          <BlockNoteToolbar aiAllowed={false} />
+        </BlockNoteView>
+      </Box>
+    </LoopTableDocContext.Provider>
   );
 };

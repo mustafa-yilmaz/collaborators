@@ -7,6 +7,7 @@ import {
 
 import { CalloutBlock } from './Callout';
 import { InterlinkingLinkInline } from './InterlinkingLinkInline';
+import { LoopTableBlock } from './LoopTable';
 import { PdfBlock } from './Pdf';
 import { UploadLoaderBlock } from './UploadLoader';
 
@@ -17,6 +18,7 @@ export const docsBlockNoteSchema = withPageBreak(
     blockSpecs: {
       ...defaultBlockSpecs,
       callout: CalloutBlock(),
+      loopTable: LoopTableBlock(),
       pdf: PdfBlock(),
       uploadLoader: UploadLoaderBlock(),
     },

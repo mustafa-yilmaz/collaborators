@@ -183,6 +183,7 @@ def test_api_document_accesses_list_authenticated_related_non_privileged(
                 if access.user
                 else None,
                 "team": access.team,
+                "team_label": access.team or None,
                 "role": access.role,
                 "max_ancestors_role": None,
                 "max_role": access.role,
@@ -293,6 +294,7 @@ def test_api_document_accesses_list_authenticated_related_privileged(
                 "max_ancestors_role": None,
                 "max_role": access.role,
                 "team": access.team,
+                "team_label": access.team or None,
                 "role": access.role,
                 "abilities": access.get_abilities(user),
                 "updated_at": access.updated_at.isoformat().replace("+00:00", "Z"),
@@ -659,6 +661,7 @@ def test_api_document_accesses_retrieve_authenticated_related(
             },
             "user": access_user,
             "team": "",
+            "team_label": None,
             "role": access.role,
             "max_ancestors_role": None,
             "max_role": access.role,

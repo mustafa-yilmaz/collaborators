@@ -198,6 +198,7 @@ def test_api_document_accesses_create_authenticated_administrator_share_to_user(
         "max_role": role,
         "role": role,
         "team": "",
+        "team_label": None,
         "user": other_user,
         "updated_at": new_document_access.updated_at.isoformat().replace("+00:00", "Z"),
         "created_at": new_document_access.created_at.isoformat().replace("+00:00", "Z"),
@@ -249,6 +250,7 @@ def test_api_document_accesses_create_authenticated_administrator_share_to_team(
         f"/api/v1.0/documents/{document.id!s}/accesses/",
         {
             "team": "new-team",
+            "team_label": "new-team" or None,
             "role": "owner",
         },
         format="json",
@@ -271,6 +273,7 @@ def test_api_document_accesses_create_authenticated_administrator_share_to_team(
             f"/api/v1.0/documents/{document.id!s}/accesses/",
             {
                 "team": "new-team",
+                "team_label": "new-team" or None,
                 "role": role,
             },
             format="json",
@@ -307,6 +310,7 @@ def test_api_document_accesses_create_authenticated_administrator_share_to_team(
         "max_role": role,
         "role": role,
         "team": "new-team",
+        "team_label": "new-team" or None,
         "user": None,
         "updated_at": new_document_access.updated_at.isoformat().replace("+00:00", "Z"),
         "created_at": new_document_access.created_at.isoformat().replace("+00:00", "Z"),
@@ -390,6 +394,7 @@ def test_api_document_accesses_create_authenticated_owner_share_to_user(
         "max_role": role,
         "role": role,
         "team": "",
+        "team_label": None,
         "user": other_user,
         "updated_at": new_document_access.updated_at.isoformat().replace("+00:00", "Z"),
         "created_at": new_document_access.created_at.isoformat().replace("+00:00", "Z"),
@@ -446,6 +451,7 @@ def test_api_document_accesses_create_authenticated_owner_share_to_team(
             f"/api/v1.0/documents/{document.id!s}/accesses/",
             {
                 "team": "new-team",
+                "team_label": "new-team" or None,
                 "role": role,
             },
             format="json",
@@ -482,6 +488,7 @@ def test_api_document_accesses_create_authenticated_owner_share_to_team(
         "max_role": role,
         "role": role,
         "team": "new-team",
+        "team_label": "new-team" or None,
         "user": None,
         "updated_at": new_document_access.updated_at.isoformat().replace("+00:00", "Z"),
         "created_at": new_document_access.created_at.isoformat().replace("+00:00", "Z"),
@@ -562,6 +569,7 @@ def test_api_document_accesses_create_email_in_receivers_language(via, mock_user
             "max_role": role,
             "role": role,
             "team": "",
+            "team_label": None,
             "user": other_user_data,
             "updated_at": new_document_access.updated_at.isoformat().replace(
                 "+00:00", "Z"

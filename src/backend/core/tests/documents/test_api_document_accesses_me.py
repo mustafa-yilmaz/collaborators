@@ -54,6 +54,7 @@ def expected_access(access, user, via):
             "id": str(user.id),
         },
         "team": "lasuite" if via == TEAM else "",
+        "team_label": "lasuite" if via == TEAM else "" or None,
         "role": access.role,
         "max_ancestors_role": None,
         "max_role": access.role,

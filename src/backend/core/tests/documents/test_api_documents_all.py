@@ -351,6 +351,8 @@ def test_api_documents_all_format():
         "depth": 1,
         "excerpt": document.excerpt,
         "is_favorite": False,
+        "kind": "page",
+        "home_workspace": None,
         "link_reach": document.link_reach,
         "link_role": document.link_role,
         "nb_accesses_ancestors": 1,

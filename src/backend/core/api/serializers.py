@@ -86,6 +86,7 @@ class ListDocumentSerializer(serializers.ModelSerializer):
     user_role = serializers.SerializerMethodField(read_only=True)
     abilities = serializers.SerializerMethodField(read_only=True)
     deleted_at = serializers.SerializerMethodField(read_only=True)
+    home_workspace = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = models.Document
@@ -102,6 +103,8 @@ class ListDocumentSerializer(serializers.ModelSerializer):
             "depth",
             "excerpt",
             "is_favorite",
+            "kind",
+            "home_workspace",
             "link_role",
             "link_reach",
             "nb_accesses_ancestors",
@@ -125,6 +128,8 @@ class ListDocumentSerializer(serializers.ModelSerializer):
             "depth",
             "excerpt",
             "is_favorite",
+            "kind",
+            "home_workspace",
             "link_role",
             "link_reach",
             "nb_accesses_ancestors",
@@ -163,6 +168,23 @@ class ListDocumentSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         return instance.get_role(request.user) if request else None
 
+    def get_home_workspace(self, instance):
+        """For a space, the workspace that owns it, if any."""
+        if not instance.is_space:
+            return None
+        link = (
+            instance.workspace_links.filter(is_home=True)
+            .select_related("workspace")
+            .first()
+        )
+        if link is None:
+            return None
+        return {
+            "id": str(link.workspace.id),
+            "name": link.workspace.name,
+            "slug": link.workspace.slug,
+        }
+
     def get_deleted_at(self, instance):
         """Return the deleted_at of the current document."""
         return instance.ancestors_deleted_at
@@ -200,6 +222,8 @@ class DocumentSerializer(ListDocumentSerializer):
             "excerpt",
             "file",
             "is_favorite",
+            "kind",
+            "home_workspace",
             "link_role",
             "link_reach",
             "nb_accesses_ancestors",
@@ -222,6 +246,8 @@ class DocumentSerializer(ListDocumentSerializer):
             "deleted_at",
             "depth",
             "is_favorite",
+            "kind",
+            "home_workspace",
             "link_role",
             "link_reach",
             "nb_accesses_ancestors",
@@ -335,6 +361,7 @@ class DocumentAccessSerializer(serializers.ModelSerializer):
     )
     user = UserSerializer(read_only=True)
     team = serializers.CharField(required=False, allow_blank=True)
+    team_label = serializers.SerializerMethodField(read_only=True)
     abilities = serializers.SerializerMethodField(read_only=True)
     max_ancestors_role = serializers.SerializerMethodField(read_only=True)
     max_role = serializers.SerializerMethodField(read_only=True)
@@ -348,6 +375,7 @@ class DocumentAccessSerializer(serializers.ModelSerializer):
             "user",
             "user_id",
             "team",
+            "team_label",
             "role",
             "abilities",
             "max_ancestors_role",
@@ -371,6 +399,10 @@ class DocumentAccessSerializer(serializers.ModelSerializer):
         if request:
             return instance.get_abilities(request.user)
         return {}
+
+    def get_team_label(self, instance):
+        """Human readable name of the group or workspace the access is granted to."""
+        return models.get_team_label(instance.team) if instance.team else None
 
     def get_max_ancestors_role(self, instance):
         """Return max_ancestors_role if annotated; else None."""
@@ -403,6 +435,7 @@ class DocumentAccessLightSerializer(DocumentAccessSerializer):
             "document",
             "user",
             "team",
+            "team_label",
             "role",
             "abilities",
             "max_ancestors_role",
@@ -414,6 +447,7 @@ class DocumentAccessLightSerializer(DocumentAccessSerializer):
             "id",
             "document",
             "team",
+            "team_label",
             "role",
             "abilities",
             "max_ancestors_role",

@@ -7,13 +7,30 @@ from lasuite.oidc_login.urls import urlpatterns as oidc_urls
 from lasuite.oidc_resource_server.urls import urlpatterns as oidc_resource_server_urls
 from rest_framework.routers import DefaultRouter
 
-from core.api import viewsets
+from core.api import viewsets, workspaces
 from core.external_api import viewsets as external_api_viewsets
 
 # - Main endpoints
 router = DefaultRouter()
 router.register("documents", viewsets.DocumentViewSet, basename="documents")
 router.register("users", viewsets.UserViewSet, basename="users")
+router.register("workspaces", workspaces.WorkspaceViewSet, basename="workspaces")
+router.register("spaces", workspaces.SpaceViewSet, basename="spaces")
+
+# - Routes nested under a workspace
+workspace_related_router = DefaultRouter()
+workspace_related_router.register(
+    "accesses", workspaces.WorkspaceAccessViewSet, basename="workspace_accesses"
+)
+workspace_related_router.register(
+    "groups", workspaces.GroupViewSet, basename="workspace_groups"
+)
+
+# - Routes nested under a group
+group_related_router = DefaultRouter()
+group_related_router.register(
+    "members", workspaces.GroupMembershipViewSet, basename="group_members"
+)
 
 # - Routes nested under a document
 document_related_router = DefaultRouter()
@@ -66,6 +83,15 @@ urlpatterns = [
             [
                 *router.urls,
                 *oidc_urls,
+                path("groups/", workspaces.GrantableTeamsView.as_view()),
+                re_path(
+                    r"^workspaces/(?P<resource_id>[0-9a-z-]*)/",
+                    include(workspace_related_router.urls),
+                ),
+                re_path(
+                    r"^groups/(?P<resource_id>[0-9a-z-]*)/",
+                    include(group_related_router.urls),
+                ),
                 re_path(
                     r"^documents/(?P<resource_id>[0-9a-z-]*)/",
                     include(document_related_router.urls),

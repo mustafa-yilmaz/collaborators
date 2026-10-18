@@ -177,6 +177,8 @@ def test_api_documents_duplicate_success(index, mock_yhub, settings):
         "depth": duplicated_document.depth,
         "excerpt": duplicated_document.excerpt,
         "is_favorite": False,
+        "kind": "page",
+        "home_workspace": None,
         "link_reach": duplicated_document.link_reach,
         "link_role": duplicated_document.link_role,
         "nb_accesses_ancestors": duplicated_document.nb_accesses_ancestors,

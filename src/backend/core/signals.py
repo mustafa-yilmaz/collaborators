@@ -72,3 +72,15 @@ def document_access_post_delete(sender, instance, **kwargs):  # pylint: disable=
     cache.delete(cache_key)
 
     reset_service_connections_on_commit(instance.document_id, instance.user_id)
+
+
+@receiver(signals.post_save, sender=models.WorkspaceAccess)
+@receiver(signals.post_delete, sender=models.WorkspaceAccess)
+@receiver(signals.post_save, sender=models.GroupMembership)
+@receiver(signals.post_delete, sender=models.GroupMembership)
+def membership_changed(sender, instance, **kwargs):  # pylint: disable=unused-argument
+    """
+    A workspace or group membership changed: recompute the teams of its user,
+    which decide the roles they get through team accesses on documents.
+    """
+    models.User.refresh_teams(instance.user_id)

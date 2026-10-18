@@ -116,3 +116,36 @@ def get_equivalent_link_definition(ancestors_links):
         )
 
     return {"link_reach": max_reach, "link_role": max_role}
+
+
+class DocumentKindChoices(TextChoices):
+    """A document is a page, or the root of a space holding pages."""
+
+    PAGE = "page", _("Page")
+    SPACE = "space", _("Space")
+
+
+class WorkspaceRoleChoices(PriorityTextChoices):
+    """Defines the roles a user can have in a workspace."""
+
+    MEMBER = "member", _("Member")
+    ADMIN = "administrator", _("Administrator")
+    OWNER = "owner", _("Owner")
+
+
+WORKSPACE_PRIVILEGED_ROLES = [WorkspaceRoleChoices.ADMIN, WorkspaceRoleChoices.OWNER]
+
+
+class GroupKindChoices(TextChoices):
+    """A group gathers people working on a task, or belonging to an organization."""
+
+    TEAM = "team", _("Team")
+    ORGANIZATION = "organization", _("Organization")
+
+
+class SpaceVisibilityChoices(TextChoices):
+    """Who can read a space when it is created."""
+
+    PUBLIC = "public", _("Public")
+    WORKSPACE = "workspace", _("All workspace members")
+    INVITED = "invited", _("Only invited people")

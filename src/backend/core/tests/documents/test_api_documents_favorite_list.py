@@ -74,6 +74,8 @@ def test_api_document_favorite_list_authenticated_with_favorite():
                 "excerpt": document.excerpt,
                 "id": str(document.id),
                 "is_favorite": True,
+                "kind": "page",
+                "home_workspace": None,
                 "link_reach": document.link_reach,
                 "link_role": document.link_role,
                 "nb_accesses_ancestors": 1,

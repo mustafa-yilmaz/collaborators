@@ -10,6 +10,15 @@
     <mj-wrapper css-class="wrapper" padding="5px 25px 0px 25px">
       <mj-section css-class="wrapper-logo">
         <mj-column>
+          <!-- A logo image when one is configured, else the brand name as a text wordmark -->
+          <mj-raw>{% if logo_img %}</mj-raw>
+          <mj-image
+            src="{{logo_img}}"
+            width="320px"
+            align="left"
+            alt="{%trans 'Logo email' %}"
+          />
+          <mj-raw>{% else %}</mj-raw>
           <mj-text
             align="left"
             font-family="Inter, sans-serif"
@@ -20,6 +29,7 @@
           >
             {{brandname}}
           </mj-text>
+          <mj-raw>{% endif %}</mj-raw>
         </mj-column>
       </mj-section>
       <mj-section mj-class="bg--white-100" padding="0px 20px 60px 20px">

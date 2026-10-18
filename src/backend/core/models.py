@@ -25,6 +25,7 @@ from django.db.models.functions import Left, Length
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.functional import cached_property
+from django.utils.text import slugify
 from django.utils.translation import get_language, override
 from django.utils.translation import gettext_lazy as _
 
@@ -34,9 +35,13 @@ from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
 from core.choices import (
     PRIVILEGED_ROLES,
+    WORKSPACE_PRIVILEGED_ROLES,
+    DocumentKindChoices,
+    GroupKindChoices,
     LinkReachChoices,
     LinkRoleChoices,
     RoleChoices,
+    WorkspaceRoleChoices,
     get_equivalent_link_definition,
 )
 from core.services.yhub_services import YHubError, YHubService
@@ -44,6 +49,31 @@ from core.utils.treebeard import create_tree_node_with_retry
 from core.validators import sub_validator
 
 logger = getLogger(__name__)
+
+
+# Teams are the strings that document accesses grant a role to, besides users
+# (see `BaseAccess.team`). Collaborators derives them from the workspaces and
+# groups a user belongs to, so that granting a group or a whole workspace on a
+# space reuses the access inheritance of the document tree unchanged.
+TEAM_GROUP = "group"
+TEAM_WORKSPACE = "workspace"
+TEAM_WORKSPACE_ADMINS = "workspace-admins"
+
+
+def make_team(kind, obj_id):
+    """Return the team string granting a role to a group or to a workspace."""
+    return f"{kind}:{obj_id}"
+
+
+def parse_team(team):
+    """Split a team string into its kind and object id, or (None, None)."""
+    kind, _sep, obj_id = (team or "").partition(":")
+    if kind not in (TEAM_GROUP, TEAM_WORKSPACE, TEAM_WORKSPACE_ADMINS):
+        return None, None
+    try:
+        return kind, uuid.UUID(obj_id)
+    except ValueError:
+        return None, None
 
 
 def get_trashbin_cutoff():
@@ -150,6 +180,10 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
     )
 
     full_name = models.CharField(_("full name"), max_length=100, null=True, blank=True)
+    # Derived from workspace and group memberships, see `teams`
+    collaborator_teams = ArrayField(
+        models.CharField(max_length=100), default=list, blank=True, editable=False
+    )
     short_name = models.CharField(
         _("short name"), max_length=100, null=True, blank=True
     )
@@ -457,10 +491,30 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
     @cached_property
     def teams(self):
         """
-        Get list of teams in which the user is, as a list of strings.
-        Must be cached if retrieved remotely.
+        Get list of teams in which the user is, as a list of strings: one per
+        group, one per workspace, and one per workspace the user administers.
+
+        Read from `collaborator_teams`, kept up to date by `refresh_teams`
+        whenever a membership changes, so that permission checks cost no query.
         """
-        return []
+        return list(self.collaborator_teams or [])
+
+    @staticmethod
+    def refresh_teams(user_id):
+        """Recompute and store the teams of a user from their memberships."""
+        teams = [
+            make_team(TEAM_GROUP, group_id)
+            for group_id in GroupMembership.objects.filter(user_id=user_id).values_list(
+                "group_id", flat=True
+            )
+        ]
+        for workspace_id, role in WorkspaceAccess.objects.filter(
+            user_id=user_id
+        ).values_list("workspace_id", "role"):
+            teams.append(make_team(TEAM_WORKSPACE, workspace_id))
+            if role in WORKSPACE_PRIVILEGED_ROLES:
+                teams.append(make_team(TEAM_WORKSPACE_ADMINS, workspace_id))
+        User.objects.filter(pk=user_id).update(collaborator_teams=sorted(teams))
 
 
 class UserReconciliation(BaseModel):
@@ -995,6 +1049,11 @@ class Document(MP_Node, BaseModel):
     """Pad document, the content of which lives in the collaboration server."""
 
     title = models.CharField(_("title"), max_length=255, null=True, blank=True)
+    kind = models.CharField(
+        max_length=10,
+        choices=DocumentKindChoices.choices,
+        default=DocumentKindChoices.PAGE,
+    )
     excerpt = models.TextField(_("excerpt"), max_length=300, null=True, blank=True)
     link_reach = models.CharField(
         max_length=20,
@@ -1067,6 +1126,17 @@ class Document(MP_Node, BaseModel):
         super().__init__(*args, **kwargs)
         self._ancestors_link_definition = None
         self._computed_link_definition = None
+
+    def clean(self):
+        """A space is always the root of its tree of pages."""
+        super().clean()
+        if self.kind == DocumentKindChoices.SPACE and self.depth and self.depth > 1:
+            raise ValidationError({"kind": _("A space must be a root document.")})
+
+    @property
+    def is_space(self):
+        """True if the document is the root of a space."""
+        return self.kind == DocumentKindChoices.SPACE
 
     def is_leaf(self):
         """
@@ -2354,3 +2424,227 @@ class DocumentMigration(models.Model):
 
     def __str__(self):
         return f"{self.document_id!s}: {self.status:s}"
+
+
+class Workspace(BaseModel):
+    """An organisation-level area (a company, a university, a community) holding spaces."""
+
+    name = models.CharField(_("name"), max_length=100)
+    slug = models.SlugField(_("slug"), max_length=100, unique=True)
+    description = models.TextField(_("description"), blank=True, default="")
+
+    class Meta:
+        db_table = "collaborators_workspace"
+        ordering = ("name",)
+        verbose_name = _("Workspace")
+        verbose_name_plural = _("Workspaces")
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        """Derive a unique slug from the name on creation."""
+        if not self.slug:
+            base = slugify(self.name)[:90] or "workspace"
+            slug, index = base, 1
+            while Workspace.objects.filter(slug=slug).exists():
+                index += 1
+                slug = f"{base}-{index}"
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def get_role(self, user):
+        """Return the role of a user in the workspace, or None."""
+        if not user.is_authenticated:
+            return None
+        return self.accesses.filter(user=user).values_list("role", flat=True).first()
+
+    def get_abilities(self, user):
+        """Compute and return the abilities of a user on the workspace."""
+        role = self.get_role(user)
+        is_privileged = role in WORKSPACE_PRIVILEGED_ROLES
+        return {
+            "destroy": role == WorkspaceRoleChoices.OWNER,
+            "manage_accesses": is_privileged,
+            "manage_groups": is_privileged,
+            "partial_update": is_privileged,
+            "retrieve": role is not None,
+            "spaces_create": role is not None,
+            "update": is_privileged,
+        }
+
+
+class WorkspaceAccess(BaseModel):
+    """The membership of a collaborator in a workspace, with a role."""
+
+    workspace = models.ForeignKey(
+        Workspace, on_delete=models.CASCADE, related_name="accesses"
+    )
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="workspace_accesses"
+    )
+    role = models.CharField(
+        max_length=20,
+        choices=WorkspaceRoleChoices.choices,
+        default=WorkspaceRoleChoices.MEMBER,
+    )
+
+    class Meta:
+        db_table = "collaborators_workspace_access"
+        ordering = ("-created_at",)
+        verbose_name = _("Workspace/user relation")
+        verbose_name_plural = _("Workspace/user relations")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["workspace", "user"],
+                name="unique_workspace_user",
+                violation_error_message=_("This user is already in this workspace."),
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.user!s} is {self.role:s} in workspace {self.workspace!s}"
+
+
+class Group(BaseModel):
+    """
+    A set of collaborators managed by the administrators of a workspace: a team
+    working on a task, or the people of an organization.
+    """
+
+    workspace = models.ForeignKey(
+        Workspace, on_delete=models.CASCADE, related_name="groups"
+    )
+    name = models.CharField(_("name"), max_length=100)
+    kind = models.CharField(
+        max_length=20, choices=GroupKindChoices.choices, default=GroupKindChoices.TEAM
+    )
+    description = models.TextField(_("description"), blank=True, default="")
+
+    class Meta:
+        db_table = "collaborators_group"
+        ordering = ("name",)
+        verbose_name = _("Group")
+        verbose_name_plural = _("Groups")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["workspace", "name"],
+                name="unique_group_name_per_workspace",
+                violation_error_message=_(
+                    "A group with this name already exists in this workspace."
+                ),
+            ),
+        ]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def team(self):
+        """The team string granting a role to this group on documents."""
+        return make_team(TEAM_GROUP, self.id)
+
+    def get_abilities(self, user):
+        """Workspace administrators manage groups; group managers manage members."""
+        is_admin = self.workspace.get_role(user) in WORKSPACE_PRIVILEGED_ROLES
+        is_manager = (
+            user.is_authenticated
+            and self.memberships.filter(user=user, is_manager=True).exists()
+        )
+        return {
+            "destroy": is_admin,
+            "manage_members": is_admin or is_manager,
+            "partial_update": is_admin,
+            "retrieve": self.workspace.get_role(user) is not None,
+            "update": is_admin,
+        }
+
+
+class GroupMembership(BaseModel):
+    """The membership of a collaborator in a group."""
+
+    group = models.ForeignKey(
+        Group, on_delete=models.CASCADE, related_name="memberships"
+    )
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="group_memberships"
+    )
+    is_manager = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "collaborators_group_membership"
+        ordering = ("-created_at",)
+        verbose_name = _("Group membership")
+        verbose_name_plural = _("Group memberships")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["group", "user"],
+                name="unique_group_user",
+                violation_error_message=_("This user is already in this group."),
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.user!s} in group {self.group!s}"
+
+
+class SpaceWorkspaceLink(BaseModel):
+    """
+    Places a space in a workspace. Each space linked to workspaces has exactly
+    one home workspace, which owns it; the other links share it with more
+    workspaces.
+    """
+
+    space = models.ForeignKey(
+        Document, on_delete=models.CASCADE, related_name="workspace_links"
+    )
+    workspace = models.ForeignKey(
+        Workspace, on_delete=models.CASCADE, related_name="space_links"
+    )
+    is_home = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "collaborators_space_workspace_link"
+        ordering = ("-is_home", "created_at")
+        verbose_name = _("Space/workspace link")
+        verbose_name_plural = _("Space/workspace links")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["space", "workspace"],
+                name="unique_space_workspace",
+                violation_error_message=_(
+                    "This space is already linked to this workspace."
+                ),
+            ),
+            models.UniqueConstraint(
+                fields=["space"],
+                condition=models.Q(is_home=True),
+                name="unique_home_workspace_per_space",
+                violation_error_message=_("This space already has a home workspace."),
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.space!s} in workspace {self.workspace!s}"
+
+    def clean(self):
+        """Only spaces can be placed in workspaces."""
+        super().clean()
+        if self.space_id and not self.space.is_space:
+            raise ValidationError({"space": _("Only a space can join a workspace.")})
+
+
+def get_team_label(team):
+    """Return a human readable name for a team string, or the string itself."""
+    kind, obj_id = parse_team(team)
+    if kind == TEAM_GROUP:
+        group = Group.objects.filter(id=obj_id).select_related("workspace").first()
+        return f"{group.name} ({group.workspace.name})" if group else team
+    if kind in (TEAM_WORKSPACE, TEAM_WORKSPACE_ADMINS):
+        workspace = Workspace.objects.filter(id=obj_id).first()
+        if not workspace:
+            return team
+        if kind == TEAM_WORKSPACE:
+            return str(_("All members of {name}")).format(name=workspace.name)
+        return str(_("Administrators of {name}")).format(name=workspace.name)
+    return team

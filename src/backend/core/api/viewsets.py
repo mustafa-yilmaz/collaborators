@@ -670,6 +670,10 @@ class DocumentViewSet(
         )
         queryset = queryset.filter(path__in=root_paths)
 
+        # Spaces are listed by the spaces API, in the left panel, and the pages
+        # inside them are reached through their space.
+        queryset = queryset.exclude(kind=choices.DocumentKindChoices.SPACE)
+
         # Annotate favorite status and filter if applicable as late as possible
         queryset = queryset.annotate_is_favorite(user)
         queryset = filterset.filters["is_favorite"].filter(
@@ -982,6 +986,12 @@ class DocumentViewSet(
         """
         user = request.user
         document = self.get_object()  # including permission checks
+
+        if document.is_space:
+            return drf.response.Response(
+                {"document": "A space can't be moved, only the pages inside it."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Validate the input payload
         serializer = serializers.MoveDocumentSerializer(data=request.data)

@@ -12,6 +12,7 @@ import { useCreateChildDocTree, useDocStore } from '@/docs/doc-management';
 
 import { LinkSelected } from './LinkSelected';
 import { SearchPage } from './SearchPage';
+import { isOwnSearch, isStaleSearch, searchOrigin } from './searchSession';
 
 export type InterlinkingLinkInlineContentType = {
   type: 'interlinkingLinkInline';
@@ -29,6 +30,13 @@ export type InterlinkingLinkInlineContentType = {
     trigger?: {
       default: '/';
       values: readonly ['/', '@'];
+    };
+    /** The browser tab that opened a search, and when (see searchSession) */
+    openedBy?: {
+      default: '';
+    };
+    openedAt?: {
+      default: '';
     };
   };
   content: 'none';
@@ -54,6 +62,12 @@ export const InterlinkingLinkInlineContent = createReactInlineContentSpec<
       trigger: {
         default: '/',
         values: ['/', '@'],
+      },
+      openedBy: {
+        default: '',
+      },
+      openedAt: {
+        default: '',
       },
     },
     content: 'none',
@@ -104,7 +118,22 @@ export const InterlinkingLinkInlineContent = createReactInlineContentSpec<
         );
       }
 
-      return <SearchPage {...props} />;
+      // A search shows only in the tab that opened it
+      if (isOwnSearch(props.inlineContent.props)) {
+        return <SearchPage {...props} />;
+      }
+      return (
+        <LeftSearch
+          isEditable={props.editor.isEditable}
+          isStale={isStaleSearch(props.inlineContent.props)}
+          onRemove={() =>
+            props.updateInlineContent({
+              type: 'interlinkingLinkInline',
+              props: { disabled: true },
+            })
+          }
+        />
+      );
     },
   },
 );
@@ -126,6 +155,7 @@ export const getInterlinkinghMenuItems = (
           type: 'interlinkingLinkInline',
           props: {
             trigger: '/',
+            ...searchOrigin(),
           },
         },
       ]);
@@ -185,5 +215,27 @@ const DisableInvalidInterlink = ({
     onUpdateInlineContent();
   }, [docId, onUpdateInlineContent]);
 
+  return null;
+};
+
+/**
+ * Someone else's search, or one left behind: nothing shows, and one left
+ * behind is removed by the next person who can edit the page.
+ */
+const LeftSearch = ({
+  isEditable,
+  isStale,
+  onRemove,
+}: {
+  isEditable: boolean;
+  isStale: boolean;
+  onRemove: () => void;
+}) => {
+  useEffect(() => {
+    if (isEditable && isStale) {
+      onRemove();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditable, isStale]);
   return null;
 };

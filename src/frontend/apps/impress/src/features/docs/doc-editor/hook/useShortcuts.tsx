@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useFindReplaceShortcut } from '@/docs/doc-find-replace/hooks/useFindReplaceShortcut';
 
+import { searchOrigin } from '../components/custom-inline-content/Interlinking/searchSession';
 import { DocsBlockNoteEditor } from '../types';
 
 const getFormattingShortcutLabel = (
@@ -133,6 +134,7 @@ export const useShortcuts = (
             type: 'interlinkingLinkInline',
             props: {
               trigger: '@',
+              ...searchOrigin(),
             },
           },
         ]);

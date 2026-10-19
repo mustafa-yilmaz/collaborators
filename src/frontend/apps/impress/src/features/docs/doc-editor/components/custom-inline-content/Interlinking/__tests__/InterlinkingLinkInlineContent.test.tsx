@@ -39,7 +39,12 @@ describe('getInterlinkinghMenuItems', () => {
     expect(insertInlineContent).toHaveBeenCalledWith([
       {
         type: 'interlinkingLinkInline',
-        props: { trigger: '/' },
+        // Marked as opened in this tab, now (see searchSession)
+        props: expect.objectContaining({
+          trigger: '/',
+          openedBy: expect.any(String),
+          openedAt: expect.any(String),
+        }),
       },
     ]);
     expect(createPage).not.toHaveBeenCalled();

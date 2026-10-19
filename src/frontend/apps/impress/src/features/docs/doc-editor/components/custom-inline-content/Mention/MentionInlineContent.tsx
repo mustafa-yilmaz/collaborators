@@ -4,6 +4,8 @@ import { Plugin } from '@tiptap/pm/state';
 
 import { Icon } from '@/components';
 
+import { searchOrigin } from '../Interlinking/searchSession';
+
 /**
  * A mention of a collaborator or a group: "@Ada" or "@Q4 Launch".
  *
@@ -111,7 +113,10 @@ const mentionTriggerExtension = createExtension(({ editor }) => ({
             return false;
           }
           editor.insertInlineContent([
-            { type: 'interlinkingLinkInline', props: { trigger: '@' } },
+            {
+              type: 'interlinkingLinkInline',
+              props: { trigger: '@', ...searchOrigin() },
+            },
           ] as never);
           return true;
         },

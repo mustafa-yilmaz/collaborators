@@ -103,7 +103,7 @@ In development the page also has **Use a test account**. It opens Keycloak's own
     - An account that already opens a separate Collaborators account isn't added.
     - Organisations of every account count for joining workspaces.
     - In production, Keycloak's allowed post-logout redirect addresses must include the app's `/api/v1.0/authenticate/` address.
-  - The dashboard suggests connecting another provider to people who have only one, until they close it for good. A new account gets a welcome note first: signing in with another provider under a different email makes a separate account.
+  - While only one provider is connected, the dashboard and the sign-in methods page show a note (with a yellow symbol) about connecting the others; it can't be closed, and goes once another one is connected. A new account gets a welcome note first (closed with Got it): signing in with another provider under a different email makes a separate account.
   - Linking is allowed up to an hour after signing in (`max_auth_age` of Keycloak's `idp_link` action); later, Keycloak asks to sign in again first.
 - **Joining workspaces:** in a workspace's settings, admins can create a **join link**. They can also open the workspace to an **email domain** or an **organisation**, optionally adding joiners to an organisation group:
   - Whoever signs in with a verified email at that domain joins as a member.

@@ -139,11 +139,13 @@ const SignInMethodsLink = ({
 );
 
 /**
- * Dashboard hints about signing in, one at a time and closed for good:
- * - a new account is welcomed, in case the person already has another one
- *   (signed in with another provider and email, it is a separate account);
- * - someone signing in with a single provider is warned and offered to
- *   connect the others, so all of them open this same account.
+ * Dashboard notes about signing in, one at a time:
+ * - a new account is welcomed once (closed for good), in case the person
+ *   already has another one (signed in with another provider and email, it
+ *   is a separate account);
+ * - while a single provider is connected, a note says so and where to
+ *   connect the others, so all of them open this same account. It stays
+ *   until another one is connected.
  */
 export const AccountHints = () => {
   const { t } = useTranslation();
@@ -155,10 +157,7 @@ export const AccountHints = () => {
   const dismissed = (hint: Hint) => !!hints?.dismissed.includes(hint);
   const showWelcome = !!hints && !dismissed('welcome');
   const { data: methods } = useSignInMethods(
-    !!hints &&
-      !showWelcome &&
-      !dismissed('connect-accounts') &&
-      providers.length > 1,
+    !!hints && !showWelcome && providers.length > 1,
   );
 
   if (showWelcome) {
@@ -209,7 +208,7 @@ export const AccountHints = () => {
     );
   }
 
-  if (dismissed('connect-accounts') || !hasUnconnectedProviders(methods)) {
+  if (!hasUnconnectedProviders(methods)) {
     return null;
   }
 
@@ -218,27 +217,12 @@ export const AccountHints = () => {
       icon="warning"
       tone="warning"
       testId="hint-connect-accounts"
-      closeLabel={t("Don't show again", {
-        description: 'Button closing a hint for good',
-      })}
-      onClose={() => dismiss.mutate('connect-accounts')}
       actions={
-        <>
-          <SignInMethodsLink
-            label={t('Sign-in methods', {
-              description: 'Link to the sign-in methods page',
-            })}
-          />
-          <Button
-            size="small"
-            variant="secondary"
-            onClick={() => dismiss.mutate('connect-accounts')}
-          >
-            {t("Don't show again", {
-              description: 'Button closing a hint for good',
-            })}
-          </Button>
-        </>
+        <SignInMethodsLink
+          label={t('Sign-in methods', {
+            description: 'Link to the sign-in methods page',
+          })}
+        />
       }
     >
       <ConnectAccountsText />

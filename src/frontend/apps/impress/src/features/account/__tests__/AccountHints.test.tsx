@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import fetchMock from 'fetch-mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -69,19 +69,19 @@ describe('AccountHints', () => {
     ).not.toBeInTheDocument();
   });
 
-  test('stays closed once closed for good', async () => {
+  test('the note about other accounts stays until one is connected', async () => {
+    // closed for good before it lost its close button: shown all the same
     fetchMock.get(`${API}/users/me/hints/`, {
       dismissed: ['welcome', 'connect-accounts'],
     });
+    fetchMock.get(`${API}/users/me/sign-in-methods/`, methods(['google']));
 
     render(<AccountHints />, { wrapper: AppWrapper });
 
-    await waitFor(() =>
-      expect(fetchMock.callHistory.called(`${API}/users/me/hints/`)).toBe(true),
-    );
-    expect(screen.queryByRole('note')).not.toBeInTheDocument();
+    const note = await screen.findByTestId('hint-connect-accounts');
     expect(
-      fetchMock.callHistory.called(`${API}/users/me/sign-in-methods/`),
-    ).toBe(false);
+      within(note).queryByRole('button', { name: "Don't show again" }),
+    ).not.toBeInTheDocument();
+    expect(within(note).getByText('Sign-in methods')).toBeInTheDocument();
   });
 });

@@ -257,3 +257,17 @@ def test_api_group_members_managers_can_add_members():
 
     assert response.status_code == 201
     assert client_for(member).post(url, {"user_id": str(owner.id)}).status_code == 403
+
+
+def test_api_workspaces_my_teams():
+    """A collaborator can read their own teams."""
+    owner, member = factories.UserFactory.create_batch(2)
+    workspace = make_workspace(owner, members=[member])
+    group = models.Group.objects.create(workspace=workspace, name="Q4")
+    models.GroupMembership.objects.create(group=group, user=member)
+
+    response = client_for(member).get("/api/v1.0/workspaces/my-teams/")
+
+    assert sorted(response.json()) == sorted(
+        [f"group:{group.id}", f"workspace:{workspace.id}"]
+    )

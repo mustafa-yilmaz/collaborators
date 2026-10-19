@@ -196,11 +196,26 @@ const columnToYMap = (column: Column) => {
   return ycolumn;
 };
 
-const newRowYMap = (columns: Column[]) => {
+/**
+ * A new row, with the given values. Values are put in the cells before the
+ * row joins the document: Yjs can't read back a map that isn't attached yet.
+ */
+const newRowYMap = (
+  columns: Column[],
+  values: Record<string, CellValue> = {},
+) => {
   const row = new Y.Map<unknown>();
   row.set('id', newId());
   const cells = new Y.Map<unknown>();
-  columns.forEach((column) => cells.set(column.id, emptyValueFor(column.type)));
+  columns.forEach((column) => {
+    const value = values[column.id];
+    cells.set(
+      column.id,
+      value === undefined || value === null
+        ? emptyValueFor(column.type)
+        : toYValue(column.type, value),
+    );
+  });
   row.set('cells', cells);
   return row;
 };
@@ -233,19 +248,7 @@ export const createTable = (
 
     const yrows = new Y.Array<Y.Map<unknown>>();
     const rowValues = init?.rows ?? [{}, {}];
-    yrows.push(
-      rowValues.map((values) => {
-        const row = newRowYMap(columns);
-        const cells = row.get('cells') as Y.Map<unknown>;
-        columns.forEach((column) => {
-          const value = values[column.id];
-          if (value !== undefined && value !== null) {
-            cells.set(column.id, toYValue(column.type, value));
-          }
-        });
-        return row;
-      }),
-    );
+    yrows.push(rowValues.map((values) => newRowYMap(columns, values)));
     table.set('rows', yrows);
     table.set('labelGroups', new Y.Map());
     const view = new Y.Map<unknown>();
@@ -527,7 +530,7 @@ const moveItem = (
 const cloneYValue = (value: unknown): unknown => {
   if (value instanceof Y.Text) {
     const text = new Y.Text();
-    text.applyDelta(value.toDelta());
+    text.applyDelta(value.toDelta() as Parameters<Y.Text['applyDelta']>[0]);
     return text;
   }
   if (value instanceof Y.Map) {

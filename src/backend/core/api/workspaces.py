@@ -289,6 +289,14 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
             accesses__user=self.request.user
         ).distinct()
 
+    @drf.decorators.action(detail=False, methods=["get"], url_path="my-teams")
+    def my_teams(self, request):
+        """
+        The teams of the logged-in user (their groups and workspaces), e.g. to
+        find the table rows assigned to one of their groups.
+        """
+        return drf.response.Response(request.user.teams)
+
     def perform_create(self, serializer):
         """The creator becomes the owner of the workspace."""
         with transaction.atomic():

@@ -82,6 +82,7 @@ Restart the backend to apply that list (`docker compose up -d app-dev`). Run the
 
 Open http://localhost:3000 and click **Start collaborating**. The sign-in page shows one **Continue with …** button per provider, each going straight to it. Signing in creates your Collaborators account on the spot; there's no invitation step.
 
+- **Signing out** also ends the Keycloak session (`OIDC_OP_LOGOUT_ENDPOINT`, and the `impress` client's post-logout redirect addresses, set by `make sso-providers`). Without that, the next sign-in got the previous account back, whatever provider was chosen.
 - **Testing a second account:** use an **Incognito window**. A browser already signed in to Collaborators, or to another Microsoft account, gets in the way.
 - **Emails in development** (confirming an address, linking accounts) don't reach real inboxes. They land in the mail catcher at http://localhost:1081: open the link **in the same window** where the sign-in is waiting.
 

@@ -52,6 +52,9 @@ OIDC_RP_SCOPES="openid email"
 LOGIN_REDIRECT_URL=http://localhost:3000
 LOGIN_REDIRECT_URL_FAILURE=http://localhost:3000
 LOGOUT_REDIRECT_URL=http://localhost:3000
+# Signing out also ends the Keycloak session: otherwise the next sign-in,
+# whatever provider is chosen, silently gets the previous account back
+OIDC_OP_LOGOUT_ENDPOINT=http://localhost:8083/realms/impress/protocol/openid-connect/logout
 
 OIDC_REDIRECT_ALLOWED_HOSTS="localhost:8083,localhost:3000"
 # Collaborators: no "acr_values" (Docs asks "eidas1" for the French state's

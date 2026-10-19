@@ -53,6 +53,14 @@ echo "Sent Keycloak's emails to the dev mail catcher"
 kc update "realms/${REALM}" -s verifyEmail=true
 echo "Asked unverified emails to be confirmed by a link"
 
+# Signing out of the app also ends the Keycloak session, then comes back to
+# the app ("+": the client's redirect addresses). Without it, the next
+# sign-in gets the previous account back, whichever provider is chosen.
+APP_CLIENT_ID="$(kc get clients -r "${REALM}" -q clientId=impress --fields id --format csv --noquotes)"
+kc update "clients/${APP_CLIENT_ID}" -r "${REALM}" \
+  -s 'attributes."post.logout.redirect.uris"=+'
+echo "Let signing out of the app end the Keycloak session"
+
 # The built-in dev and test accounts (docker/auth/realm.json) have known
 # emails: they never need to confirm them
 for username in impress user-e2e-chromium user-e2e-webkit user-e2e-firefox; do

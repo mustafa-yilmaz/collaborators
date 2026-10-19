@@ -295,8 +295,9 @@ export function useGroupMemberMutations(groupId: string) {
 // -- Spaces
 
 export type SpacesParams =
-  | { workspaceId: string; independent?: never }
-  | { independent: true; workspaceId?: never };
+  | { workspaceId: string; independent?: never; mine?: never }
+  | { independent: true; workspaceId?: never; mine?: never }
+  | { mine: true; workspaceId?: never; independent?: never };
 
 export function useSpaces(params: SpacesParams, enabled = true) {
   return useQuery<Space[], APIError>({
@@ -304,9 +305,11 @@ export function useSpaces(params: SpacesParams, enabled = true) {
     queryFn: () =>
       request<Space[]>(
         `spaces/?${
-          params.independent
-            ? 'independent=true'
-            : `workspace=${params.workspaceId}`
+          params.mine
+            ? 'mine=true'
+            : params.independent
+              ? 'independent=true'
+              : `workspace=${params.workspaceId}`
         }`,
         'Failed to get the spaces',
       ),

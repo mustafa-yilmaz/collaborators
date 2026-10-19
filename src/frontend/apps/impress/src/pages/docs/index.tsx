@@ -6,6 +6,7 @@ import { css } from 'styled-components';
 
 import { DocDefaultFilter, useTrans } from '@/docs/doc-management';
 import { DocsGrid } from '@/docs/docs-grid';
+import { Dashboard } from '@/features/dashboard/Dashboard';
 import { HeaderFloatingBar } from '@/features/header/components/HeaderFloatingBar';
 import { MainLayout } from '@/layouts';
 import { useResponsiveStore } from '@/stores/useResponsiveStore';
@@ -16,10 +17,15 @@ const Page: NextPageWithLayout = () => {
   const { transFilter } = useTrans();
   const { isDesktop } = useResponsiveStore();
   const searchParams = useSearchParams();
-  const target =
-    (searchParams.get('target') as DocDefaultFilter) ??
-    DocDefaultFilter.ALL_DOCS;
-  const pageTitle = transFilter(target);
+  const targetParam = searchParams.get('target') as DocDefaultFilter | null;
+  const target = targetParam ?? DocDefaultFilter.ALL_DOCS;
+  // Without a list chosen in the left panel, the home is the dashboard
+  const isDashboard = !targetParam;
+  const pageTitle = isDashboard
+    ? t('Home', {
+        description: 'Button/link label to go back to the home page',
+      })
+    : transFilter(target);
 
   return (
     <>
@@ -42,7 +48,7 @@ const Page: NextPageWithLayout = () => {
             : undefined
         }
       />
-      <DocsGrid target={target} />
+      {isDashboard ? <Dashboard /> : <DocsGrid target={target} />}
     </>
   );
 };

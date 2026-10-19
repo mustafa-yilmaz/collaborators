@@ -21,9 +21,8 @@ export const LeftPanelTargetFilters = () => {
   const { closePanel } = useLeftPanelStore();
   const { colorsTokens, spacingsTokens } = useCunninghamTheme();
 
-  const target =
-    (searchParams.get('target') as DocDefaultFilter) ??
-    DocDefaultFilter.ALL_DOCS;
+  // No list is highlighted on the dashboard (no target)
+  const target = searchParams.get('target') as DocDefaultFilter | null;
 
   const defaultQueries = [
     {

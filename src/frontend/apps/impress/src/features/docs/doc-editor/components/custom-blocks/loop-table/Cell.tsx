@@ -11,7 +11,9 @@ import {
   cellAnchor,
   mentionToken,
   notifyCell,
+  plainText,
   splitMentions,
+  syncAssignments,
 } from './mentions';
 import {
   CellValue,
@@ -216,6 +218,18 @@ const NumberEditor = ({
   );
 };
 
+/** What a row is about, for assignments: its first non-empty text. */
+const rowLabel = (snapshot: TableSnapshot, rowId: string) => {
+  const row = snapshot.rows.find((item) => item.id === rowId);
+  const textColumn = snapshot.columns.find(
+    (column) =>
+      column.type === ColumnType.TEXT &&
+      typeof row?.cells[column.id] === 'string' &&
+      row.cells[column.id] !== '',
+  );
+  return textColumn && row ? plainText(String(row.cells[textColumn.id])) : '';
+};
+
 export const Cell = ({
   table,
   tableId,
@@ -361,22 +375,20 @@ export const Cell = ({
               value={Array.isArray(value) ? (value as PersonValue[]) : []}
               onChange={(people) => {
                 const before = Array.isArray(value)
-                  ? (value as PersonValue[]).map((person) => person.id)
+                  ? (value as PersonValue[])
                   : [];
                 setCellValue(table, rowId, column.id, people);
-                // Assigning someone (or a group) notifies them
-                people
-                  .filter((person) => !before.includes(person.id))
-                  .forEach((person) => {
-                    if (docId) {
-                      void notifyCell(
-                        docId,
-                        cellAnchor(tableId, rowId, column.id),
-                        person,
-                        'assignment',
-                      ).catch(() => undefined);
-                    }
-                  });
+                // Assigning someone (or a group) notifies them and lists the
+                // row on their dashboard; removing them takes it off
+                if (docId) {
+                  syncAssignments(
+                    docId,
+                    cellAnchor(tableId, rowId, column.id),
+                    before,
+                    people,
+                    rowLabel(snapshot, rowId),
+                  );
+                }
               }}
               onClose={() => onStopEdit()}
             />

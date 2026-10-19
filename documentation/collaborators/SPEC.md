@@ -58,7 +58,7 @@ Space and page access can be granted to a collaborator or to a **group**.
 |---|---|---|
 | F1 | Loop-style table, with @mentions and groups in cells | ❌ only simple BlockNote tables |
 | F2 | Self sign-up through SSO only | 🟡 OIDC login exists; providers, self sign-up rules and account linking to build |
-| F3 | Lean dashboard each collaborator can customise | ❌ home is a document list |
+| F3 | Lean dashboard each collaborator can customise | ✅ phase 4 |
 | F4 | @mentions with notifications in pages, comments and table cells | 🟡 user mentions + email exist; inbox, groups, table cells to build |
 | F5 | Groups managed by workspace admins (Teams, Organizations) | 🟡 a `team` access hook exists but is empty |
 | F6 | Platform → Workspace → Space → Page, with Shared spaces | ❌ Docs has only a tree of documents |
@@ -311,7 +311,7 @@ Loop's public documentation doesn't cover the following. Before building them, w
 
 Each phase ends with something you can click through. Requirements may change after each one.
 
-**Status (2026-10-19):** phases 0, 1, 2 (Loop table v1) and 3 (mentions and notifications) are built, on branches `collaborators/phase-0` to `-phase-3`. Email digests (F4) are not built yet: emails are sent right away, or not at all.
+**Status (2026-10-19):** phases 0, 1, 2 (Loop table v1), 3 (mentions and notifications) and 4 (the dashboard) are built, on branches `collaborators/phase-0` to `-phase-4`. Email digests (F4) are not built yet: emails are sent right away, or not at all.
 
 Moved out of the table v1:
 - **Moved to v2 (not built yet):** rich formatting in Text cells (T9), "expand to margins" (T5), drawing only the visible rows of very large tables (T56).

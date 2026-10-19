@@ -17,7 +17,8 @@ import {
   useUnreadCount,
 } from './api';
 
-const useNotificationText = () => {
+/** The sentence describing a notification, e.g. "Ada mentioned you in Plan". */
+export const useNotificationText = () => {
   const { t } = useTranslation();
   return (notification: Notification) => {
     const name =

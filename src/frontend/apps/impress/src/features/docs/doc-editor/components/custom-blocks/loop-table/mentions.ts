@@ -4,6 +4,7 @@
  * collaborative text. They are shown as chips, and exported and searched as
  * "@Label".
  */
+import { fetchAPI } from '@/api';
 import { postMention } from '@/features/notifications/api';
 
 import { PersonValue } from './model';
@@ -57,3 +58,36 @@ export const notifyCell = (
     target: { kind: person.kind, id: person.id },
     reason,
   });
+
+/**
+ * Keep the server's index of table assignments in step with a Person cell:
+ * someone added is recorded (and notified once), someone removed is dropped.
+ */
+export const syncAssignments = (
+  docId: string,
+  anchorId: string,
+  before: PersonValue[],
+  after: PersonValue[],
+  rowLabel: string,
+) => {
+  const target = (person: PersonValue) =>
+    person.kind === 'group' ? { team: person.id } : { assignee_id: person.id };
+  const send = (method: 'POST' | 'DELETE', person: PersonValue) =>
+    fetchAPI(`documents/${docId}/assignments/`, {
+      method,
+      body: JSON.stringify({
+        anchor_id: anchorId,
+        row_label: rowLabel.slice(0, 255),
+        ...target(person),
+      }),
+    }).catch(() => undefined);
+
+  const beforeIds = before.map((person) => person.id);
+  const afterIds = after.map((person) => person.id);
+  after
+    .filter((person) => !beforeIds.includes(person.id))
+    .forEach((person) => void send('POST', person));
+  before
+    .filter((person) => !afterIds.includes(person.id))
+    .forEach((person) => void send('DELETE', person));
+};

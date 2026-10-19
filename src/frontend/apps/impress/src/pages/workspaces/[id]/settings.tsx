@@ -4,6 +4,7 @@ import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Box } from '@/components';
+import { HeaderFloatingBar } from '@/features/header/components/HeaderFloatingBar';
 import { WorkspaceSettings } from '@/features/workspaces/components/WorkspaceSettings';
 import { MainLayout } from '@/layouts';
 import { NextPageWithLayout } from '@/types/next';
@@ -24,6 +25,7 @@ const Page: NextPageWithLayout = () => {
         <title>{title}</title>
         <meta property="og:title" content={title} key="title" />
       </Head>
+      <HeaderFloatingBar />
       <Box $width="100%" $css="overflow-y: auto;">
         {workspaceId && <WorkspaceSettings workspaceId={workspaceId} />}
       </Box>

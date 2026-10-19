@@ -12,22 +12,28 @@ import { useResponsiveStore } from '@/stores/useResponsiveStore';
 import { HeaderIcon } from './HeaderIcon';
 
 export const HeaderFloatingBar = (props: PropsWithChildren<BoxType>) => {
-  const { isMobile, isTablet } = useResponsiveStore();
+  const { isMobile } = useResponsiveStore();
   const { t } = useTranslation();
   const { isPanelOpen } = useLeftPanelStore();
 
-  const isVisible = (isTablet && !isPanelOpen) || isMobile;
+  // The logo and the search come here while the side panel is hidden
+  const isVisible = !isPanelOpen || isMobile;
 
   return (
     <FloatingBar $align="center" {...props}>
-      {isTablet && (
-        <LeftPanelCollapseButton
-          ariaLabel={t('Toggle left panel', {
-            description:
-              'Accessible name of the button showing or hiding the left panel',
-          })}
-        />
-      )}
+      <LeftPanelCollapseButton
+        ariaLabel={
+          isPanelOpen
+            ? t('Hide the side panel', {
+                description:
+                  'Accessible name of the button hiding the left panel',
+              })
+            : t('Show the side panel', {
+                description:
+                  'Accessible name of the button showing the left panel',
+              })
+        }
+      />
       <FadeComponent isVisible={isVisible}>
         <HeaderIcon />
       </FadeComponent>

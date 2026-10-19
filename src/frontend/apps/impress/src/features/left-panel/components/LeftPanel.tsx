@@ -12,7 +12,7 @@ import { LeftPanelHeader } from './LeftPanelHeader';
 
 export const LeftPanel = ({ isResizable }: { isResizable?: boolean }) => {
   const { t } = useTranslation();
-  const { isMobile, isTablet } = useResponsiveStore();
+  const { isMobile } = useResponsiveStore();
   const { isPanelOpen, closePanel } = useLeftPanelStore();
 
   return (
@@ -58,7 +58,9 @@ export const LeftPanel = ({ isResizable }: { isResizable?: boolean }) => {
           }
 
           ${
-            isTablet && !isMobile
+            // Collaborators: the panel can be hidden at every width; the
+            // resizable one (on documents) collapses itself
+            !isResizable && !isMobile
               ? css`
                   ${
                     !isPanelOpen

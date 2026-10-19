@@ -6,6 +6,7 @@ import styled from 'styled-components';
 
 import Icon404 from '@/assets/icons/icon-404.svg';
 import { Box, Icon, StyledLink, Text } from '@/components';
+import { HeaderFloatingBar } from '@/features/header/components/HeaderFloatingBar';
 import { MainLayout } from '@/layouts';
 import { NextPageWithLayout } from '@/types/next';
 
@@ -28,6 +29,7 @@ const Page: NextPageWithLayout = () => {
           key="title"
         />
       </Head>
+      <HeaderFloatingBar />
       <Box $align="center" $margin="auto" $height="70vh" $gap="2rem">
         <Icon404 aria-label="Image 404" role="img" />
 

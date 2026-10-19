@@ -1,5 +1,6 @@
 import { Loader } from '@gouvfr-lasuite/ui-components';
 import { useRouter } from 'next/router';
+import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import { Box, Text } from '@/components';
@@ -11,6 +12,8 @@ import {
   useDocStore,
   useTrans,
 } from '@/docs/doc-management/';
+import { useWikiContext } from '@/features/publishing/WikiContext';
+import { wikiUrl } from '@/features/publishing/utils';
 
 interface LinkSelectedProps {
   docId: string;
@@ -25,14 +28,26 @@ export const LinkSelected = ({ docId, blockId }: LinkSelectedProps) => {
       refetchOnWindowFocus: (query) => query.state.error?.status !== 403,
     },
   );
+  const { t } = useTranslation();
   const { untitledDocument } = useTrans();
-  const href = `/docs/${docId}/${blockId ? `#${blockId}` : ''}`;
-  const visualHref = `/${docId}/`;
-  const label = doc ? doc.title || untitledDocument : visualHref;
-  const isHrefFallback = !isLoading && !doc;
+  const wiki = useWikiContext();
+  const anchor = blockId ? `#${blockId}` : '';
+  // Inside a public wiki, links to its pages stay in the wiki
+  const href =
+    wiki && wiki.pageIds.has(docId)
+      ? `${wikiUrl(wiki.slug, docId)}${anchor}`
+      : `/docs/${docId}/${anchor}`;
+  // A page the reader can't open is named "Private page", nothing more
+  const isPrivate = !isLoading && !doc;
+  const label = doc
+    ? doc.title || untitledDocument
+    : t('Private page', {
+        description: 'A link to a page the reader cannot open',
+      });
+  const isHrefFallback = isPrivate;
   const { emoji, titleWithoutEmoji } = getEmojiAndTitle(label);
   const { currentDoc } = useDocStore();
-  const isDeletedDoc = !!currentDoc?.deleted_at;
+  const isDeletedDoc = !!currentDoc?.deleted_at || isPrivate;
   const router = useRouter();
 
   const handleClick = (e: React.MouseEvent<HTMLSpanElement>) => {

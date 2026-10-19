@@ -17,7 +17,7 @@ REDIS_PREFIX=yhub
 # publishes the JWKS the admin tokens it signs are verified against. The origin
 # list is what a browser may open a websocket from — the frontend dev server.
 COLLABORATION_BACKEND_BASE_URL=http://app-dev:8000
-COLLABORATION_SERVER_ORIGIN=http://localhost:3000
+COLLABORATION_SERVER_ORIGIN=http://localhost:3000,http://127.0.0.1:3000
 # sent as X-Y-Provider-Key on the calls made to the backend; the same value as
 # in `common`, which is where the backend reads the one it compares it to
 Y_PROVIDER_API_KEY=yprovider-api-key

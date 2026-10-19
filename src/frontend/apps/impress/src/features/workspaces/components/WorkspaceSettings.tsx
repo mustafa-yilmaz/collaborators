@@ -14,6 +14,7 @@ import { Box, BoxButton, Icon, StyledLink, Text } from '@/components';
 import { useAuth } from '@/features/auth';
 import { Role } from '@/features/docs/doc-management';
 import { SearchUserRow } from '@/features/docs/doc-share/components/SearchUserRow';
+import { PublishingSection } from '@/features/publishing/PublishingSection';
 
 import {
   useDeleteWorkspace,
@@ -802,6 +803,7 @@ export const WorkspaceSettings = ({ workspaceId }: { workspaceId: string }) => {
       <MembersSection workspace={workspace} />
       <GroupsSection workspace={workspace} />
       <SpacesSection workspace={workspace} />
+      <PublishingSection workspace={workspace} Section={Section} />
     </Box>
   );
 };

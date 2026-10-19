@@ -13,6 +13,7 @@ import {
   Group,
   GroupKind,
   GroupMembership,
+  PublishingPolicy,
   Space,
   SpaceVisibility,
   Workspace,
@@ -88,7 +89,12 @@ export function useUpdateWorkspace() {
   return useMutation<
     Workspace,
     APIError,
-    { id: string; name?: string; description?: string }
+    {
+      id: string;
+      name?: string;
+      description?: string;
+      publishing_policy?: PublishingPolicy;
+    }
   >({
     mutationFn: ({ id, ...data }) =>
       request<Workspace>(

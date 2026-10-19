@@ -7,11 +7,14 @@ export enum WorkspaceRole {
   OWNER = 'owner',
 }
 
+export type PublishingPolicy = 'space_admins' | 'workspace_admins';
+
 export interface Workspace {
   id: string;
   name: string;
   slug: string;
   description: string;
+  publishing_policy: PublishingPolicy;
   user_role: WorkspaceRole | null;
   abilities: {
     destroy: boolean;

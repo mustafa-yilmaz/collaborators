@@ -4,6 +4,7 @@ import { css } from 'styled-components';
 
 import { Box, HorizontalSeparator, Icon } from '@/components';
 import { Doc, useCopyDocLink } from '@/docs/doc-management';
+import { DocPublishing } from '@/features/publishing/DocPublishing';
 
 import { DocVisibility } from './DocVisibility';
 
@@ -29,6 +30,12 @@ export const DocShareModalFooter = ({
 
       <DocVisibility doc={doc} />
       <HorizontalSeparator $margin={{ vertical: 'sm' }} />
+      {doc.abilities.link_configuration && (
+        <>
+          <DocPublishing doc={doc} />
+          <HorizontalSeparator $margin={{ vertical: 'sm' }} />
+        </>
+      )}
 
       <Box
         $direction="row"

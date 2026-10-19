@@ -20,6 +20,7 @@ import {
 import { KEY_AUTH, setAuthUrl, useAuth } from '@/features/auth';
 import { PresenterRoot } from '@/features/docs/doc-presenter';
 import { getDocChildren, subPageToTree } from '@/features/docs/doc-tree/';
+import { usePublication } from '@/features/publishing/api';
 import { DocEditorSkeleton, useSkeletonStore } from '@/features/skeletons';
 import { MainLayout } from '@/layouts';
 import { MAIN_LAYOUT_ID } from '@/layouts/conf';
@@ -40,6 +41,10 @@ export function DocLayout() {
   const {
     query: { id },
   } = useRouter();
+  // Search engines index a page only when it was published allowing it
+  const { data: publication } = usePublication(
+    typeof id === 'string' ? id : '',
+  );
 
   if (typeof id !== 'string') {
     return null;
@@ -48,7 +53,11 @@ export function DocLayout() {
   return (
     <>
       <Head>
-        <meta name="robots" content="noindex" />
+        <meta
+          name="robots"
+          content={publication?.indexable ? 'index, follow' : 'noindex'}
+          key="robots"
+        />
       </Head>
 
       <TreeProvider

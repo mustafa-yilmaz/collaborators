@@ -136,6 +136,23 @@ class WorkspaceRoleChoices(PriorityTextChoices):
 WORKSPACE_PRIVILEGED_ROLES = [WorkspaceRoleChoices.ADMIN, WorkspaceRoleChoices.OWNER]
 
 
+class PublishingPolicyChoices(TextChoices):
+    """Who may publish the pages and spaces of a workspace to the web."""
+
+    SPACE_ADMINS = "space_admins", _("Space owners and administrators")
+    WORKSPACE_ADMINS = "workspace_admins", _("Workspace administrators only")
+
+
+class PublicationActionChoices(TextChoices):
+    """What happened, in the publishing log."""
+
+    PAGE_PUBLISHED = "page_published", _("Page published")
+    PAGE_UNPUBLISHED = "page_unpublished", _("Page unpublished")
+    WIKI_PUBLISHED = "wiki_published", _("Wiki published")
+    WIKI_UPDATED = "wiki_updated", _("Wiki updated")
+    WIKI_UNPUBLISHED = "wiki_unpublished", _("Wiki unpublished")
+
+
 class GroupKindChoices(TextChoices):
     """A group gathers people working on a task, or belonging to an organization."""
 

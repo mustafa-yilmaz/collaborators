@@ -40,6 +40,7 @@ class WorkspaceSerializer(serializers.ModelSerializer):
             "name",
             "slug",
             "description",
+            "publishing_policy",
             "abilities",
             "user_role",
             "created_at",

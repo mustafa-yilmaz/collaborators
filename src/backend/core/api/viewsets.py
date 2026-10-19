@@ -87,7 +87,7 @@ from core.utils.users import users_sharing_documents_with
 from core.utils.yjs import extract_attachments_from_update
 
 from ..enums import FeatureFlag, SearchType
-from . import permissions, serializers, utils
+from . import permissions, publishing, serializers, utils
 from .filters import (
     DocumentFilter,
     ListDocumentFilter,
@@ -1180,6 +1180,7 @@ class DocumentViewSet(
             document.get_children()
             .select_related("creator")
             .filter(ancestors_deleted_at__isnull=True)
+            .exclude_private_unreadable(request.user)
         )
         queryset = self.filter_queryset(queryset)
 
@@ -1319,6 +1320,9 @@ class DocumentViewSet(
         ancestors_links = []
         children_clause = db.Q()
         for ancestor in ancestors:
+            if ancestor.keep_private:
+                # nothing above a page kept private reaches it
+                ancestors_links = []
             # Compute cache for ancestors links to avoid many queries while computing
             # abilities for his documents in the tree!
             ancestors_links.append(
@@ -1333,7 +1337,9 @@ class DocumentViewSet(
                 path__startswith=ancestor.path, depth=ancestor.depth + 1
             )
 
-        children = self.queryset.filter(children_clause, deleted_at__isnull=True)
+        children = self.queryset.filter(
+            children_clause, deleted_at__isnull=True
+        ).exclude_private_unreadable(user)
 
         queryset = (
             ancestors.select_related("creator").filter(
@@ -1356,9 +1362,19 @@ class DocumentViewSet(
                 "paths_links_mapping": paths_links_mapping,
             },
         )
-        return drf.response.Response(
-            utils.nest_tree(serializer.data, self.queryset.model.steplen)
-        )
+        # A page kept private, on the way down to the document, hides itself
+        # and what is below it from those who can't open it
+        hidden = [
+            item["path"]
+            for item in serializer.data
+            if not item["abilities"].get("retrieve", True)
+        ]
+        data = [
+            item
+            for item in serializer.data
+            if not any(item["path"].startswith(path) for path in hidden)
+        ]
+        return drf.response.Response(utils.nest_tree(data, self.queryset.model.steplen))
 
     @drf.decorators.action(
         detail=True,
@@ -1919,9 +1935,34 @@ class DocumentViewSet(
         )
         serializer.is_valid(raise_exception=True)
 
+        # Publishing to the web follows the workspace's publishing policy, and
+        # is recorded in its publishing log
+        was_public = document.link_reach == models.LinkReachChoices.PUBLIC
+        is_public = (
+            serializer.validated_data.get("link_reach", document.link_reach)
+            == models.LinkReachChoices.PUBLIC
+        )
+        if (
+            is_public
+            and not was_public
+            and not publishing.can_publish(request.user, document)
+        ):
+            raise drf.exceptions.PermissionDenied(
+                _("Your workspace only lets its administrators publish.")
+            )
+
         # saving a changed link definition is what tells the collaboration
         # server to re-check the connections of the document and its descendants
         serializer.save(update_fields=["link_reach", "link_role", "updated_at"])
+
+        if is_public != was_public:
+            publishing.log_publication(
+                document,
+                request.user,
+                models.PublicationActionChoices.PAGE_PUBLISHED
+                if is_public
+                else models.PublicationActionChoices.PAGE_UNPUBLISHED,
+            )
 
         return drf.response.Response(serializer.data, status=drf.status.HTTP_200_OK)
 

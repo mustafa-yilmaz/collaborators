@@ -7,7 +7,7 @@ from lasuite.oidc_login.urls import urlpatterns as oidc_urls
 from lasuite.oidc_resource_server.urls import urlpatterns as oidc_resource_server_urls
 from rest_framework.routers import DefaultRouter
 
-from core.api import dashboard, notifications, viewsets, workspaces
+from core.api import dashboard, notifications, publishing, viewsets, workspaces
 from core.external_api import viewsets as external_api_viewsets
 
 # - Main endpoints
@@ -93,6 +93,19 @@ urlpatterns = [
                 path(
                     "documents/<uuid:resource_id>/assignments/",
                     dashboard.DocumentAssignmentsView.as_view(),
+                ),
+                path(
+                    "documents/<uuid:resource_id>/publication/",
+                    publishing.DocumentPublicationView.as_view(),
+                ),
+                path(
+                    "spaces/<uuid:resource_id>/wiki/",
+                    publishing.SpaceWikiView.as_view(),
+                ),
+                path("wiki/<slug:slug>/", publishing.PublicWikiView.as_view()),
+                path(
+                    "workspaces/<uuid:resource_id>/publication-log/",
+                    publishing.PublicationLogView.as_view(),
                 ),
                 re_path(
                     r"^workspaces/(?P<resource_id>[0-9a-z-]*)/",

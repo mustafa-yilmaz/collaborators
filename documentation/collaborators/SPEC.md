@@ -63,7 +63,7 @@ Space and page access can be granted to a collaborator or to a **group**.
 | F5 | Groups managed by workspace admins (Teams, Organizations) | 🟡 a `team` access hook exists but is empty |
 | F6 | Platform → Workspace → Space → Page, with Shared spaces | ❌ Docs has only a tree of documents |
 | F7 | Independent spaces and pages | 🟡 every Docs document is independent today; independent *spaces* to build |
-| F8 | Public sharing: pages to the web, spaces as public wikis | 🟡 public link reach per document exists; wiki mode to build |
+| F8 | Public sharing: pages to the web, spaces as public wikis | ✅ phase 5 (see what is left below) |
 
 ### F1 — Loop-style table
 
@@ -176,6 +176,27 @@ See **section 3**: it is the largest single piece of work.
 **Docs today:** 🟡 a document's link reach can be `public` with a reader role, and access passes down to sub-pages. No wiki mode, slugs, indexing control or redaction.
 
 **Work:** wiki renderer and routes, slugs, `noindex` control, Keep private flag, redaction of mentions and private links for anonymous readers, publishing policy and audit log.
+
+**Built in phase 5:**
+- *Publish to the web* in the share dialog:
+  - **Spaces:** *Publish as wiki*, with an address, one of six accent colours and a search-engine switch. Publishing makes the space public and read-only for everyone not invited.
+  - **Public pages:** a *Let search engines find this page* switch.
+  - **Sub-pages:** *Keep private*. A page kept private inherits no link access (public, or any signed-in collaborator) from the pages above it, so it and its sub-pages leave public links and wikis. Invited people keep their access.
+- **Wiki reader** at `/wiki/<slug>` and `/wiki/<slug>/<page>`, for anyone:
+  - the page tree and a title search on the side;
+  - the wiki's colour, and an *Edit* button for its editors;
+  - links to its own pages stay in the wiki;
+  - links to pages the reader can't open read "Private page".
+- **Search engines:** pages are `noindex` unless published with indexing allowed.
+- **Workspace settings → Publishing:**
+  - *Who can publish*: space owners and administrators, or workspace administrators only.
+  - The **publishing log**: page published or unpublished, and wiki published, updated or unpublished.
+
+**Still to do:**
+- Full-text wiki search (titles only today).
+- An image logo for a wiki (it shows the space title).
+- `<workspace>.collaborators.community` addresses and custom domains.
+- Publishing a fixed version.
 
 ---
 
@@ -311,7 +332,7 @@ Loop's public documentation doesn't cover the following. Before building them, w
 
 Each phase ends with something you can click through. Requirements may change after each one.
 
-**Status (2026-10-19):** phases 0, 1, 2 (Loop table v1), 3 (mentions and notifications) and 4 (the dashboard) are built, on branches `collaborators/phase-0` to `-phase-4`. Email digests (F4) are not built yet: emails are sent right away, or not at all.
+**Status (2026-10-19):** phases 0, 1, 2 (Loop table v1), 3 (mentions and notifications), 4 (the dashboard) and 5 (public pages and wikis) are built, on branches `collaborators/phase-0` to `-phase-5`. Email digests (F4) are not built yet: emails are sent right away, or not at all.
 
 Moved out of the table v1:
 - **Moved to v2 (not built yet):** rich formatting in Text cells (T9), "expand to margins" (T5), drawing only the visible rows of very large tables (T56).

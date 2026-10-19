@@ -40,6 +40,8 @@ from core.choices import (
     GroupKindChoices,
     LinkReachChoices,
     LinkRoleChoices,
+    PublicationActionChoices,
+    PublishingPolicyChoices,
     RoleChoices,
     WorkspaceRoleChoices,
     get_equivalent_link_definition,
@@ -986,6 +988,26 @@ class DocumentQuerySet(MP_NodeQuerySet):
 
         return self.filter(link_reach=LinkReachChoices.PUBLIC)
 
+    def exclude_private_unreadable(self, user):
+        """
+        Leave out the pages kept private that the user can't open: they have
+        no access to them (nor above them) and the page's own link is closed.
+        """
+        if not user.is_authenticated:
+            return self.exclude(
+                models.Q(keep_private=True)
+                & ~models.Q(link_reach=LinkReachChoices.PUBLIC)
+            )
+        has_role = DocumentAccess.objects.filter(
+            models.Q(user=user) | models.Q(team__in=user.teams),
+            document__path=Left(models.OuterRef("path"), Length("document__path")),
+        )
+        return self.exclude(
+            models.Q(keep_private=True)
+            & models.Q(link_reach=LinkReachChoices.RESTRICTED)
+            & ~models.Exists(has_role)
+        )
+
     def annotate_is_favorite(self, user):
         """
         Annotate document queryset with the favorite status for the current user.
@@ -1068,6 +1090,15 @@ class Document(MP_Node, BaseModel):
     link_role = models.CharField(
         max_length=20, choices=LinkRoleChoices.choices, default=LinkRoleChoices.READER
     )
+    # Publishing (Collaborators). A page kept private inherits no link access
+    # (public, or any signed-in collaborator) from the pages above it: it is
+    # left out of a published wiki and of a published page's sub-pages.
+    keep_private = models.BooleanField(default=False)
+    # Let search engines index the page when it is public
+    allow_indexing = models.BooleanField(default=False)
+    # A space published as a wiki, at /wiki/<slug>, in its accent colour
+    wiki_slug = models.SlugField(max_length=100, unique=True, null=True, blank=True)
+    wiki_accent = models.CharField(max_length=7, blank=True, default="")
     creator = models.ForeignKey(
         User,
         on_delete=models.RESTRICT,
@@ -1254,12 +1285,14 @@ class Document(MP_Node, BaseModel):
         `fields` restricts the snapshot to the link fields among them, the
         others keep what was remembered of them.
         """
-        reach, role = self._saved_link_definition or (None, None)
+        reach, role, private = self._saved_link_definition or (None, None, None)
         if fields is None or "link_reach" in fields:
             reach = self.__dict__.get("link_reach")
         if fields is None or "link_role" in fields:
             role = self.__dict__.get("link_role")
-        self._saved_link_definition = (reach, role)
+        if fields is None or "keep_private" in fields:
+            private = self.__dict__.get("keep_private")
+        self._saved_link_definition = (reach, role, private)
 
     def link_definition_changed(self):
         """
@@ -1270,7 +1303,11 @@ class Document(MP_Node, BaseModel):
         """
         if self._saved_link_definition is None:
             return True
-        return self._saved_link_definition != (self.link_reach, self.link_role)
+        return self._saved_link_definition != (
+            self.link_reach,
+            self.link_role,
+            self.keep_private,
+        )
 
     def invalidate_nb_accesses_cache(self):
         """
@@ -1323,6 +1360,9 @@ class Document(MP_Node, BaseModel):
         paths_links_mapping = {}
 
         for ancestor in ancestors:
+            if ancestor.keep_private:
+                # nothing above a page kept private reaches it
+                ancestors_links = []
             ancestors_links.append(
                 {"link_reach": ancestor.link_reach, "link_role": ancestor.link_role}
             )
@@ -1338,6 +1378,8 @@ class Document(MP_Node, BaseModel):
     @property
     def ancestors_link_definition(self):
         """Link definition equivalent to all document's ancestors."""
+        if self.keep_private:
+            return get_equivalent_link_definition([])
         if getattr(self, "_ancestors_link_definition", None) is None:
             if self.depth <= 1:
                 ancestors_links = []
@@ -2466,6 +2508,11 @@ class Workspace(BaseModel):
     name = models.CharField(_("name"), max_length=100)
     slug = models.SlugField(_("slug"), max_length=100, unique=True)
     description = models.TextField(_("description"), blank=True, default="")
+    publishing_policy = models.CharField(
+        max_length=20,
+        choices=PublishingPolicyChoices.choices,
+        default=PublishingPolicyChoices.SPACE_ADMINS,
+    )
 
     class Meta:
         db_table = "collaborators_workspace"
@@ -2801,3 +2848,37 @@ class TableAssignment(BaseModel):
 
     def __str__(self):
         return f"{self.assignee or self.team} on {self.document!s}"
+
+
+class PublicationLog(BaseModel):
+    """The publishing log: who published what to the web, and when."""
+
+    document = models.ForeignKey(
+        Document, on_delete=models.CASCADE, related_name="publication_logs"
+    )
+    # The home workspace of the page's space when it happened, if any
+    workspace = models.ForeignKey(
+        Workspace,
+        on_delete=models.CASCADE,
+        related_name="publication_logs",
+        null=True,
+        blank=True,
+    )
+    actor = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="publication_logs",
+        null=True,
+        blank=True,
+    )
+    action = models.CharField(max_length=20, choices=PublicationActionChoices.choices)
+    details = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        db_table = "collaborators_publication_log"
+        ordering = ("-created_at",)
+        verbose_name = _("Publication log entry")
+        verbose_name_plural = _("Publication log entries")
+
+    def __str__(self):
+        return f"{self.action} {self.document_id!s}"

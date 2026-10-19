@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { useRouter } from 'next/router';
 import { Mock, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { WikiContext } from '@/features/publishing/WikiContext';
 import { AppWrapper } from '@/tests/utils';
 
 const DOC_ID = 'a1b2c3d4-e5f6-4789-a123-1234567890ab';
@@ -72,6 +73,35 @@ describe('LinkSelected', () => {
     });
 
     expect(screen.getByText(`Untitled document`)).toBeInTheDocument();
+  });
+
+  it('names a page the reader cannot open "Private page", unclickable', () => {
+    mockDocQuery = { data: undefined, isLoading: false };
+
+    render(<LinkSelected docId={DOC_ID} isEditable={false} />, {
+      wrapper: AppWrapper,
+    });
+
+    expect(screen.getByText('Private page')).toBeInTheDocument();
+    expect(screen.queryByText(new RegExp(DOC_ID))).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link'));
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('keeps links to pages of a wiki inside the wiki', () => {
+    mockDocQuery = { data: { title: 'Glossary' }, isLoading: false };
+
+    render(
+      <WikiContext.Provider
+        value={{ slug: 'handbook', pageIds: new Set([DOC_ID]) }}
+      >
+        <LinkSelected docId={DOC_ID} isEditable={false} />
+      </WikiContext.Provider>,
+      { wrapper: AppWrapper },
+    );
+
+    fireEvent.click(screen.getByRole('link'));
+    expect(push).toHaveBeenCalledWith(`/wiki/handbook/${DOC_ID}/`);
   });
 
   it('navigates on click with no modifier keys', () => {

@@ -10,12 +10,21 @@ import { useConfig } from '@/core/config';
 import IconLink from './assets/external-link.svg';
 import { ContentType } from './types';
 
+// A thin line in the brand colour, fading out at both ends
 const BlueStripe = styled.div`
   position: absolute;
-  height: 2px;
+  height: 1px;
   width: 100%;
-  background: var(--c--globals--colors--brand-700);
-  top: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--c--globals--colors--brand-300) 20%,
+    var(--c--globals--colors--brand-500) 50%,
+    var(--c--globals--colors--brand-300) 80%,
+    transparent 100%
+  );
+  /* A little below the footer's edge, closer to its content */
+  top: 16px;
 `;
 
 export const Footer = () => {

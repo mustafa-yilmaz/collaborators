@@ -22,6 +22,7 @@ export const HomeHeader = () => {
   const icon = config?.theme_customization?.header?.icon;
   const logo = config?.theme_customization?.header?.logo;
   const singleLanguage = config?.theme_customization?.single_language;
+  const wordmark = config?.theme_customization?.wordmark;
 
   return (
     <Box
@@ -70,7 +71,8 @@ export const HomeHeader = () => {
               {...(({ withTitle: _, ...rest }) => rest)(icon)}
             />
           )}
-          {(!icon?.src || icon.withTitle) && <Title />}
+          {/* With a text wordmark, the home banner already shows it */}
+          {!wordmark && (!icon?.src || icon.withTitle) && <Title />}
         </Box>
       </Box>
       <Box

@@ -22,13 +22,18 @@ def test_people_lists_close_people_without_a_minimum_length():
     client.force_login(user)
 
     everyone = client.get("/api/v1.0/people/").json()
+    # Oneself first, then the people around
+    assert everyone[0]["id"] == str(user.id)
     assert {person["id"] for person in everyone} == {
+        str(user.id),
         str(sharer.id),
         str(co_member.id),
     }
 
     by_letter = client.get("/api/v1.0/people/?q=b").json()
     assert [person["id"] for person in by_letter] == [str(sharer.id)]
+    myself = client.get("/api/v1.0/people/?q=ada").json()
+    assert [person["id"] for person in myself] == [str(user.id)]
     assert str(stranger.id) not in {person["id"] for person in everyone}
 
 

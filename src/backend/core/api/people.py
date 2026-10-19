@@ -1,6 +1,6 @@
 """
-The people a collaborator works with, to mention or to put in a table's
-Person cell straight away: no minimum length to type, since only people
+The people a collaborator works with (themselves first), to mention or to
+put in a table's Person cell straight away: no minimum length to type, since only people
 already close to them are listed (people they share pages with, members of
 their workspaces), never the whole platform.
 """
@@ -37,6 +37,14 @@ class KnownPeopleView(APIView):
             or query in (person.email or "").lower()
         ]
         people.sort(key=lambda person: closeness[person.id], reverse=True)
+        # Oneself first: to mention oneself, or take a row in a Person cell
+        me = request.user
+        if (
+            not query
+            or query in remove_accents(me.full_name or "").lower()
+            or query in (me.email or "").lower()
+        ):
+            people.insert(0, me)
         return drf.response.Response(
             UserSerializer(people[:PEOPLE_LIMIT], many=True).data
         )

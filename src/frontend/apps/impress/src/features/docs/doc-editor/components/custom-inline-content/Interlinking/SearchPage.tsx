@@ -201,6 +201,29 @@ export const SearchPage = ({
     }
   };
 
+  /**
+   * A click anywhere else on the screen closes the menu: with nothing typed
+   * after the trigger, the trigger goes away; what was typed stays as text.
+   */
+  const dismissRef = useRef(() => {});
+  dismissRef.current = () => closeSearch(search ? `${trigger}${search}` : '');
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (
+        !target ||
+        modalRef.current?.contains(target) ||
+        inputRef.current?.parentElement?.contains(target)
+      ) {
+        return;
+      }
+      dismissRef.current();
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () =>
+      document.removeEventListener('pointerdown', onPointerDown, true);
+  }, []);
+
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
       e.preventDefault();

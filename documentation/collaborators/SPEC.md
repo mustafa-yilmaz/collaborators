@@ -302,6 +302,9 @@ The goal is Microsoft Loop's table with all its features, plus what Collaborator
 | T54 | Tables appear correctly in page PDF/DOCX export and in search results | C | v1 |
 | T55 | Tables render read-only on public pages and wikis (F8), with names only in Person cells | C | v1 |
 | T56 | Smooth with **1,000+ rows** (only visible rows are drawn) | C | v1 |
+| T57 | **Background colour** and **text alignment** (horizontal and vertical) for a whole column (its "⌄" menu) or row (its "⋮" menu) | Collaborators | ✅ built |
+| T58 | The same two for a **single cell** (format button on the selected cell, or right-click) | Collaborators | ✅ built |
+| T59 | **Corner cell menu**: show or hide the numbers column; colour and alignment of the header row and of the numbers column | Collaborators | ✅ built |
 
 ### 3.7 To verify hands-on in Microsoft Loop
 

@@ -1,5 +1,6 @@
 import { DropdownMenuItem } from '@gouvfr-lasuite/ui-components';
 import type { TFunction } from 'i18next';
+import * as Y from 'yjs';
 
 import { Icon } from '@/components';
 
@@ -10,8 +11,11 @@ import {
   ColumnType,
   FormatPatch,
   HorizontalAlign,
+  TableLayout,
   VerticalAlign,
   mergeFormats,
+  setLayout,
+  setLayoutFormat,
 } from './model';
 
 /** Light colours that keep text readable, as in Loop. */
@@ -193,3 +197,78 @@ export const columnDefaults = (column: Column): CellFormat => ({
   ...DEFAULT_ALIGNMENT,
   ...(column.type === ColumnType.NUMBER ? { align: 'right' } : {}),
 });
+
+/**
+ * The menu of the top-left corner, also in the toolbar: shows or hides the
+ * row numbers, and formats the header row and the numbers column as a whole.
+ * Both follow the same defaults as the other columns: left, in the middle.
+ */
+export const layoutMenuItems = (
+  t: T,
+  table: Y.Map<unknown>,
+  layout: TableLayout,
+): DropdownMenuItem[] => [
+  {
+    label: layout.showRowNumbers
+      ? t('Hide the numbers column', {
+          description: 'Loop table corner menu',
+        })
+      : t('Show the numbers column', {
+          description: 'Loop table corner menu',
+        }),
+    icon: (
+      <Icon
+        iconName={
+          layout.showRowNumbers ? 'visibility_off' : 'format_list_numbered'
+        }
+        $size="18px"
+      />
+    ),
+    callback: () =>
+      setLayout(table, { showRowNumbers: !layout.showRowNumbers }),
+  },
+  { type: 'separator' },
+  ...formatMenuItems(
+    t,
+    layout.header,
+    (patch) => setLayoutFormat(table, 'header', patch),
+    {
+      labels: {
+        background: t('Header row colour', {
+          description: 'Loop table corner menu',
+        }),
+        horizontal: t('Header row horizontal alignment', {
+          description: 'Loop table corner menu',
+        }),
+        vertical: t('Header row vertical alignment', {
+          description: 'Loop table corner menu',
+        }),
+        clear: t('Clear header row formatting', {
+          description: 'Loop table corner menu',
+        }),
+      },
+    },
+  ),
+  { type: 'separator' },
+  ...formatMenuItems(
+    t,
+    layout.numbers,
+    (patch) => setLayoutFormat(table, 'numbers', patch),
+    {
+      labels: {
+        background: t('Numbers column colour', {
+          description: 'Loop table corner menu',
+        }),
+        horizontal: t('Numbers column horizontal alignment', {
+          description: 'Loop table corner menu',
+        }),
+        vertical: t('Numbers column vertical alignment', {
+          description: 'Loop table corner menu',
+        }),
+        clear: t('Clear numbers column formatting', {
+          description: 'Loop table corner menu',
+        }),
+      },
+    },
+  ),
+];

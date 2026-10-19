@@ -106,7 +106,6 @@ export const SummaryRow = ({
           </td>
         );
       })}
-      {isEditable && <td />}
     </tr>
   );
 };

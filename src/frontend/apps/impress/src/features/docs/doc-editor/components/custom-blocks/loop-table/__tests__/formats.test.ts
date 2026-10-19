@@ -1,7 +1,9 @@
+import type { TFunction } from 'i18next';
 import { describe, expect, it } from 'vitest';
 import * as Y from 'yjs';
 
 import { loopTableFormats } from '../export';
+import { layoutMenuItems } from '../formatMenu';
 import {
   CLEAR_FORMAT,
   applyFormatPatch,
@@ -30,6 +32,28 @@ const setup = () => {
     rowId: snapshot.rows[0].id,
   };
 };
+
+interface MenuItem {
+  label?: string;
+  isChecked?: boolean;
+  callback?: () => void;
+  children?: MenuItem[];
+}
+
+const t = ((key: string) => key) as unknown as TFunction<
+  'translation',
+  undefined
+>;
+
+/** The entry of a menu with this label. */
+const entry = (items: unknown[], label: string) =>
+  (items as MenuItem[]).find((item) => item.label === label)!;
+
+/** The ticked choices of a submenu. */
+const ticked = (items: unknown[], label: string) =>
+  entry(items, label)
+    .children?.filter((child) => child.isChecked)
+    .map((child) => child.label);
 
 describe('Loop table formats', () => {
   it('patches a format and drops it when empty', () => {
@@ -138,5 +162,47 @@ describe('Loop table formats', () => {
       align: undefined,
       valign: undefined,
     });
+  });
+
+  it('aligns the row numbers like any column: left, in the middle', () => {
+    const { table } = setup();
+    const menu = () => layoutMenuItems(t, table, readTable(table).layout);
+
+    expect(ticked(menu(), 'Numbers column horizontal alignment')).toEqual([
+      'Left',
+    ]);
+    expect(ticked(menu(), 'Numbers column vertical alignment')).toEqual([
+      'Middle',
+    ]);
+
+    // Horizontal and vertical alignments hold at once
+    entry(
+      entry(menu(), 'Numbers column horizontal alignment').children!,
+      'Right',
+    ).callback?.();
+    entry(
+      entry(menu(), 'Numbers column vertical alignment').children!,
+      'Bottom',
+    ).callback?.();
+    expect(readTable(table).layout.numbers).toEqual({
+      align: 'right',
+      valign: 'bottom',
+    });
+    expect(ticked(menu(), 'Numbers column horizontal alignment')).toEqual([
+      'Right',
+    ]);
+    expect(ticked(menu(), 'Numbers column vertical alignment')).toEqual([
+      'Bottom',
+    ]);
+  });
+
+  it('hides and shows the numbers column from its menu', () => {
+    const { table } = setup();
+    const menu = () => layoutMenuItems(t, table, readTable(table).layout);
+
+    entry(menu(), 'Hide the numbers column').callback?.();
+    expect(readTable(table).layout.showRowNumbers).toBe(false);
+    entry(menu(), 'Show the numbers column').callback?.();
+    expect(readTable(table).layout.showRowNumbers).toBe(true);
   });
 });

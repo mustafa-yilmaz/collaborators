@@ -1,3 +1,4 @@
+import { DropdownMenu } from '@gouvfr-lasuite/ui-components';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Y from 'yjs';
@@ -7,11 +8,13 @@ import { Icon } from '@/components';
 import { Popover } from './Popover';
 import { operatorLabel, operatorNeedsValue } from './columnTypes';
 import { labelOptionsOf } from './format';
+import { layoutMenuItems } from './formatMenu';
 import {
   ColumnType,
   FilterOperator,
   FilterRule,
   TableSnapshot,
+  addColumn,
   newId,
   setView,
   updateColumn,
@@ -23,6 +26,8 @@ interface ToolbarProps {
   snapshot: TableSnapshot;
   isEditable: boolean;
   shownRows: number;
+  /** Adds a row at the end and starts typing in it */
+  onAddRow: () => void;
 }
 
 const FilterValueInput = ({
@@ -74,9 +79,12 @@ export const Toolbar = ({
   snapshot,
   isEditable,
   shownRows,
+  onAddRow,
 }: ToolbarProps) => {
   const { t } = useTranslation();
-  const [open, setOpen] = useState<'filter' | 'sort' | 'hidden' | null>(null);
+  const [open, setOpen] = useState<
+    'filter' | 'sort' | 'hidden' | 'layout' | null
+  >(null);
   const { filters, sort } = snapshot.view;
   const hiddenColumns = snapshot.columns.filter((column) => column.hidden);
   const visibleColumns = snapshot.columns.filter((column) => !column.hidden);
@@ -94,6 +102,27 @@ export const Toolbar = ({
 
   return (
     <div className="loop-table__toolbar" role="toolbar">
+      {isEditable && (
+        <>
+          <button
+            type="button"
+            className="loop-table__toolbar-button"
+            onClick={onAddRow}
+          >
+            <Icon iconName="add" $size="18px" />
+            {t('Add row', { description: 'Loop table toolbar' })}
+          </button>
+          <button
+            type="button"
+            className="loop-table__toolbar-button"
+            onClick={() => addColumn(table, snapshot.columns.length)}
+          >
+            <Icon iconName="view_column" $size="18px" />
+            {t('Add column', { description: 'Loop table toolbar' })}
+          </button>
+          <span className="loop-table__toolbar-separator" aria-hidden="true" />
+        </>
+      )}
       <div style={{ position: 'relative' }}>
         <button
           type="button"
@@ -309,6 +338,25 @@ export const Toolbar = ({
             </Popover>
           )}
         </div>
+      )}
+
+      {isEditable && (
+        // The corner menu, also reachable when the numbers column is hidden
+        <DropdownMenu
+          options={layoutMenuItems(t, table, snapshot.layout)}
+          isOpen={open === 'layout'}
+          onOpenChange={(isOpen) => setOpen(isOpen ? 'layout' : null)}
+        >
+          <button
+            type="button"
+            className="loop-table__toolbar-button"
+            aria-expanded={open === 'layout'}
+            onClick={() => setOpen(open === 'layout' ? null : 'layout')}
+          >
+            <Icon iconName="format_list_numbered" $size="18px" />
+            {t('Header and numbers', { description: 'Loop table toolbar' })}
+          </button>
+        </DropdownMenu>
       )}
 
       {filters.length > 0 && (

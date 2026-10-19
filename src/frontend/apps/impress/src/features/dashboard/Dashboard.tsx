@@ -8,7 +8,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { Button } from '@gouvfr-lasuite/ui-components';
+import { DropdownMenu, DropdownMenuItem } from '@gouvfr-lasuite/ui-components';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
@@ -49,28 +49,59 @@ interface DashboardCardProps {
   card: CardLayout;
   index: number;
   count: number;
-  isCustomizing: boolean;
   onChange: (changes: Partial<CardLayout>) => void;
   onMove: (to: number) => void;
 }
+
+/** A card's handle and menu show on hover (or keyboard focus) only. */
+const cardCss = css`
+  .--collaborators--card-tool {
+    visibility: hidden;
+  }
+  &:hover .--collaborators--card-tool,
+  &:focus-within .--collaborators--card-tool,
+  .--collaborators--card-tool[aria-expanded='true'] {
+    visibility: visible;
+  }
+`;
 
 const DashboardCard = ({
   card,
   index,
   count,
-  isCustomizing,
   onChange,
   onMove,
 }: DashboardCardProps) => {
   const { t } = useTranslation();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const definition = CARDS.find((item) => item.id === card.id);
-  const drag = useDraggable({ id: card.id, disabled: !isCustomizing });
+  const drag = useDraggable({ id: card.id });
   const drop = useDroppable({ id: card.id });
   if (!definition) {
     return null;
   }
   const title = definition.title(t);
   const Body = definition.Body;
+  const menu: DropdownMenuItem[] = [
+    {
+      label: t('Move up', { description: 'Dashboard card action' }),
+      icon: <Icon iconName="arrow_upward" $size="18px" />,
+      isDisabled: index === 0,
+      callback: () => onMove(index - 1),
+    },
+    {
+      label: t('Move down', { description: 'Dashboard card action' }),
+      icon: <Icon iconName="arrow_downward" $size="18px" />,
+      isDisabled: index === count - 1,
+      callback: () => onMove(index + 1),
+    },
+    { type: 'separator' },
+    {
+      label: t('Hide this card', { description: 'Dashboard card action' }),
+      icon: <Icon iconName="visibility_off" $size="18px" />,
+      callback: () => onChange({ hidden: true }),
+    },
+  ];
 
   return (
     <Box
@@ -95,55 +126,50 @@ const DashboardCard = ({
         };
         z-index: ${drag.isDragging ? 10 : 'auto'};
         position: relative;
+        ${cardCss}
       `}
     >
       <Box $direction="row" $align="center" $gap="2xs">
-        {isCustomizing && (
-          <span
-            ref={drag.setNodeRef}
-            {...drag.listeners}
-            {...drag.attributes}
-            aria-label={t('Move the {{name}} card', {
-              description: 'Accessible name of a dashboard card drag handle',
-              name: title,
-            })}
-            style={{ cursor: 'grab', display: 'inline-flex' }}
-          >
-            <Icon
-              iconName="drag_indicator"
-              $size="20px"
-              $variation="secondary"
-            />
-          </span>
-        )}
+        <span
+          ref={drag.setNodeRef}
+          {...drag.listeners}
+          {...drag.attributes}
+          className="--collaborators--card-tool"
+          aria-label={t('Move the {{name}} card', {
+            description: 'Accessible name of a dashboard card drag handle',
+            name: title,
+          })}
+          title={t('Drag to move', {
+            description: 'Tooltip of a dashboard card drag handle',
+          })}
+          style={{
+            cursor: 'grab',
+            display: 'inline-flex',
+            touchAction: 'none',
+          }}
+        >
+          <Icon iconName="drag_indicator" $size="20px" $variation="secondary" />
+        </span>
         <Icon iconName={definition.icon} $size="20px" $variation="secondary" />
         <Text as="h2" $size="md" $weight="700" $margin="none" $css="flex: 1;">
           {title}
         </Text>
-        {isCustomizing && (
-          <>
-            <IconButton
-              icon="arrow_upward"
-              label={t('Move up', { description: 'Dashboard card action' })}
-              disabled={index === 0}
-              onClick={() => onMove(index - 1)}
-            />
-            <IconButton
-              icon="arrow_downward"
-              label={t('Move down', { description: 'Dashboard card action' })}
-              disabled={index === count - 1}
-              onClick={() => onMove(index + 1)}
-            />
-            <IconButton
-              icon="visibility_off"
-              label={t('Hide {{name}}', {
-                description: 'Dashboard card action',
-                name: title,
-              })}
-              onClick={() => onChange({ hidden: true })}
-            />
-          </>
-        )}
+        <DropdownMenu
+          options={menu}
+          isOpen={isMenuOpen}
+          onOpenChange={setIsMenuOpen}
+        >
+          <IconButton
+            icon="more_horiz"
+            label={t('{{name}} options', {
+              description: 'Dashboard card menu button',
+              name: title,
+            })}
+            className="--collaborators--card-tool"
+            aria-expanded={isMenuOpen}
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          />
+        </DropdownMenu>
         <IconButton
           icon={card.collapsed ? 'expand_more' : 'expand_less'}
           label={
@@ -172,13 +198,14 @@ const DashboardCard = ({
 
 /**
  * The landing screen after sign-in: lean by default (search and three
- * cards), and each collaborator can collapse, hide, show and reorder cards.
+ * cards). Each collaborator collapses, hides, shows and reorders cards right
+ * there: drag a card by its handle, or use its "⋯" menu.
  */
 export const Dashboard = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { isMobile } = useResponsiveStore();
-  const [isCustomizing, setIsCustomizing] = useState(false);
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const { query, save } = useDashboardLayout();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -248,33 +275,6 @@ export const Dashboard = () => {
               })
             : t('Welcome back', { description: 'Dashboard greeting' })}
         </Text>
-        <Box $direction="row" $gap="xs" $align="center">
-          {isCustomizing && (
-            <Button
-              size="small"
-              variant="tertiary"
-              onClick={() => update(DEFAULT_LAYOUT)}
-            >
-              {t('Reset to default', { description: 'Dashboard action' })}
-            </Button>
-          )}
-          <Button
-            size="small"
-            variant={isCustomizing ? 'primary' : 'secondary'}
-            icon={
-              <Icon
-                iconName={isCustomizing ? 'check' : 'tune'}
-                $size="18px"
-                $color="inherit"
-              />
-            }
-            onClick={() => setIsCustomizing(!isCustomizing)}
-          >
-            {isCustomizing
-              ? t('Done', { description: 'Dashboard action' })
-              : t('Customize', { description: 'Dashboard action' })}
-          </Button>
-        </Box>
       </Box>
 
       <BoxButton
@@ -327,7 +327,6 @@ export const Dashboard = () => {
               card={card}
               index={index}
               count={visible.length}
-              isCustomizing={isCustomizing}
               onChange={(changes) => change(card.id, changes)}
               onMove={(to) => move(card.id, to)}
             />
@@ -335,29 +334,60 @@ export const Dashboard = () => {
         </Box>
       </DndContext>
 
-      {isCustomizing && hidden.length > 0 && (
-        <Box $gap="xs">
-          <Text as="h2" $size="sm" $weight="600" $margin="none">
-            {t('Add a card', { description: 'Dashboard hidden cards heading' })}
-          </Text>
-          <Box $direction="row" $gap="xs" $css="flex-wrap: wrap;">
-            {hidden.map((card) => {
+      {/* Hidden cards come back from here; the layout can be reset too */}
+      <Box $direction="row">
+        <DropdownMenu
+          options={[
+            ...hidden.flatMap((card) => {
               const definition = CARDS.find((item) => item.id === card.id);
-              return definition ? (
-                <Button
-                  key={card.id}
-                  size="small"
-                  variant="secondary"
-                  icon={<Icon iconName="add" $size="18px" $color="inherit" />}
-                  onClick={() => change(card.id, { hidden: false })}
-                >
-                  {definition.title(t)}
-                </Button>
-              ) : null;
-            })}
-          </Box>
-        </Box>
-      )}
+              return definition
+                ? [
+                    {
+                      label: definition.title(t),
+                      icon: <Icon iconName={definition.icon} $size="18px" />,
+                      callback: () => change(card.id, { hidden: false }),
+                    },
+                  ]
+                : [];
+            }),
+            ...(hidden.length ? [{ type: 'separator' as const }] : []),
+            {
+              label: t('Reset the dashboard', {
+                description: 'Dashboard action putting the default cards back',
+              }),
+              icon: <Icon iconName="restart_alt" $size="18px" />,
+              callback: () => update(DEFAULT_LAYOUT),
+            },
+          ]}
+          isOpen={isAddMenuOpen}
+          onOpenChange={setIsAddMenuOpen}
+        >
+          <BoxButton
+            onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
+            aria-expanded={isAddMenuOpen}
+            $direction="row"
+            $align="center"
+            $gap="3xs"
+            $padding={{ horizontal: 'xs', vertical: '3xs' }}
+            $css={css`
+              border-radius: var(--c--globals--spacings--3xs);
+              color: var(
+                --c--contextuals--content--semantic--neutral--secondary
+              );
+              &:hover {
+                background: var(
+                  --c--contextuals--background--semantic--contextual--primary
+                );
+              }
+            `}
+          >
+            <Icon iconName="add" $size="18px" $color="inherit" />
+            <Text $size="sm" $color="inherit">
+              {t('Add a card', { description: 'Dashboard hidden cards menu' })}
+            </Text>
+          </BoxButton>
+        </DropdownMenu>
+      </Box>
     </Box>
   );
 };

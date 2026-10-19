@@ -108,9 +108,11 @@ export default function HomeBanner() {
           $justify="center"
           $align={!isMobile ? 'flex-start' : 'center'}
           $gap="1.25rem"
-          // Its own width: the logo never runs into the illustration
+          // The logo is sized to this column (container units), so that at
+          // any window width it never runs into the illustration
           $css={css`
             min-width: 0;
+            container-type: inline-size;
           `}
         >
           {icon?.src && (
@@ -129,17 +131,19 @@ export default function HomeBanner() {
           {!icon?.src && (
             <Title
               as="span"
-              $size={isMobile ? '2rem' : 'clamp(2rem, 0.9rem + 2.2vw, 3rem)'}
+              $size={isMobile ? '2rem' : 'clamp(1.5rem, 9cqi, 3rem)'}
               $weight="bold"
               $css={css`
                 letter-spacing: -0.01em;
+                /* room for the slant of the last letter */
+                padding-right: 0.12em;
                 ${entrance(0)}
               `}
             />
           )}
           <Text
             as="h2"
-            $size={!isMobile ? '1.4rem' : '1.15rem'}
+            $size={!isMobile ? 'clamp(1rem, 4.6cqi, 1.4rem)' : '1.15rem'}
             $weight="400"
             $textAlign={!isMobile ? 'left' : 'center'}
             $margin="none"

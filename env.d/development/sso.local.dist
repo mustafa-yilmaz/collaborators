@@ -21,9 +21,3 @@ MICROSOFT_TENANT_ID=common
 # Redirect URL: http://localhost:8083/realms/impress/broker/linkedin/endpoint
 LINKEDIN_CLIENT_ID=
 LINKEDIN_CLIENT_SECRET=
-
-# X: developer app with "User authentication settings" (OAuth 1.0a, "Request
-# email from users" on). Callback URL:
-# http://localhost:8083/realms/impress/broker/x/endpoint
-X_API_KEY=
-X_API_KEY_SECRET=

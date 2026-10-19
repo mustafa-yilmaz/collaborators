@@ -47,7 +47,7 @@ kc update "realms/${REALM}" \
   -s smtpServer.fromDisplayName=Collaborators
 echo "Sent Keycloak's emails to the dev mail catcher"
 
-# An email nobody has checked (X, Microsoft) is confirmed by a link before
+# An email nobody has checked (Microsoft) is confirmed by a link before
 # entering. Google and LinkedIn emails are trusted as verified (trustEmail),
 # so their users are never asked.
 kc update "realms/${REALM}" -s verifyEmail=true
@@ -160,35 +160,10 @@ else
   echo "LINKEDIN_CLIENT_ID is empty: skipping LinkedIn"
 fi
 
-if [[ -n "${X_API_KEY}" ]]; then
-  # Keycloak's "twitter" provider signs in with X. X may give no email, or
-  # one it hasn't verified: Keycloak then asks for one, and it isn't trusted
-  # for linking accounts nor for joining workspaces by domain.
-  upsert_provider x "$(cat <<EOF
-{
-  "alias": "x",
-  "displayName": "X",
-  "providerId": "twitter",
-  "enabled": true,
-  "trustEmail": false,
-  "firstBrokerLoginFlowAlias": "first broker login",
-  "config": {
-    "clientId": "${X_API_KEY}",
-    "clientSecret": "${X_API_KEY_SECRET}",
-    "syncMode": "IMPORT",
-    "guiOrder": "5"
-  }
-}
-EOF
-)"
-else
-  echo "X_API_KEY is empty: skipping X"
-fi
-
 # Tell the app which providers to offer on its sign-in page, in this order
 PROVIDERS="$(kc get identity-provider/instances -r "${REALM}" | python3 -c '
 import json, sys
-order = ["google", "microsoft", "linkedin", "x"]
+order = ["google", "microsoft", "linkedin"]
 enabled = {p["alias"] for p in json.load(sys.stdin) if p.get("enabled")}
 print(",".join(alias for alias in order if alias in enabled))
 ')"

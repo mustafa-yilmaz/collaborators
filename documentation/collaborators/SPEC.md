@@ -72,14 +72,13 @@ See **section 3**: it is the largest single piece of work.
 ### F2 — SSO-only self sign-up
 
 **Requirements**
-- Sign up and sign in only through: **Google** (personal + Google Workspace), **Microsoft** (personal + work/school), **LinkedIn**, **X**, all with ordinary personal accounts. More providers can be added by configuration.
-- **No Apple sign-in** (user's decision, 2026-10-19): it needs a paid Apple Developer membership.
+- Sign up and sign in only through: **Google** (personal + Google Workspace), **Microsoft** (personal + work/school), **LinkedIn**, all with ordinary personal accounts. More providers can be added by configuration.
+- **No Apple and no X sign-in** (user's decision, 2026-10-19): Apple needs a paid Apple Developer membership; the X API is pay-per-use (about $0.01 per sign-in).
 - **No email-invitation sign-up.** Anyone can create an account by signing in. Sharing only finds collaborators who already have an account; to bring someone new, you send them a join link.
 - **Account linking:** signing in with a second provider whose *verified* email matches an existing account links to that account after confirmation. Settings → "Sign-in methods" lists, adds and removes providers (at least one must remain).
 - **Provider quirks to handle:**
   - Microsoft: use the `common` endpoint so both personal and work accounts work; the `tid` claim identifies the company tenant.
   - Google: the `hd` claim identifies a Google Workspace domain.
-  - X: may not return an email; ask the collaborator for one and verify it.
 - **Workspace joining:** a workspace can be joined by (a) a join link, (b) admin approval of a request, or (c) automatically by **verified domain** (`@acme.com`, or Microsoft tenant / Google Workspace domain), which also adds the person to that workspace's matching Organization group (F5).
 
 **Docs today**
@@ -94,17 +93,16 @@ See **section 3**: it is the largest single piece of work.
 - Store provider, tenant id and domain claims on the collaborator for F5 auto-join.
 
 **Built in phase 6:**
-- **Sign-in page** `/signin`: one *Continue with …* button per provider set up (Google, Microsoft, LinkedIn, X), each going straight to it; a test-account button in development only.
-- **Providers:** the setup script adds Google, Microsoft, LinkedIn and X (all Keycloak's own providers). Each needs its app made once at the provider by the owner of Collaborators (see `sso-setup.md`).
-- **Unverified emails** (X, Microsoft) are confirmed by a link the first time (Keycloak's *Verify email*); Google and LinkedIn emails are trusted.
-- **Account linking:** Keycloak's first sign-in flow links a second provider giving the same email, after confirmation (sign in with the first method, or a link by email). Google and LinkedIn emails count as verified; Microsoft and X don't. *Sign-in methods* in the account menu opens Keycloak's linked-accounts page.
+- **Sign-in page** `/signin`: one *Continue with …* button per provider set up (Google, Microsoft, LinkedIn), each going straight to it; a test-account button in development only.
+- **Providers:** the setup script adds Google, Microsoft and LinkedIn (all Keycloak's own providers). Each needs its app made once at the provider by the owner of Collaborators (see `sso-setup.md`).
+- **Unverified emails** (Microsoft) are confirmed by a link the first time (Keycloak's *Verify email*); Google and LinkedIn emails are trusted.
+- **Account linking:** Keycloak's first sign-in flow links a second provider giving the same email, after confirmation (sign in with the first method, or a link by email). Google and LinkedIn emails count as verified; Microsoft's don't. *Sign-in methods* in the account menu opens Keycloak's linked-accounts page.
 - **Joining a workspace:**
   - **Join link**, made, renewed or turned off by admins; `/join/<link>` asks to sign in, then joins.
   - **Email domain:** a verified email at the domain joins on sign-in, also into an organisation group if one is chosen. An admin can only add the domain of their own verified email; public domains (Gmail, Outlook…) are refused.
 - **Email invitations** to documents are turned off; documents are shared with people who have an account.
 
 **Still to do:**
-- Asking X users for an email and verifying it ourselves (Keycloak asks for one, unverified).
 - Joining by Google Workspace domain (`hd`) or Microsoft tenant (`tid`) claims.
 - Join requests approved by admins.
 - A sign-in-methods page inside Collaborators, rather than Keycloak's.
@@ -381,7 +379,7 @@ Moved out of the table v1:
 | 3 | Notification inbox; mentions of people and groups in pages, comments and table cells | F4, F1 (mentions) |
 | 4 | Lean customisable dashboard | F3 |
 | 5 | Public pages and public wikis | F8 |
-| 6 | Remaining sign-in providers (LinkedIn, X), account linking, domain auto-join | F2 |
+| 6 | Remaining sign-in providers (LinkedIn), account linking, domain auto-join | F2 |
 
 ---
 
@@ -389,7 +387,7 @@ Moved out of the table v1:
 
 Done: the Loop table tweaks, Loop table v2 (T9, T5, T56), and the wiki extras (F8).
 
-1. Setting up the sign-in providers for real (in progress): the apps at Google, Microsoft, LinkedIn and X, then production addresses once hosting is chosen (F2). Unverified emails are now confirmed by a link; Apple is dropped.
+1. Sign-in providers in production, once hosting is chosen: production redirect addresses, publishing the Google app (home page and privacy policy), a real SMTP server for Keycloak (F2, see `sso-setup.md` → Production). Locally, Google, Microsoft and LinkedIn sign-in work (apps registered 2026-10-19); Apple and X are dropped.
 2. A sign-in-methods page inside Collaborators, instead of Keycloak's (F2).
 3. Joining: join requests approved by admins; joining by Google Workspace domain or Microsoft organisation (F2).
 

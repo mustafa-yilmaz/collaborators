@@ -16,7 +16,6 @@ export const PROVIDER_NAMES: Record<string, string> = {
   google: 'Google',
   microsoft: 'Microsoft',
   linkedin: 'LinkedIn',
-  x: 'X',
 };
 
 /**

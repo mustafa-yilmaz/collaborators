@@ -37,6 +37,16 @@ kc update "realms/${REALM}" \
   -s 'displayNameHtml=<b><i>CO</i>✍️✍️<i>ABORATORS</i></b>'
 echo "Branded the sign-in page and turned off self-registration by password"
 
+# Email through the dev mail catcher (http://localhost:1081): Keycloak can then
+# confirm by email that someone signing in with a second provider owns the
+# account it would be linked to
+kc update "realms/${REALM}" \
+  -s smtpServer.host=mailcatcher \
+  -s smtpServer.port=1025 \
+  -s smtpServer.from=noreply@collaborators.community \
+  -s smtpServer.fromDisplayName=Collaborators
+echo "Sent Keycloak's emails to the dev mail catcher"
+
 if [[ ! -f "${ENV_FILE}" ]]; then
   echo "No ${ENV_FILE} yet: copy ${ENV_FILE}.dist and fill in the client ids and secrets to add the providers." >&2
   exit 0
@@ -109,3 +119,102 @@ EOF
 else
   echo "MICROSOFT_CLIENT_ID is empty: skipping Microsoft"
 fi
+
+if [[ -n "${LINKEDIN_CLIENT_ID}" ]]; then
+  # "Sign In with LinkedIn using OpenID Connect" returns verified emails
+  upsert_provider linkedin "$(cat <<EOF
+{
+  "alias": "linkedin",
+  "displayName": "LinkedIn",
+  "providerId": "linkedin-openid-connect",
+  "enabled": true,
+  "trustEmail": true,
+  "firstBrokerLoginFlowAlias": "first broker login",
+  "config": {
+    "clientId": "${LINKEDIN_CLIENT_ID}",
+    "clientSecret": "${LINKEDIN_CLIENT_SECRET}",
+    "defaultScope": "openid profile email",
+    "syncMode": "IMPORT",
+    "guiOrder": "4"
+  }
+}
+EOF
+)"
+else
+  echo "LINKEDIN_CLIENT_ID is empty: skipping LinkedIn"
+fi
+
+if [[ -n "${X_API_KEY}" ]]; then
+  # Keycloak's "twitter" provider signs in with X. X may give no email, or
+  # one it hasn't verified: Keycloak then asks for one, and it isn't trusted
+  # for linking accounts nor for joining workspaces by domain.
+  upsert_provider x "$(cat <<EOF
+{
+  "alias": "x",
+  "displayName": "X",
+  "providerId": "twitter",
+  "enabled": true,
+  "trustEmail": false,
+  "firstBrokerLoginFlowAlias": "first broker login",
+  "config": {
+    "clientId": "${X_API_KEY}",
+    "clientSecret": "${X_API_KEY_SECRET}",
+    "syncMode": "IMPORT",
+    "guiOrder": "5"
+  }
+}
+EOF
+)"
+else
+  echo "X_API_KEY is empty: skipping X"
+fi
+
+if [[ -n "${APPLE_SERVICES_ID}" ]]; then
+  # Keycloak has no Apple provider of its own: it comes from the extension
+  # put in docker/auth/providers (see documentation/collaborators/sso-setup.md)
+  if ! kc get serverinfo | grep -q '"id" : "apple"'; then
+    echo "The Apple extension isn't installed in Keycloak: skipping Apple (see sso-setup.md)" >&2
+  elif [[ ! -f "${APPLE_PRIVATE_KEY_FILE}" ]]; then
+    echo "APPLE_PRIVATE_KEY_FILE (${APPLE_PRIVATE_KEY_FILE}) not found: skipping Apple" >&2
+  else
+    # Apple verifies emails, its private relay addresses included. The key
+    # goes into the JSON escaped, as it spans several lines.
+    APPLE_KEY_JSON="$(python3 -c 'import json, sys; print(json.dumps(open(sys.argv[1]).read()))' "${APPLE_PRIVATE_KEY_FILE}")"
+    upsert_provider apple "$(cat <<EOF
+{
+  "alias": "apple",
+  "displayName": "Apple",
+  "providerId": "apple",
+  "enabled": true,
+  "trustEmail": true,
+  "firstBrokerLoginFlowAlias": "first broker login",
+  "config": {
+    "clientId": "${APPLE_SERVICES_ID}",
+    "clientSecret": ${APPLE_KEY_JSON},
+    "teamId": "${APPLE_TEAM_ID}",
+    "keyId": "${APPLE_KEY_ID}",
+    "defaultScope": "name email",
+    "syncMode": "IMPORT",
+    "guiOrder": "3"
+  }
+}
+EOF
+)"
+  fi
+else
+  echo "APPLE_SERVICES_ID is empty: skipping Apple"
+fi
+
+# Tell the app which providers to offer on its sign-in page, in this order
+PROVIDERS="$(kc get identity-provider/instances -r "${REALM}" | python3 -c '
+import json, sys
+order = ["google", "microsoft", "apple", "linkedin", "x"]
+enabled = {p["alias"] for p in json.load(sys.stdin) if p.get("enabled")}
+print(",".join(alias for alias in order if alias in enabled))
+')"
+LOCAL_ENV="env.d/development/common.local"
+touch "${LOCAL_ENV}"
+grep -v '^COLLABORATORS_SIGNIN_PROVIDERS=' "${LOCAL_ENV}" > "${LOCAL_ENV}.tmp" || true
+echo "COLLABORATORS_SIGNIN_PROVIDERS=${PROVIDERS}" >> "${LOCAL_ENV}.tmp"
+mv "${LOCAL_ENV}.tmp" "${LOCAL_ENV}"
+echo "Sign-in page providers: ${PROVIDERS:-none}. Restart the backend to apply: docker compose up -d app-dev"

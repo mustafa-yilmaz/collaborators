@@ -185,6 +185,9 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
     # Whether mentions and assignments are also sent by email (they always
     # reach the in-app notification inbox)
     collaborator_email_notifications = models.BooleanField(default=True)
+    # The identity provider vouched for the email at the last sign-in: it
+    # can join workspaces by domain
+    collaborator_email_verified = models.BooleanField(default=False)
     # The dashboard as this collaborator arranged it: [{id, hidden, collapsed}]
     collaborator_dashboard = models.JSONField(default=list, blank=True)
     # Derived from workspace and group memberships, see `teams`
@@ -2513,6 +2516,20 @@ class Workspace(BaseModel):
         choices=PublishingPolicyChoices.choices,
         default=PublishingPolicyChoices.SPACE_ADMINS,
     )
+    # Collaborators whose verified email is at one of these domains join the
+    # workspace when they sign in, and its organisation group if one is set
+    join_domains = ArrayField(
+        models.CharField(max_length=253), default=list, blank=True
+    )
+    join_group = models.ForeignKey(
+        "Group",
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    # The secret of the workspace's join link, or none when it is turned off
+    join_token = models.CharField(max_length=43, unique=True, null=True, blank=True)
 
     class Meta:
         db_table = "collaborators_workspace"

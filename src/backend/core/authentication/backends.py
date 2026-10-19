@@ -14,7 +14,8 @@ from rest_framework.authentication import (
     SessionAuthentication as BaseSessionAuthentication,
 )
 
-from core.models import DuplicateEmailError
+from core import joining
+from core.models import DuplicateEmailError, User
 from core.utils.analytics import PosthogEventName, posthog_capture
 
 logger = logging.getLogger(__name__)
@@ -56,6 +57,12 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
             "short_name": user_info.get(settings.OIDC_USERINFO_SHORTNAME_FIELD),
         }
 
+    def get_userinfo(self, access_token, id_token, payload):
+        """Keep the user info: whether the email is verified is read later."""
+        user_info = super().get_userinfo(access_token, id_token, payload)
+        self.collaborators_user_info = user_info
+        return user_info
+
     def get_existing_user(self, sub, email):
         """Fetch existing user by sub or email."""
 
@@ -85,6 +92,19 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
 
         if user:
             posthog_capture(PosthogEventName.USER_LOGIN, user)
+            self.collaborators_after_sign_in(user)
+
+    def collaborators_after_sign_in(self, user):
+        """
+        Record whether the identity provider verified the email, and join the
+        workspaces open to its domain.
+        """
+        user_info = getattr(self, "collaborators_user_info", None) or {}
+        verified = user_info.get("email_verified") is True
+        if user.collaborator_email_verified != verified:
+            User.objects.filter(pk=user.pk).update(collaborator_email_verified=verified)
+            user.collaborator_email_verified = verified
+        joining.join_by_domain(user)
 
 
 class SessionAuthentication(BaseSessionAuthentication):

@@ -5,6 +5,7 @@ import {
   LOGIN_URL,
   LOGOUT_URL,
   PATH_AUTH_SESSION_STORAGE,
+  SIGNIN_URL,
   SILENT_LOGIN_RETRY,
 } from './conf';
 
@@ -33,12 +34,26 @@ export const setAuthUrl = () => {
   }
 };
 
+/** Open the sign-in page, coming back here once signed in. */
 export const gotoLogin = (withRedirect = true) => {
   if (withRedirect) {
     setAuthUrl();
   }
 
-  window.location.replace(LOGIN_URL);
+  window.location.replace(SIGNIN_URL);
+};
+
+/**
+ * Sign in with one identity provider (its alias in the identity server, e.g.
+ * "google"), straight to its page; without one, the identity server's own
+ * page.
+ */
+export const gotoProviderLogin = (provider?: string) => {
+  window.location.assign(
+    provider
+      ? `${LOGIN_URL}?${new URLSearchParams({ kc_idp_hint: provider }).toString()}`
+      : LOGIN_URL,
+  );
 };
 
 export const gotoSilentLogin = () => {

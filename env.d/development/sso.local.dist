@@ -2,7 +2,7 @@
 #
 # Copy this file to "sso.local" (gitignored), fill in the values, then run
 # "make sso-providers". See documentation/collaborators/sso-setup.md for how to
-# create the Google and Microsoft apps. Leave a client id empty to skip it.
+# create the apps at each provider. Leave a client id empty to skip it.
 
 # Google: OAuth client of type "Web application"
 # Redirect URI: http://localhost:8083/realms/impress/broker/google/endpoint
@@ -16,3 +16,23 @@ MICROSOFT_CLIENT_ID=
 MICROSOFT_CLIENT_SECRET=
 # "common" = personal and work/school accounts. Put a tenant id to restrict.
 MICROSOFT_TENANT_ID=common
+
+# LinkedIn: app with the "Sign In with LinkedIn using OpenID Connect" product
+# Redirect URL: http://localhost:8083/realms/impress/broker/linkedin/endpoint
+LINKEDIN_CLIENT_ID=
+LINKEDIN_CLIENT_SECRET=
+
+# X: developer app with "User authentication settings" (OAuth 1.0a, "Request
+# email from users" on). Callback URL:
+# http://localhost:8083/realms/impress/broker/x/endpoint
+X_API_KEY=
+X_API_KEY_SECRET=
+
+# Apple: needs the Keycloak Apple extension (see sso-setup.md), a Services ID
+# with "Sign in with Apple", and a key for it (.p8 file, kept outside the
+# repository). Return URL: http://localhost:8083/realms/impress/broker/apple/endpoint
+# Apple only accepts https and a real domain: use a tunnel to try it locally.
+APPLE_SERVICES_ID=
+APPLE_TEAM_ID=
+APPLE_KEY_ID=
+APPLE_PRIVATE_KEY_FILE=

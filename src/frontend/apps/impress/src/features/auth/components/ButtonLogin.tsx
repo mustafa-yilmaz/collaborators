@@ -6,14 +6,14 @@ import { css } from 'styled-components';
 import { BoxButton } from '@/components';
 
 import ProConnectImg from '../assets/button-proconnect.svg';
-import { LOGIN_URL } from '../conf';
+import { SIGNIN_URL } from '../conf';
 import { useAuth } from '../hooks';
 import { gotoLogin } from '../utils';
 
 type ButtonLoginProps = ComponentProps<typeof Button>;
 
 export const ButtonLogin = ({
-  href = LOGIN_URL,
+  href = SIGNIN_URL,
   children,
   ...props
 }: ButtonLoginProps) => {

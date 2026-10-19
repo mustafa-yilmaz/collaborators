@@ -1,8 +1,8 @@
-import { UserMenu } from '@gouvfr-lasuite/ui-components';
+import { Button, UserMenu } from '@gouvfr-lasuite/ui-components';
 import { useTranslation } from 'react-i18next';
 import { createGlobalStyle } from 'styled-components';
 
-import { Box } from '@/components';
+import { Box, Icon } from '@/components';
 import { Waffle } from '@/components/Waffle';
 import { useConfig } from '@/core';
 import { ButtonLogin, gotoLogout, useAuth } from '@/features/auth';
@@ -24,6 +24,25 @@ export const FooterActions = ({ withLogin }: FooterActionsProps) => {
   const { user } = useAuth();
   const { data: config } = useConfig();
   const singleLanguage = config?.theme_customization?.single_language;
+  const accountUrl = config?.COLLABORATORS_ACCOUNT_URL;
+  // Collaborators: where to add or remove the providers one signs in with
+  const signInMethods =
+    user && accountUrl ? (
+      <Button
+        size="small"
+        variant="tertiary"
+        color="neutral"
+        href={accountUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        icon={<Icon iconName="key" $size="18px" $color="inherit" />}
+      >
+        {t('Sign-in methods', {
+          description:
+            'Link to the page listing the providers one signs in with',
+        })}
+      </Button>
+    ) : undefined;
 
   const userMenu = user || {
     full_name: t('Guest', {
@@ -47,7 +66,16 @@ export const FooterActions = ({ withLogin }: FooterActionsProps) => {
           <UserMenu
             user={userMenu}
             logout={user ? gotoLogout : undefined}
-            actions={singleLanguage ? undefined : <LanguagePicker />}
+            actions={
+              singleLanguage ? (
+                signInMethods
+              ) : (
+                <>
+                  {signInMethods}
+                  <LanguagePicker />
+                </>
+              )
+            }
             withMobileView={false}
           />
           <Waffle />

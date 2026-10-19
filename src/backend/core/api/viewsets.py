@@ -3033,6 +3033,15 @@ class InvitationViewset(
 
     def perform_create(self, serializer):
         """Save invitation to a document then send an email to the invited user."""
+        if not settings.COLLABORATORS_EMAIL_INVITATIONS:
+            # Collaborators join by signing in with a provider; documents are
+            # shared with people who already have an account
+            raise drf.exceptions.PermissionDenied(
+                _(
+                    "Invitations by email are turned off: ask them to sign in "
+                    "first, then share the document with them."
+                )
+            )
         invitation = serializer.save()
 
         invitation.document.send_invitation_email(
@@ -3157,6 +3166,9 @@ class ConfigView(drf.views.APIView):
         array_settings = [
             "AI_BOT",
             "AI_FEATURE_ENABLED",
+            "COLLABORATORS_ACCOUNT_URL",
+            "COLLABORATORS_SIGNIN_PASSWORD",
+            "COLLABORATORS_SIGNIN_PROVIDERS",
             "AI_FEATURE_BLOCKNOTE_ENABLED",
             "AI_FEATURE_LEGACY_ENABLED",
             "API_USERS_SEARCH_QUERY_MIN_LENGTH",

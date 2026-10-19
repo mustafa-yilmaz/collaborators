@@ -20,6 +20,12 @@ from core.tests.conftest import TEAM, USER, VIA
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture(autouse=True)
+def email_invitations_on(settings):
+    """Collaborators turns email invitations off; these tests cover them on."""
+    settings.COLLABORATORS_EMAIL_INVITATIONS = True
+
+
 # List
 
 

@@ -770,6 +770,32 @@ class Base(Configuration):
     OIDC_AUTH_REQUEST_EXTRA_PARAMS = values.DictValue(
         {}, environ_name="OIDC_AUTH_REQUEST_EXTRA_PARAMS", environ_prefix=None
     )
+    # Collaborators: "kc_idp_hint" sends the sign-in straight to the provider
+    # chosen on the sign-in page (Google, Microsoft, ...), past Keycloak's page
+    OIDC_AUTH_REQUEST_FORWARDED_PARAMS = values.ListValue(
+        ["login_hint", "kc_idp_hint"],
+        environ_name="OIDC_AUTH_REQUEST_FORWARDED_PARAMS",
+        environ_prefix=None,
+    )
+    # The providers offered on the sign-in page, by their Keycloak alias, in
+    # order: google, microsoft, apple, linkedin, x
+    COLLABORATORS_SIGNIN_PROVIDERS = values.ListValue(
+        [], environ_name="COLLABORATORS_SIGNIN_PROVIDERS", environ_prefix=None
+    )
+    # Also offer the identity server's own page (password sign-in of the dev
+    # and test accounts); never in production
+    COLLABORATORS_SIGNIN_PASSWORD = values.BooleanValue(
+        False, environ_name="COLLABORATORS_SIGNIN_PASSWORD", environ_prefix=None
+    )
+    # Where collaborators manage their sign-in methods (linked accounts)
+    COLLABORATORS_ACCOUNT_URL = values.Value(
+        "", environ_name="COLLABORATORS_ACCOUNT_URL", environ_prefix=None
+    )
+    # Collaborators join by signing in: no account is created from an email
+    # invitation to a document
+    COLLABORATORS_EMAIL_INVITATIONS = values.BooleanValue(
+        False, environ_name="COLLABORATORS_EMAIL_INVITATIONS", environ_prefix=None
+    )
     OIDC_RP_SCOPES = values.Value(
         "openid email", environ_name="OIDC_RP_SCOPES", environ_prefix=None
     )

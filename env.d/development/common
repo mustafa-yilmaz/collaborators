@@ -104,3 +104,9 @@ SEARCH_URL=http://find:8000/api/v1.0/documents/search/
 SEARCH_INDEXER_QUERY_LIMIT=50
 
 CONVERSION_UPLOAD_ENABLED=true
+
+# Collaborators sign-in page: the providers set up with "make sso-providers"
+# (bin/setup-sso-providers.sh writes this list to common.local), and the
+# password form of the dev and test accounts
+COLLABORATORS_SIGNIN_PASSWORD=True
+COLLABORATORS_ACCOUNT_URL=http://localhost:8083/realms/impress/account/account-security/linked-accounts

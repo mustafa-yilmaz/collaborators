@@ -17,7 +17,7 @@ import rest_framework as drf
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.views import APIView
 
-from core import choices, models
+from core import choices, joining, models
 from core.api import permissions
 from core.api.serializers import ListDocumentSerializer, UserSerializer
 from core.utils.treebeard import create_tree_node_with_retry
@@ -32,6 +32,13 @@ class WorkspaceSerializer(serializers.ModelSerializer):
 
     abilities = serializers.SerializerMethodField(read_only=True)
     user_role = serializers.SerializerMethodField(read_only=True)
+    join_token = serializers.SerializerMethodField(read_only=True)
+    join_domains = serializers.ListField(
+        child=serializers.CharField(max_length=253), required=False
+    )
+    join_group = serializers.PrimaryKeyRelatedField(
+        queryset=models.Group.objects.all(), required=False, allow_null=True
+    )
 
     class Meta:
         model = models.Workspace
@@ -41,6 +48,9 @@ class WorkspaceSerializer(serializers.ModelSerializer):
             "slug",
             "description",
             "publishing_policy",
+            "join_domains",
+            "join_group",
+            "join_token",
             "abilities",
             "user_role",
             "created_at",
@@ -62,6 +72,41 @@ class WorkspaceSerializer(serializers.ModelSerializer):
     def get_user_role(self, instance):
         """Return the role of the logged-in user in the workspace."""
         return instance.get_role(self.context["request"].user)
+
+    def get_join_token(self, instance):
+        """The secret of the join link, for the workspace's admins only."""
+        if is_workspace_admin(instance, self.context["request"].user):
+            return instance.join_token
+        return None
+
+    def to_representation(self, instance):
+        """Only admins see how people join without an invitation."""
+        data = super().to_representation(instance)
+        if not is_workspace_admin(instance, self.context["request"].user):
+            data["join_domains"] = []
+            data["join_group"] = None
+        return data
+
+    def validate_join_domains(self, value):
+        """Domains the admin's own verified email proves they hold."""
+        admin = self.context["request"].user
+        cleaned = []
+        for raw in value:
+            try:
+                domain = joining.check_join_domain(raw, admin)
+            except ValueError as error:
+                raise serializers.ValidationError(str(error)) from error
+            if domain not in cleaned:
+                cleaned.append(domain)
+        return cleaned
+
+    def validate_join_group(self, value):
+        """The organisation group must be one of the workspace's groups."""
+        if value is not None and (
+            self.instance is None or value.workspace_id != self.instance.id
+        ):
+            raise serializers.ValidationError(_("Choose a group of this workspace."))
+        return value
 
 
 class WorkspaceAccessSerializer(serializers.ModelSerializer):
@@ -297,6 +342,23 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
         find the table rows assigned to one of their groups.
         """
         return drf.response.Response(request.user.teams)
+
+    @drf.decorators.action(
+        detail=True, methods=["post", "delete"], url_path="join-link"
+    )
+    def join_link(self, request, *args, **kwargs):
+        """
+        POST: turn the join link on, or change its secret (the old link stops
+        working). DELETE: turn it off. For the workspace's admins.
+        """
+        workspace = self.get_object()
+        if not is_workspace_admin(workspace, request.user):
+            raise drf.exceptions.PermissionDenied()
+        workspace.join_token = (
+            joining.new_join_token() if request.method == "POST" else None
+        )
+        workspace.save(update_fields=["join_token", "updated_at"])
+        return drf.response.Response({"join_token": workspace.join_token})
 
     def perform_create(self, serializer):
         """The creator becomes the owner of the workspace."""
@@ -844,3 +906,43 @@ def get_object_or_404_space(pk):
     if space is None:
         raise drf.exceptions.NotFound()
     return space
+
+
+class JoinWorkspaceView(APIView):
+    """
+    GET  /join/<token>/ — which workspace the link opens, for anyone holding it
+    POST /join/<token>/ — join it, signed in
+    """
+
+    def get_permissions(self):
+        """Anyone with the link can see where it leads."""
+        if self.request.method == "GET":
+            return [drf.permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
+    def _workspace(self, token):
+        workspace = models.Workspace.objects.filter(join_token=token).first()
+        if not token or workspace is None:
+            raise drf.exceptions.NotFound(_("This join link doesn't work any more."))
+        return workspace
+
+    def _describe(self, workspace, user):
+        return {
+            "id": str(workspace.id),
+            "name": workspace.name,
+            "description": workspace.description,
+            "member_count": workspace.accesses.count(),
+            "is_member": user.is_authenticated
+            and workspace.accesses.filter(user=user).exists(),
+        }
+
+    def get(self, request, token):
+        """Describe the workspace."""
+        workspace = self._workspace(token)
+        return drf.response.Response(self._describe(workspace, request.user))
+
+    def post(self, request, token):
+        """Join the workspace as a member."""
+        workspace = self._workspace(token)
+        joining.join(workspace, request.user)
+        return drf.response.Response(self._describe(workspace, request.user))

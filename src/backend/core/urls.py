@@ -87,6 +87,7 @@ urlpatterns = [
                 *router.urls,
                 *oidc_urls,
                 path("groups/", workspaces.GrantableTeamsView.as_view()),
+                path("join/<str:token>/", workspaces.JoinWorkspaceView.as_view()),
                 path("dashboard/layout/", dashboard.DashboardLayoutView.as_view()),
                 path("dashboard/recent/", dashboard.DashboardRecentView.as_view()),
                 path("dashboard/assigned/", dashboard.DashboardAssignedView.as_view()),

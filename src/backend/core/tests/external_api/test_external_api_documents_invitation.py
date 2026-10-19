@@ -16,6 +16,13 @@ from core.tests.utils.urls import reload_urls
 
 pytestmark = pytest.mark.django_db
 
+
+@pytest.fixture(autouse=True)
+def email_invitations_on(settings):
+    """Collaborators turns email invitations off; these tests cover them on."""
+    settings.COLLABORATORS_EMAIL_INVITATIONS = True
+
+
 # pylint: disable=unused-argument
 
 

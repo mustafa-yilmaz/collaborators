@@ -64,6 +64,12 @@ export interface ConfigResponse {
   COLLABORATION_LOCAL_DOC_RETENTION_DAYS?: number;
   COLLABORATION_VERSION_GRANULARITY_MS?: number;
   COLLABORATION_WS_URL?: string;
+  /** Where collaborators manage their sign-in methods */
+  COLLABORATORS_ACCOUNT_URL?: string;
+  /** Offer the identity server's own page too (dev and test accounts) */
+  COLLABORATORS_SIGNIN_PASSWORD?: boolean;
+  /** Identity providers of the sign-in page, by alias, in order */
+  COLLABORATORS_SIGNIN_PROVIDERS?: string[];
   COLLABORATION_WS_INACTIVITY_TIMEOUT?: number | null;
   CONVERSION_FILE_EXTENSIONS_ALLOWED: string[];
   CONVERSION_FILE_MAX_SIZE: number;

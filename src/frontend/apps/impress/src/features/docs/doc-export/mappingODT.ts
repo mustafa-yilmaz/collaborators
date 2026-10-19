@@ -45,5 +45,15 @@ export const getOdtDocsSchemaMappings = (
         createInlineContentMappingInterlinkingLinkODT(interlinkTitles),
       // Renders inline math as a native (editable) ODF formula object.
       math: inlineMathMapping,
+      // A mention is exported as its bold "@name"
+      mention: (inline, exporter) =>
+        baseInlineMappings.text(
+          {
+            type: 'text',
+            text: `@${inline.props.label}`,
+            styles: { bold: true },
+          },
+          exporter,
+        ),
     },
   });

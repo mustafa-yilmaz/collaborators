@@ -86,6 +86,7 @@ export interface GrantableTeam {
   label: string;
   kind: 'workspace' | GroupKind;
   workspace: { id: string; name: string };
+  member_count: number;
 }
 
 export interface WorkspaceGrant {

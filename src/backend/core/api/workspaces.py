@@ -506,11 +506,13 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
 
 class GrantableTeamsView(APIView):
     """
-    GET /api/v1.0/groups/?document_id=<id>&q=<text>
+    GET /api/v1.0/groups/?document_id=<id>&q=<text>[&include_granted=true]
 
     The groups and workspaces the logged-in user can grant a role to on a
-    document: those of the workspaces its space is placed in and that the user
-    belongs to. Independent pages and spaces have none.
+    document, or mention in it: those of the workspaces its space is placed in
+    and that the user belongs to. Independent pages and spaces have none.
+    Teams that already have a role on the document are left out, unless
+    `include_granted` (for mentions). Each comes with its number of members.
     """
 
     permission_classes = [permissions.IsAuthenticated]
@@ -541,9 +543,10 @@ class GrantableTeamsView(APIView):
                         "label": label,
                         "kind": "workspace",
                         "workspace": {"id": str(workspace.id), "name": workspace.name},
+                        "member_count": workspace.accesses.count(),
                     }
                 )
-            groups = workspace.groups.all()
+            groups = workspace.groups.annotate(member_count=Count("memberships"))
             if query:
                 groups = groups.filter(name__icontains=query)
             results.extend(
@@ -552,9 +555,12 @@ class GrantableTeamsView(APIView):
                     "label": group.name,
                     "kind": group.kind,
                     "workspace": {"id": str(workspace.id), "name": workspace.name},
+                    "member_count": group.member_count,
                 }
                 for group in groups[:20]
             )
+        if request.query_params.get("include_granted") in ("true", "1"):
+            return drf.response.Response(results)
         return drf.response.Response(
             [result for result in results if result["team"] not in granted]
         )

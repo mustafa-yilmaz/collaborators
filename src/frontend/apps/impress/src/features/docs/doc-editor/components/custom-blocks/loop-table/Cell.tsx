@@ -8,6 +8,12 @@ import { PersonPicker } from './PersonPicker';
 import { Popover } from './Popover';
 import { formatCell, labelOptionsOf } from './format';
 import {
+  cellAnchor,
+  mentionToken,
+  notifyCell,
+  splitMentions,
+} from './mentions';
+import {
   CellValue,
   Column,
   ColumnType,
@@ -23,6 +29,7 @@ export type Direction = 'up' | 'down' | 'left' | 'right' | 'next' | 'prev';
 
 interface CellProps {
   table: Y.Map<unknown>;
+  tableId: string;
   snapshot: TableSnapshot;
   column: Column;
   rowId: string;
@@ -67,12 +74,16 @@ const editorKeyMove = (
 
 const TextEditor = ({
   table,
+  tableId,
+  docId,
   rowId,
   column,
   initial,
   onStopEdit,
 }: {
   table: Y.Map<unknown>;
+  tableId: string;
+  docId: string;
   rowId: string;
   column: Column;
   initial: string;
@@ -80,6 +91,26 @@ const TextEditor = ({
 }) => {
   const ref = useRef<HTMLTextAreaElement>(null);
   const [draft, setDraft] = useState(initial);
+  const [isPicking, setIsPicking] = useState(false);
+  const caretRef = useRef(0);
+
+  // "@" at the start of a word opens the people and groups picker
+  const insertMention = (person: PersonValue) => {
+    const at = caretRef.current;
+    const next = `${draft.slice(0, at)}${mentionToken(person)} ${draft.slice(at)}`;
+    setDraft(next);
+    setTextCell(table, rowId, column.id, next);
+    setIsPicking(false);
+    if (docId) {
+      void notifyCell(
+        docId,
+        cellAnchor(tableId, rowId, column.id),
+        person,
+        'mention',
+      ).catch(() => undefined);
+    }
+    requestAnimationFrame(() => ref.current?.focus());
+  };
 
   // Show the edits other people make to the same cell while I edit it
   useEffect(() => {
@@ -99,24 +130,48 @@ const TextEditor = ({
   }, []);
 
   return (
-    <textarea
-      ref={ref}
-      className="loop-table__input"
-      rows={Math.max(1, draft.split('\n').length)}
-      value={draft}
-      onChange={(event) => {
-        setDraft(event.target.value);
-        setTextCell(table, rowId, column.id, event.target.value);
-      }}
-      onBlur={() => onStopEdit()}
-      onKeyDown={(event) => {
-        const move = editorKeyMove(event, true);
-        if (move) {
-          event.preventDefault();
-          onStopEdit(move === 'stay' ? undefined : move);
-        }
-      }}
-    />
+    <>
+      <textarea
+        ref={ref}
+        className="loop-table__input"
+        rows={Math.max(1, draft.split('\n').length)}
+        value={draft}
+        onChange={(event) => {
+          setDraft(event.target.value);
+          setTextCell(table, rowId, column.id, event.target.value);
+        }}
+        onBlur={() => !isPicking && onStopEdit()}
+        onKeyDown={(event) => {
+          if (event.key === '@') {
+            const element = event.currentTarget;
+            const at = element.selectionStart ?? element.value.length;
+            const before = element.value.slice(Math.max(0, at - 1), at);
+            if (!before || /\s/.test(before)) {
+              event.preventDefault();
+              caretRef.current = at;
+              setIsPicking(true);
+              return;
+            }
+          }
+          const move = editorKeyMove(event, true);
+          if (move) {
+            event.preventDefault();
+            onStopEdit(move === 'stay' ? undefined : move);
+          }
+        }}
+      />
+      {isPicking && (
+        <PersonPicker
+          docId={docId}
+          value={[]}
+          onChange={(people) => people[0] && insertMention(people[0])}
+          onClose={() => {
+            setIsPicking(false);
+            requestAnimationFrame(() => ref.current?.focus());
+          }}
+        />
+      )}
+    </>
   );
 };
 
@@ -163,6 +218,7 @@ const NumberEditor = ({
 
 export const Cell = ({
   table,
+  tableId,
   snapshot,
   column,
   rowId,
@@ -216,6 +272,8 @@ export const Cell = ({
         return (
           <TextEditor
             table={table}
+            tableId={tableId}
+            docId={docId}
             rowId={rowId}
             column={column}
             initial={typeof value === 'string' ? value : ''}
@@ -301,9 +359,25 @@ export const Cell = ({
             <PersonPicker
               docId={docId}
               value={Array.isArray(value) ? (value as PersonValue[]) : []}
-              onChange={(people) =>
-                setCellValue(table, rowId, column.id, people)
-              }
+              onChange={(people) => {
+                const before = Array.isArray(value)
+                  ? (value as PersonValue[]).map((person) => person.id)
+                  : [];
+                setCellValue(table, rowId, column.id, people);
+                // Assigning someone (or a group) notifies them
+                people
+                  .filter((person) => !before.includes(person.id))
+                  .forEach((person) => {
+                    if (docId) {
+                      void notifyCell(
+                        docId,
+                        cellAnchor(tableId, rowId, column.id),
+                        person,
+                        'assignment',
+                      ).catch(() => undefined);
+                    }
+                  });
+              }}
               onClose={() => onStopEdit()}
             />
           </div>
@@ -324,6 +398,15 @@ export const Cell = ({
   }
   if (column.type === ColumnType.PERSON) {
     content = <PersonChips value={value} />;
+  }
+  if (column.type === ColumnType.TEXT && typeof value === 'string') {
+    content = splitMentions(value).map((part, index) =>
+      typeof part === 'string' ? (
+        part
+      ) : (
+        <PersonChips key={index} value={[part]} />
+      ),
+    );
   }
 
   return (

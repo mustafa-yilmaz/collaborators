@@ -11,6 +11,7 @@ import { NewDocButton } from '@/docs/doc-management/components/NewDocButton';
 import { DocSearchButtonModal } from '@/docs/doc-search/components/DocSearchButtonModal';
 import { useAuth } from '@/features/auth';
 import { HEADER_ROW_MIN_HEIGHT, HeaderLogoLink } from '@/features/header';
+import { NotificationBell } from '@/features/notifications/NotificationBell';
 import HomeSVG from '@/icons/house-rounded.svg';
 import { useResponsiveStore } from '@/stores';
 
@@ -84,6 +85,7 @@ export const LeftPanelHeaderActions = () => {
               icon={<HomeSVG aria-hidden="true" width={24} height={24} />}
             />
           )}
+          <NotificationBell />
           <DocSearchButtonModal />
         </Box>
       </Box>

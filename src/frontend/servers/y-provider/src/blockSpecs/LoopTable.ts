@@ -34,7 +34,10 @@ type Json = Record<string, unknown>;
 
 const cellText = (value: unknown, type: unknown, labels: Json): string => {
   if (value instanceof Y.Text) {
-    return value.toString();
+    // Mentions written "@[Label](user:<id>)" read as "@Label"
+    return value
+      .toString()
+      .replace(/@\[([^\]]+)\]\((?:user|group):[^)]+\)/g, '@$1');
   }
   if (value instanceof Y.Map) {
     return value.size ? String(value.size) : '';

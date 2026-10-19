@@ -1,8 +1,10 @@
 import { syntaxHighlighter } from '@blocknote/code-block';
 import {
   BlockNoteSchema,
+  createParagraphBlockSpec,
   defaultBlockSpecs,
   defaultInlineContentSpecs,
+  defaultStyleSpecs,
   withPageBreak,
 } from '@blocknote/core';
 import { CommentsExtension } from '@blocknote/core/comments';
@@ -69,17 +71,21 @@ import { BlockNoteSuggestionMenu } from './BlockNoteSuggestionMenu';
 import { BlockNoteToolbar } from './BlockNoteToolBar/BlockNoteToolbar';
 import { DocsSideMenu } from './DocsSideMenu/DocsSideMenu';
 import { CalloutBlock, PdfBlock, UploadLoaderBlock } from './custom-blocks';
-import { LoopTableBlock } from './custom-blocks/loop-table/LoopTableBlock';
-import { LoopTableDocContext } from './custom-blocks/loop-table/LoopTableContext';
 const AIMenu = BlockNoteAI?.AIMenu;
 const AIMenuController = BlockNoteAI?.AIMenuController;
 const useAI = BlockNoteAI?.useAI;
 const localesBNAI = BlockNoteAI?.localesAI || {};
 import { createSafeCodeBlockSpec } from './custom-blocks/CodeBlock';
+import { LoopTableBlock } from './custom-blocks/loop-table/LoopTableBlock';
+import { LoopTableDocContext } from './custom-blocks/loop-table/LoopTableContext';
 import {
   InterlinkingLinkInlineContent,
   getPastedDocInterlink,
 } from './custom-inline-content';
+import {
+  MentionInlineContent,
+  MentionWithTriggerInlineContent,
+} from './custom-inline-content/Mention/MentionInlineContent';
 import XLMultiColumn from './xl-multi-column';
 
 const localesBNMultiColumn = XLMultiColumn?.locales;
@@ -105,9 +111,27 @@ const baseBlockNoteSchema = withPageBreak(
       ...defaultInlineContentSpecs,
       interlinkingLinkInline: InterlinkingLinkInlineContent,
       math: createReactInlineMathSpec(),
+      mention: MentionInlineContent,
     },
   }),
 );
+
+// Comments use BlockNote's comment schema (paragraphs, no colors) plus
+// mentions and page links, both opened by typing "@"
+const {
+  textColor: _commentTextColor,
+  backgroundColor: _commentBackgroundColor,
+  ...commentStyleSpecs
+} = defaultStyleSpecs;
+const commentEditorSchema = BlockNoteSchema.create({
+  blockSpecs: { paragraph: createParagraphBlockSpec() },
+  styleSpecs: commentStyleSpecs,
+  inlineContentSpecs: {
+    ...defaultInlineContentSpecs,
+    interlinkingLinkInline: InterlinkingLinkInlineContent,
+    mention: MentionWithTriggerInlineContent,
+  },
+});
 
 export const blockNoteSchema = (withMultiColumn?.(baseBlockNoteSchema) ||
   baseBlockNoteSchema) as typeof baseBlockNoteSchema;
@@ -298,7 +322,11 @@ export const BlockNoteEditor = ({ doc, provider }: BlockNoteEditorProps) => {
         // Highlights the source of code blocks and of the math / diagram
         // blocks' editable LaTeX / Mermaid popups.
         syntaxHighlighter,
-        CommentsExtension({ threadStore, resolveUsers }),
+        CommentsExtension({
+          threadStore,
+          resolveUsers,
+          schema: commentEditorSchema,
+        }),
         ...(aiExtension ? [aiExtension] : []),
       ],
       _tiptapOptions: {
@@ -432,6 +460,7 @@ export const BlockNoteReader = ({
           resolveUsers: async () => {
             return Promise.resolve([]);
           },
+          schema: commentEditorSchema,
         }),
       ],
     }),

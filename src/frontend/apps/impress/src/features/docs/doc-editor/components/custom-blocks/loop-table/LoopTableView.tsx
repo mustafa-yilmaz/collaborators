@@ -258,6 +258,32 @@ export const LoopTableView = ({
     [active, rows, columns, table, isEditable],
   );
 
+  const hasSnapshot = !!snapshot;
+  // A link to one of this table's cells (e.g. from a notification) selects
+  // that cell and scrolls it into view
+  useEffect(() => {
+    const focusCellFromHash = () => {
+      const [kind, hashTableId, rowId, columnId] = decodeURIComponent(
+        window.location.hash.slice(1),
+      ).split(':');
+      if (kind !== 'cell' || hashTableId !== tableId || !rowId || !columnId) {
+        return;
+      }
+      setActive({ rowId, columnId });
+      setIsEditing(false);
+      setTimeout(() => {
+        containerRef.current
+          ?.querySelector(
+            `td[data-row-id="${rowId}"][data-column-id="${columnId}"]`,
+          )
+          ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }, 100);
+    };
+    focusCellFromHash();
+    window.addEventListener('hashchange', focusCellFromHash);
+    return () => window.removeEventListener('hashchange', focusCellFromHash);
+  }, [tableId, hasSnapshot]);
+
   // Keep the focus in the grid so keyboard navigation keeps working
   useEffect(() => {
     if (active && !isEditing) {
@@ -551,6 +577,8 @@ export const LoopTableView = ({
                     return (
                       <td
                         key={column.id}
+                        data-row-id={row.id}
+                        data-column-id={column.id}
                         role="gridcell"
                         aria-selected={isActive}
                         className={[
@@ -573,6 +601,7 @@ export const LoopTableView = ({
                       >
                         <Cell
                           table={table}
+                          tableId={tableId}
                           snapshot={snapshot}
                           column={column}
                           rowId={row.id}

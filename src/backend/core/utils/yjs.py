@@ -26,6 +26,8 @@ def base64_yjs_to_xml(base64_string):
 # Loop tables keep their data next to the document fragment, see
 # frontend .../custom-blocks/loop-table/model.ts
 LOOP_TABLES_KEY = "loop-tables"
+# Mentions inside Text cells: "@[Label](user:<id>)", searched as "@Label"
+LOOP_MENTION_RE = re.compile(r"@\[([^\]]+)\]\((?:user|group):[^)]+\)")
 BUILTIN_LABELS = {
     "low": "Low",
     "medium": "Medium",
@@ -50,7 +52,7 @@ def _loop_table_labels(table):
 def _loop_cell_texts(value, column_type, labels):
     """Yield the searchable texts of one cell."""
     if isinstance(value, pycrdt.Text):
-        yield str(value)
+        yield LOOP_MENTION_RE.sub(r"@\1", str(value))
     elif column_type == "label" and value:
         yield labels.get(value, "")
     elif column_type == "person" and isinstance(value, (list, tuple)):

@@ -392,12 +392,23 @@ export function useSpace(spaceId: string, enabled = true) {
 
 // -- Grants to groups
 
-export function useGrantableTeams(docId: string, query: string) {
+/**
+ * The groups of the workspaces a document's space belongs to. For sharing,
+ * groups that already have a role are left out; for mentions
+ * (`includeGranted`), all are listed.
+ */
+export function useGrantableTeams(
+  docId: string,
+  query: string,
+  includeGranted = false,
+) {
   return useQuery<GrantableTeam[], APIError>({
-    queryKey: [KEY_LIST_GRANTABLE_TEAM, docId, query],
+    queryKey: [KEY_LIST_GRANTABLE_TEAM, docId, query, includeGranted],
     queryFn: () =>
       request<GrantableTeam[]>(
-        `groups/?document_id=${docId}&q=${encodeURIComponent(query)}`,
+        `groups/?document_id=${docId}&q=${encodeURIComponent(query)}${
+          includeGranted ? '&include_granted=true' : ''
+        }`,
         'Failed to get the groups',
       ),
     enabled: !!docId,

@@ -8,6 +8,7 @@ import {
 import { CalloutBlock } from './Callout';
 import { InterlinkingLinkInline } from './InterlinkingLinkInline';
 import { LoopTableBlock } from './LoopTable';
+import { MentionInline } from './Mention';
 import { PdfBlock } from './Pdf';
 import { UploadLoaderBlock } from './UploadLoader';
 
@@ -25,6 +26,7 @@ export const docsBlockNoteSchema = withPageBreak(
     inlineContentSpecs: {
       ...defaultInlineContentSpecs,
       interlinkingLinkInline: InterlinkingLinkInline,
+      mention: MentionInline,
     },
   }),
 );

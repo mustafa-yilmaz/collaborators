@@ -1,3 +1,4 @@
+import { plainText } from './mentions';
 import {
   CellValue,
   Column,
@@ -78,6 +79,6 @@ export const formatCell = (
     case ColumnType.VOTING:
       return Array.isArray(value) && value.length ? String(value.length) : '';
     default:
-      return String(value);
+      return plainText(String(value));
   }
 };

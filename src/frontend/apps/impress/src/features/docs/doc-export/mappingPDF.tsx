@@ -48,6 +48,16 @@ export const getPdfDocsSchemaMappings = (
         createInlineContentMappingInterlinkingLinkPDF(interlinkTitles),
       // Inline math is rasterized to an image that flows with the text.
       math: inlineMathMapping,
+      // A mention is exported as its bold "@name"
+      mention: (inline, exporter) =>
+        pdfDefaultSchemaMappings.inlineContentMapping.text(
+          {
+            type: 'text',
+            text: `@${inline.props.label}`,
+            styles: { bold: true },
+          },
+          exporter,
+        ),
     },
     styleMapping: {
       ...pdfDefaultSchemaMappings.styleMapping,

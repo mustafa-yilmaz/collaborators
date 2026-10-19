@@ -67,6 +67,16 @@ export const getDocxDocsSchemaMappings = (
         createInlineContentMappingInterlinkingLinkDocx(interlinkTitles),
       // Renders inline math as a native (editable) Word equation.
       math: inlineMathMapping,
+      // A mention is exported as its bold "@name"
+      mention: (inline, exporter) =>
+        docxDefaultSchemaMappings.inlineContentMapping.text(
+          {
+            type: 'text',
+            text: `@${inline.props.label}`,
+            styles: { bold: true },
+          },
+          exporter,
+        ),
     },
     styleMapping: {
       ...docxDefaultSchemaMappings.styleMapping,

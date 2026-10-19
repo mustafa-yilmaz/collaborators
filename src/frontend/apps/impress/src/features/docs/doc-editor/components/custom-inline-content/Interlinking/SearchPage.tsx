@@ -1,6 +1,10 @@
 import { StyleSchema } from '@blocknote/core';
 import { ReactCustomInlineContentRenderProps } from '@blocknote/react';
-import { useTreeContext } from '@gouvfr-lasuite/ui-components';
+import {
+  Button,
+  VariantType,
+  useTreeContext,
+} from '@gouvfr-lasuite/ui-components';
 import { Popover } from '@mantine/core';
 import type { KeyboardEvent } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -16,11 +20,25 @@ import {
   QuickSearchItemContent,
   Text,
 } from '@/components';
+import { useEditorStore } from '@/docs/doc-editor/stores';
 import { DocsBlockNoteEditor } from '@/docs/doc-editor/types';
-import { Doc, getEmojiAndTitle, useTrans } from '@/docs/doc-management';
+import {
+  Doc,
+  getEmojiAndTitle,
+  useDocStore,
+  useTrans,
+} from '@/docs/doc-management';
 import { DocSearchContent } from '@/docs/doc-search';
 import { useDocSearchFilterStore } from '@/docs/doc-search/stores/useDocSearchFilterStore';
+import { postMention } from '@/features/notifications/api';
+import { useToast } from '@/hooks';
 import { useResponsiveStore } from '@/stores';
+
+import {
+  LARGE_GROUP,
+  MentionCandidate,
+  MentionSearchGroup,
+} from '../Mention/MentionSearchGroup';
 
 import { InterlinkingLinkInlineContentType } from './InterlinkingLinkInlineContent';
 
@@ -57,6 +75,74 @@ export const SearchPage = ({
   const dropdownId = useId();
   const [popoverOpened, setPopoverOpened] = useState(false);
   const { setFilter } = useDocSearchFilterStore();
+  const { currentDoc } = useDocStore();
+  const { editor: mainEditor } = useEditorStore();
+  const { toast } = useToast();
+  const [pendingGroup, setPendingGroup] = useState<MentionCandidate | null>(
+    null,
+  );
+
+  /**
+   * Replace the search by a mention chip. In the page, report it so the
+   * people concerned are notified; comments are read by the server.
+   */
+  const insertMention = (candidate: MentionCandidate) => {
+    if (!isEditable) {
+      return;
+    }
+    updateInlineContent({
+      type: 'interlinkingLinkInline',
+      props: { disabled: true },
+    });
+    contentRef(null);
+    editor.focus();
+    (editor as DocsBlockNoteEditor).insertInlineContent([
+      {
+        type: 'mention',
+        props: {
+          kind: candidate.kind,
+          targetId: candidate.id,
+          label: candidate.label,
+        },
+      },
+      ' ',
+    ]);
+
+    const isPage = mainEditor === (editor as unknown);
+    if (isPage && currentDoc) {
+      const anchorId = (editor as DocsBlockNoteEditor).getTextCursorPosition()
+        .block.id;
+      postMention({
+        docId: currentDoc.id,
+        anchorId,
+        target: { kind: candidate.kind, id: candidate.id },
+      }).catch(() =>
+        toast(
+          t(
+            "{{name}} was not notified: they can't see this page yet. Share it with them first.",
+            {
+              description: 'Toast when a mentioned person has no access',
+              name: candidate.label,
+            },
+          ),
+          VariantType.WARNING,
+        ),
+      );
+    }
+  };
+
+  const onSelectCandidate = (candidate: MentionCandidate) => {
+    if (
+      candidate.kind === 'group' &&
+      (candidate.memberCount ?? 0) > LARGE_GROUP &&
+      pendingGroup?.id !== candidate.id
+    ) {
+      setPendingGroup(candidate);
+      return;
+    }
+    setPendingGroup(null);
+    insertMention(candidate);
+  };
 
   /**
    * When the search page is opened, we set the search
@@ -174,10 +260,17 @@ export const SearchPage = ({
               aria-autocomplete="list"
               aria-controls={dropdownId}
               $padding={{ left: '3px' }}
-              placeholder={t('mention a sub-doc...', {
-                description:
-                  'Placeholder of the field to search a doc to link in the editor',
-              })}
+              placeholder={
+                trigger === '@'
+                  ? t('mention someone, a group or a page...', {
+                      description:
+                        'Placeholder of the @ search for people, groups and pages',
+                    })
+                  : t('mention a sub-doc...', {
+                      description:
+                        'Placeholder of the field to search a doc to link in the editor',
+                    })
+              }
               $css={inputStyle}
               ref={inputRef}
               $display="inline-flex"
@@ -269,6 +362,53 @@ export const SearchPage = ({
                 $margin="sm"
                 $padding="none"
               >
+                {trigger === '@' && pendingGroup && (
+                  <Box
+                    $padding="sm"
+                    $gap="xs"
+                    role="alert"
+                    $css={css`
+                      border-bottom: 1px solid
+                        var(--c--contextuals--border--surface--primary);
+                    `}
+                  >
+                    <Text $size="sm">
+                      {t('Notify {{count}} people in {{name}}?', {
+                        description:
+                          'Confirmation before mentioning a large group',
+                        count: pendingGroup.memberCount,
+                        name: pendingGroup.label,
+                      })}
+                    </Text>
+                    <Box $direction="row" $gap="xs">
+                      <Button
+                        size="small"
+                        onClick={() => onSelectCandidate(pendingGroup)}
+                      >
+                        {t('Notify them', {
+                          description: 'Confirms mentioning a large group',
+                        })}
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="secondary"
+                        onClick={() => setPendingGroup(null)}
+                      >
+                        {t('Cancel', {
+                          description:
+                            'Button to dismiss a dialog without confirming',
+                        })}
+                      </Button>
+                    </Box>
+                  </Box>
+                )}
+                {trigger === '@' && currentDoc && (
+                  <MentionSearchGroup
+                    docId={currentDoc.id}
+                    search={search}
+                    onSelect={onSelectCandidate}
+                  />
+                )}
                 <DocSearchContent
                   groupName={t('Link a doc', {
                     description:

@@ -1,6 +1,13 @@
 import { createGlobalStyle } from 'styled-components';
 
 export const DocsEditorStyle = createGlobalStyle`
+  /* Collaborators: a selected block (e.g. a whole Loop table) is outlined in
+     blue only while the editor is in use; clicking elsewhere clears it */
+  .ProseMirror:not(:focus-within) .ProseMirror-selectednode,
+  .ProseMirror:not(:focus-within) .ProseMirror-selectednode > .bn-block-content {
+    outline: none !important;
+  }
+
   .bn-container {
     height: 100%;
   }

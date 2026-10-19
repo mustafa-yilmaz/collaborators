@@ -375,6 +375,36 @@ export const LoopTableView = ({
     return () => observer.disconnect();
   }, [placeControls]);
 
+  // A click anywhere else on the page lets go of the selected cell (and its
+  // blue frame), once the clicked spot has taken the focus, so that a cell
+  // being typed in is saved first. The table's own menus and panels, shown
+  // above the page, are part of the table.
+  useEffect(() => {
+    if (!active) {
+      return;
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (
+        !target ||
+        wrapperRef.current?.contains(target) ||
+        target.closest(
+          '.loop-table__popover, [role="menu"], [role="listbox"], [role="dialog"], .c__dropdown-menu, .bn-menu-dropdown',
+        )
+      ) {
+        return;
+      }
+      setTimeout(() => {
+        setActive(null);
+        setIsEditing(false);
+        setCellMenuFor(null);
+      }, 0);
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () =>
+      document.removeEventListener('pointerdown', onPointerDown, true);
+  }, [active]);
+
   const hasSnapshot = !!snapshot;
   // A link to one of this table's cells (e.g. from a notification) selects
   // that cell and scrolls it into view

@@ -403,7 +403,28 @@ Moved out of the table v1:
 
 Done: the Loop table tweaks, Loop table v2 (T9, T5, T56), the wiki extras (F8), the in-app sign-in methods page, and the joining extras (join requests approved by admins; joining by Google Workspace or Microsoft organisation) (F2).
 
-1. Sign-in providers in production, once hosting is chosen: production redirect addresses, publishing the Google app (home page and privacy policy), a real SMTP server for Keycloak (F2, see `sso-setup.md` → Production). Locally, Google, Microsoft and LinkedIn sign-in work (apps registered 2026-10-19); Apple and X are dropped.
+**Before the first public version** (asked for 2026-10-20; in this order, small ones first, then the ones that shape data and privacy from day one):
+
+1. **Group management by group creators:** the creator of a group (besides workspace admins) manages its members, and can move or copy people between the groups they created. A person can be in several groups.
+2. **Profile badge on mentions:** hovering a mentioned person (in text and in table cells) shows a small card: name, picture, and what their profile lets the viewer see.
+3. **One visibility setting for workspaces, spaces and pages:** who can find and open each one:
+   1. public to the internet (and search engines, which can be refused separately);
+   2. inside the platform: (a) all collaborators, (b) the workspace's members, (c) the space's members;
+   3. hidden: only invited people.
+   - Much of this exists (pages' link reach, a space's visibility, wiki indexing); the work is one consistent control, plus a workspace's own visibility.
+   - To decide: inviting *people outside the platform* means reopening email invitations, turned off so far.
+4. **Labels:** labels on workspaces, spaces and pages (a free, shared vocabulary, Web 2.0 style), with a **label cloud** card on the dashboard. Built before launch so content gets labels from the start; items 6–9 below build on them.
+5. **Profile pages** with visibility per piece of information (public / whole platform / chosen workspaces or spaces). A profile can't be fully hidden: at least the name stays visible to people who share a workspace or page with the person.
+
+6. Sign-in providers in production, once hosting is chosen: production redirect addresses, publishing the Google app (home page and privacy policy), a real SMTP server for Keycloak (F2, see `sso-setup.md` → Production). Locally, Google, Microsoft and LinkedIn sign-in work (apps registered 2026-10-19); Apple and X are dropped.
+
+**After the first public version** (grant calls, built on labels):
+
+7. **Call alerts:** notifications about upcoming grant programmes and calls matching the labels a collaborator follows.
+8. **Calls dashboard:** a second dashboard of upcoming and open calls, searchable by labels.
+9. **Label followers:** a third dashboard listing, per label, the collaborators who follow it and agreed "other users can discover me as a follower of this label".
+10. **Following calls:** the same following and discoverability for calls themselves.
+   - To decide first: where calls come from (e.g. the EU Funding & Tenders portal's public API, other funders' feeds, or entered by hand), and how often they're refreshed.
 
 ## 5. Open questions
 

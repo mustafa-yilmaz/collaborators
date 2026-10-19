@@ -311,6 +311,12 @@ Loop's public documentation doesn't cover the following. Before building them, w
 
 Each phase ends with something you can click through. Requirements may change after each one.
 
+**Status (2026-10-19):** phases 0, 1 and 2 (Loop table v1) are built, on branches `collaborators/phase-0`, `-phase-1` and `-phase-2`.
+
+Moved out of the table v1:
+- **Moved to v2 (not built yet):** rich formatting in Text cells (T9), "expand to margins" (T5), drawing only the visible rows of very large tables (T56).
+- **Moved to phase 3:** @mentions inside Text cells (T41).
+
 | Phase | Delivers | Features |
 |---|---|---|
 | 0 | Fork runs locally under the Collaborators name; Google and Microsoft sign-in | F2 (part) |

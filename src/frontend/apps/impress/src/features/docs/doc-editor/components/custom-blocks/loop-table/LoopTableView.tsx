@@ -375,7 +375,7 @@ export const LoopTableView = ({
     return () => observer.disconnect();
   }, [placeControls]);
 
-  // A click anywhere else on the page lets go of the selected cell (and its
+  // A click anywhere else on the screen lets go of the selected cell (and its
   // blue frame), once the clicked spot has taken the focus, so that a cell
   // being typed in is saved first. The table's own menus and panels, shown
   // above the page, are part of the table.
@@ -383,6 +383,11 @@ export const LoopTableView = ({
     if (!active) {
       return;
     }
+    const letGo = () => {
+      setActive(null);
+      setIsEditing(false);
+      setCellMenuFor(null);
+    };
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Element | null;
       if (
@@ -394,15 +399,15 @@ export const LoopTableView = ({
       ) {
         return;
       }
-      setTimeout(() => {
-        setActive(null);
-        setIsEditing(false);
-        setCellMenuFor(null);
-      }, 0);
+      setTimeout(letGo, 0);
     };
     document.addEventListener('pointerdown', onPointerDown, true);
-    return () =>
+    // A click outside the page, in another window, lets go too
+    window.addEventListener('blur', letGo);
+    return () => {
       document.removeEventListener('pointerdown', onPointerDown, true);
+      window.removeEventListener('blur', letGo);
+    };
   }, [active]);
 
   const hasSnapshot = !!snapshot;

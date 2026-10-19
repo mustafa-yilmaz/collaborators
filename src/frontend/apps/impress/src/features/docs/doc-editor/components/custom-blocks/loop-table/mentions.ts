@@ -1,20 +1,28 @@
 /**
  * Mentions inside Text cells, written in the cell's text as
- * "@[Label](user:<id>)" or "@[Label](group:<team>)", so they travel with the
- * collaborative text. They are shown as chips, and exported and searched as
- * "@Label".
+ * "@[Label](user:<id>)", "@[Label](group:<team>)" or "@[Title](page:<id>)",
+ * so they travel with the collaborative text. They are shown as chips (a
+ * page's opens it), and exported and searched as "@Label" (a page as its
+ * title).
  */
 import { fetchAPI } from '@/api';
 import { postMention } from '@/features/notifications/api';
 
 import { PersonValue } from './model';
 
-export const MENTION_TOKEN_RE = /@\[([^\]]+)\]\((user|group):([^)]+)\)/g;
+export const MENTION_TOKEN_RE = /@\[([^\]]+)\]\((user|group|page):([^)]+)\)/g;
 
-export const mentionToken = (person: PersonValue) =>
-  `@[${person.label.replace(/[[\]]/g, '')}](${person.kind}:${person.id})`;
+/** A page linked from a cell. */
+export interface PageRef {
+  kind: 'page';
+  id: string;
+  label: string;
+}
 
-export type TextPart = string | PersonValue;
+export const mentionToken = (item: PersonValue | PageRef) =>
+  `@[${item.label.replace(/[[\]]/g, '')}](${item.kind}:${item.id})`;
+
+export type TextPart = string | PersonValue | PageRef;
 
 /** Split a cell's text into plain text and mentions. */
 export const splitMentions = (text: string): TextPart[] => {
@@ -27,7 +35,7 @@ export const splitMentions = (text: string): TextPart[] => {
     }
     parts.push({
       label: match[1],
-      kind: match[2] as PersonValue['kind'],
+      kind: match[2] as PersonValue['kind'] | 'page',
       id: match[3],
     });
     last = index + match[0].length;
@@ -38,9 +46,11 @@ export const splitMentions = (text: string): TextPart[] => {
   return parts;
 };
 
-/** A cell's text with its mentions as "@Label". */
+/** A cell's text with its mentions as "@Label" (a page as its title). */
 export const plainText = (text: string) =>
-  text.replace(MENTION_TOKEN_RE, (_match, label: string) => `@${label}`);
+  text.replace(MENTION_TOKEN_RE, (_match, label: string, kind: string) =>
+    kind === 'page' ? label : `@${label}`,
+  );
 
 export const cellAnchor = (tableId: string, rowId: string, columnId: string) =>
   `cell:${tableId}:${rowId}:${columnId}`;

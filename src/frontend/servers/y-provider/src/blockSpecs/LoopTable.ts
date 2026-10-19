@@ -34,10 +34,15 @@ type Json = Record<string, unknown>;
 
 const cellText = (value: unknown, type: unknown, labels: Json): string => {
   if (value instanceof Y.Text) {
-    // Mentions written "@[Label](user:<id>)" read as "@Label"
+    // Mentions written "@[Label](user:<id>)" read as "@Label", a linked
+    // page ("@[Title](page:<id>)") as its title
     return value
       .toString()
-      .replace(/@\[([^\]]+)\]\((?:user|group):[^)]+\)/g, '@$1');
+      .replace(
+        /@\[([^\]]+)\]\((user|group|page):[^)]+\)/g,
+        (_match, label: string, kind: string) =>
+          kind === 'page' ? label : `@${label}`,
+      );
   }
   if (value instanceof Y.Map) {
     return value.size ? String(value.size) : '';

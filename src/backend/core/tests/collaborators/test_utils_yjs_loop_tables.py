@@ -32,7 +32,10 @@ def make_update():
                     "id": "r1",
                     "cells": pycrdt.Map(
                         {
-                            "c1": pycrdt.Text("Write the proposal @[Ada](user:abc)"),
+                            "c1": pycrdt.Text(
+                                "Write the proposal @[Ada](user:abc) "
+                                "see @[Budget](page:p1)"
+                            ),
                             "c2": "high",
                             "c3": [
                                 {"kind": "group", "id": "group:x", "label": "Q4 Launch"}
@@ -55,10 +58,11 @@ def test_utils_yjs_to_text_includes_loop_tables():
     for expected in [
         "Task",
         "Priority",
-        "Write the proposal @Ada",
+        "Write the proposal @Ada see Budget",
         "High",
         "Q4 Launch",
         "1200",
     ]:
         assert expected in text
     assert "user:abc" not in text
+    assert "page:p1" not in text

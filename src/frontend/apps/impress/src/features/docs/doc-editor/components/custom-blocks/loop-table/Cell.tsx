@@ -8,6 +8,7 @@ import { PersonPicker } from './PersonPicker';
 import { Popover } from './Popover';
 import { formatCell, labelOptionsOf } from './format';
 import {
+  PageRef,
   cellAnchor,
   mentionToken,
   notifyCell,
@@ -97,13 +98,14 @@ const TextEditor = ({
   const caretRef = useRef(0);
 
   // "@" at the start of a word opens the people and groups picker
-  const insertMention = (person: PersonValue) => {
+  const insertMention = (person: PersonValue | PageRef) => {
     const at = caretRef.current;
     const next = `${draft.slice(0, at)}${mentionToken(person)} ${draft.slice(at)}`;
     setDraft(next);
     setTextCell(table, rowId, column.id, next);
     setIsPicking(false);
-    if (docId) {
+    // People and groups are notified; a linked page has no one to tell
+    if (docId && person.kind !== 'page') {
       void notifyCell(
         docId,
         cellAnchor(tableId, rowId, column.id),
@@ -167,6 +169,7 @@ const TextEditor = ({
           docId={docId}
           value={[]}
           onChange={(people) => people[0] && insertMention(people[0])}
+          onPickPage={insertMention}
           onClose={() => {
             setIsPicking(false);
             requestAnimationFrame(() => ref.current?.focus());
@@ -415,6 +418,8 @@ export const Cell = ({
     content = splitMentions(value).map((part, index) =>
       typeof part === 'string' ? (
         part
+      ) : part.kind === 'page' ? (
+        <PageChip key={index} page={part} />
       ) : (
         <PersonChips key={index} value={[part]} />
       ),
@@ -430,6 +435,20 @@ export const Cell = ({
     </div>
   );
 };
+
+/** A page linked from a cell: its title, opening it on click. */
+const PageChip = ({ page }: { page: PageRef }) => (
+  <a
+    href={`/docs/${page.id}/`}
+    className="loop-table__chip"
+    style={{ background: '#E3EDF8', color: '#1F4E8C', textDecoration: 'none' }}
+    title={page.label}
+    onClick={(event) => event.stopPropagation()}
+  >
+    <Icon iconName="description" $size="14px" />
+    {page.label}
+  </a>
+);
 
 const PersonChips = ({ value }: { value: CellValue }) => {
   const people = Array.isArray(value) ? (value as PersonValue[]) : [];

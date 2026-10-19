@@ -7,7 +7,14 @@ from lasuite.oidc_login.urls import urlpatterns as oidc_urls
 from lasuite.oidc_resource_server.urls import urlpatterns as oidc_resource_server_urls
 from rest_framework.routers import DefaultRouter
 
-from core.api import dashboard, notifications, publishing, viewsets, workspaces
+from core.api import (
+    dashboard,
+    notifications,
+    people,
+    publishing,
+    viewsets,
+    workspaces,
+)
 from core.external_api import viewsets as external_api_viewsets
 
 # - Main endpoints
@@ -87,6 +94,7 @@ urlpatterns = [
                 *router.urls,
                 *oidc_urls,
                 path("groups/", workspaces.GrantableTeamsView.as_view()),
+                path("people/", people.KnownPeopleView.as_view()),
                 path("join/<str:token>/", workspaces.JoinWorkspaceView.as_view()),
                 path("dashboard/layout/", dashboard.DashboardLayoutView.as_view()),
                 path("dashboard/recent/", dashboard.DashboardRecentView.as_view()),

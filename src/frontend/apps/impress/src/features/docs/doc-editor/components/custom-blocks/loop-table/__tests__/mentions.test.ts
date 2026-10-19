@@ -34,4 +34,17 @@ describe('Loop table cell mentions', () => {
   it('points notifications at a cell', () => {
     expect(cellAnchor('t', 'r', 'c')).toBe('cell:t:r:c');
   });
+
+  it('links pages, read as their title', () => {
+    const token = mentionToken({ kind: 'page', id: 'p1', label: 'Budget' });
+
+    expect(token).toBe('@[Budget](page:p1)');
+    expect(splitMentions(`See ${token}`)).toEqual([
+      'See ',
+      { kind: 'page', id: 'p1', label: 'Budget' },
+    ]);
+    expect(plainText(`See ${token} and @[Ada](user:u1)`)).toBe(
+      'See Budget and @Ada',
+    );
+  });
 });

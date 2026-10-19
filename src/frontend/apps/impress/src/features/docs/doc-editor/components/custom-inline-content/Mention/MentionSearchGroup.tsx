@@ -8,11 +8,7 @@ import {
   QuickSearchItemContent,
   Text,
 } from '@/components';
-import { useConfig } from '@/core';
-import {
-  KEY_LIST_USER,
-  useUsers,
-} from '@/features/docs/doc-share/api/useUsers';
+import { usePeopleToMention } from '@/features/docs/doc-share/api/usePeopleToMention';
 import { useGrantableTeams } from '@/features/workspaces/api';
 
 export interface MentionCandidate {
@@ -39,16 +35,9 @@ export const MentionSearchGroup = ({
   onSelect,
 }: MentionSearchGroupProps) => {
   const { t } = useTranslation();
-  const { data: config } = useConfig();
   const [query] = useDebounce(search, 250);
-  const minLength = config?.API_USERS_SEARCH_QUERY_MIN_LENGTH ?? 3;
-  const { data: users = [] } = useUsers(
-    { query, docId: '' },
-    {
-      queryKey: [KEY_LIST_USER, { query, docId: '' }],
-      enabled: query.length >= minLength,
-    },
-  );
+  // From the first letter, or none: the people one works with first
+  const users = usePeopleToMention(query);
   const { data: teams = [] } = useGrantableTeams(docId, query, true);
 
   const candidates: MentionCandidate[] = [
@@ -59,7 +48,7 @@ export const MentionSearchGroup = ({
       detail: team.workspace.name,
       memberCount: team.member_count,
     })),
-    ...(query.length >= minLength ? users : []).slice(0, 5).map((user) => ({
+    ...users.slice(0, 6).map((user) => ({
       kind: 'user' as const,
       id: user.id,
       label: user.full_name || user.email,

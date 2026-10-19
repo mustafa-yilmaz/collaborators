@@ -292,6 +292,29 @@ export function useGroupMemberMutations(groupId: string) {
         ),
       onSuccess,
     }),
+    transfer: useMutation<
+      { count: number },
+      APIError,
+      { userIds: string[]; toGroupId: string; mode: 'move' | 'copy' }
+    >({
+      mutationFn: ({ userIds, toGroupId, mode }) =>
+        request(
+          `${url}transfer/`,
+          'Failed to move the members',
+          jsonInit('POST', {
+            user_ids: userIds,
+            to_group_id: toGroupId,
+            mode,
+          }),
+        ),
+      onSuccess: () => {
+        // Both groups changed
+        void queryClient.invalidateQueries({
+          queryKey: [KEY_LIST_GROUP_MEMBER],
+        });
+        void queryClient.invalidateQueries({ queryKey: [KEY_LIST_GROUP] });
+      },
+    }),
     remove: useMutation<void, APIError, { membershipId: string }>({
       mutationFn: ({ membershipId }) =>
         request(

@@ -1,7 +1,9 @@
 import {
   Button,
+  Checkbox,
   Input,
   Select,
+  Switch,
   VariantType,
   useToastProvider,
 } from '@gouvfr-lasuite/ui-components';
@@ -43,6 +45,7 @@ import { Group, GroupKind, Space, Workspace, WorkspaceRole } from '../types';
 
 import { ConfirmModal } from './ConfirmModal';
 import { JoiningSection } from './JoiningSection';
+import { MoveMembersModal } from './MoveMembersModal';
 import { UserPicker } from './UserPicker';
 
 /** Turn an API error into a toast. */
@@ -307,16 +310,23 @@ const MembersSection = ({ workspace }: { workspace: Workspace }) => {
 
 const GroupMembers = ({
   group,
+  otherGroups,
   workspaceMemberIds,
 }: {
   group: Group;
+  /** The workspace's other groups, to move or copy people into */
+  otherGroups: Group[];
   workspaceMemberIds: string[];
 }) => {
   const { t } = useTranslation();
   const onError = useErrorToast();
   const { data: members = [] } = useGroupMembers(group.id);
-  const { add, remove } = useGroupMemberMutations(group.id);
+  const { add, remove, update } = useGroupMemberMutations(group.id);
   const canManage = group.abilities.manage_members;
+  const targets = otherGroups.filter((other) => other.abilities.manage_members);
+  const canTransfer = canManage && targets.length > 0;
+  const [selected, setSelected] = useState<string[]>([]);
+  const [isMoving, setIsMoving] = useState(false);
 
   return (
     <Box
@@ -355,15 +365,69 @@ const GroupMembers = ({
           {t('No member yet.', { description: 'Shown for an empty group' })}
         </Text>
       )}
+      {canTransfer && members.length > 0 && (
+        <Box $direction="row" $align="center" $gap="xs">
+          <Button
+            size="small"
+            variant="secondary"
+            disabled={!selected.length}
+            icon={
+              <Icon iconName="drive_file_move" $size="18px" $color="inherit" />
+            }
+            onClick={() => setIsMoving(true)}
+          >
+            {t('Move or copy ({{count}})', {
+              description: 'Button moving chosen members to another group',
+              count: selected.length,
+            })}
+          </Button>
+          {!selected.length && (
+            <Text $size="xs" $variation="secondary">
+              {t('Tick people to move or copy them to another group.', {
+                description: 'Hint for moving members between groups',
+              })}
+            </Text>
+          )}
+        </Box>
+      )}
       {members.map((member) => (
         <Row key={member.id}>
+          {canTransfer && (
+            <Checkbox
+              aria-label={t('Choose {{name}}', {
+                description: 'Checkbox choosing a group member',
+                name: member.user.full_name || member.user.email,
+              })}
+              checked={selected.includes(member.user.id)}
+              onChange={(event) =>
+                setSelected((current) =>
+                  event.target.checked
+                    ? [...current, member.user.id]
+                    : current.filter((id) => id !== member.user.id),
+                )
+              }
+            />
+          )}
           <Box $flex={1}>
             <SearchUserRow user={member.user} />
           </Box>
-          {member.is_manager && (
-            <Text $size="xs" $variation="secondary">
-              {t('Manager', { description: 'Group manager badge' })}
-            </Text>
+          {group.abilities.manage_managers ? (
+            <Switch
+              label={t('Manager', { description: 'Group manager badge' })}
+              checked={member.is_manager}
+              onChange={() =>
+                update.mutate(
+                  { membershipId: member.id, isManager: !member.is_manager },
+                  { onError },
+                )
+              }
+            />
+          ) : (
+            member.is_manager && (
+              <Text $size="xs" $variation="secondary">
+                {t('Manager', { description: 'Group manager badge' })}
+              </Text>
+            )
           )}
           {canManage && (
             <IconButton
@@ -379,6 +443,15 @@ const GroupMembers = ({
           )}
         </Row>
       ))}
+      {isMoving && (
+        <MoveMembersModal
+          group={group}
+          targets={targets}
+          userIds={selected}
+          onDone={() => setSelected([])}
+          onClose={() => setIsMoving(false)}
+        />
+      )}
     </Box>
   );
 };
@@ -393,7 +466,8 @@ const GroupsSection = ({ workspace }: { workspace: Workspace }) => {
   const [kind, setKind] = useState<GroupKind>(GroupKind.TEAM);
   const [openGroupId, setOpenGroupId] = useState<string | null>(null);
   const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
-  const canManage = workspace.abilities.manage_groups;
+  const canCreate = workspace.abilities.create_groups;
+  const isAdmin = workspace.abilities.manage_groups;
 
   const kinds = [
     {
@@ -412,11 +486,11 @@ const GroupsSection = ({ workspace }: { workspace: Workspace }) => {
     <Section
       title={t('Groups', { description: 'Heading of a list of groups' })}
       description={t(
-        'Teams gather people working on a task; organizations gather the people of a company or institution. Groups can be given access to spaces and pages, and mentioned.',
+        'Teams gather people working on a task; organizations gather the people of a company or institution. Groups can be given access to spaces and pages, and mentioned. Any member can create a team and manage it; administrators manage every group.',
         { description: 'Explanation of workspace groups' },
       )}
     >
-      {canManage && (
+      {canCreate && (
         <Box $direction="row" $gap="sm" $align="flex-end">
           <Box $flex={1}>
             <Input
@@ -428,21 +502,23 @@ const GroupsSection = ({ workspace }: { workspace: Workspace }) => {
               onChange={(event) => setName(event.target.value)}
             />
           </Box>
-          <Box $width="190px">
-            <Select
-              fullWidth
-              label={t('Kind', { description: 'Label of the group kind' })}
-              clearable={false}
-              options={kinds}
-              value={kind}
-              onChange={(event) => setKind(event.target.value as GroupKind)}
-            />
-          </Box>
+          {isAdmin && (
+            <Box $width="190px">
+              <Select
+                fullWidth
+                label={t('Kind', { description: 'Label of the group kind' })}
+                clearable={false}
+                options={kinds}
+                value={kind}
+                onChange={(event) => setKind(event.target.value as GroupKind)}
+              />
+            </Box>
+          )}
           <Button
             disabled={!name.trim()}
             onClick={() =>
               create.mutate(
-                { name: name.trim(), kind },
+                { name: name.trim(), kind: isAdmin ? kind : GroupKind.TEAM },
                 { onError, onSuccess: () => setName('') },
               )
             }
@@ -481,10 +557,19 @@ const GroupsSection = ({ workspace }: { workspace: Workspace }) => {
                 />
                 <Text $weight="500">{group.name}</Text>
                 <Text $size="xs" $variation="secondary">
-                  {t('{{count}} members', {
-                    description: 'Number of members of a group',
-                    count: group.nb_members,
-                  })}
+                  {group.nb_members === 1
+                    ? t('1 member', {
+                        description: 'Number of members of a group',
+                      })
+                    : t('{{count}} members', {
+                        description: 'Number of members of a group',
+                        count: group.nb_members,
+                      })}
+                  {group.created_by &&
+                    ` · ${t('created by {{name}}', {
+                      description: 'Who created a group',
+                      name: group.created_by.full_name,
+                    })}`}
                 </Text>
                 <Icon
                   iconName={
@@ -508,6 +593,7 @@ const GroupsSection = ({ workspace }: { workspace: Workspace }) => {
             {openGroupId === group.id && (
               <GroupMembers
                 group={group}
+                otherGroups={groups.filter((other) => other.id !== group.id)}
                 workspaceMemberIds={accesses.map((access) => access.user.id)}
               />
             )}

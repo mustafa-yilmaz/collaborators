@@ -173,6 +173,7 @@ class GroupSerializer(serializers.ModelSerializer):
     abilities = serializers.SerializerMethodField(read_only=True)
     nb_members = serializers.IntegerField(read_only=True)
     team = serializers.CharField(read_only=True)
+    created_by = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = models.Group
@@ -184,6 +185,7 @@ class GroupSerializer(serializers.ModelSerializer):
             "description",
             "team",
             "nb_members",
+            "created_by",
             "abilities",
             "created_at",
         ]
@@ -192,9 +194,17 @@ class GroupSerializer(serializers.ModelSerializer):
             "workspace",
             "team",
             "nb_members",
+            "created_by",
             "abilities",
             "created_at",
         ]
+
+    def get_created_by(self, instance):
+        """Who created the group, if known."""
+        user = instance.created_by
+        if user is None:
+            return None
+        return {"id": str(user.id), "full_name": user.full_name or user.email}
 
     def get_abilities(self, instance) -> dict:
         """Return abilities of the logged-in user on the group."""
@@ -564,7 +574,9 @@ class WorkspaceAccessViewSet(WorkspaceNestedMixin, viewsets.ModelViewSet):
 
 class GroupViewSet(WorkspaceNestedMixin, viewsets.ModelViewSet):
     """
-    Groups of a workspace. Members can list them; administrators manage them.
+    Groups of a workspace. Members can list them and create teams;
+    administrators also create organizations. Administrators and each
+    group's creator manage it.
 
     /api/v1.0/workspaces/<resource_id>/groups/[<id>/]
     """
@@ -575,21 +587,43 @@ class GroupViewSet(WorkspaceNestedMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Groups of the workspace in the URL, with their size."""
-        return self.workspace.groups.annotate(nb_members=Count("memberships"))
+        return self.workspace.groups.annotate(
+            nb_members=Count("memberships")
+        ).select_related("created_by", "workspace")
 
     def perform_create(self, serializer):
-        """Administrators create groups."""
-        self.check_workspace_admin()
-        serializer.save(workspace=self.workspace)
+        """Members create teams; administrators also organizations."""
+        if serializer.validated_data.get(
+            "kind"
+        ) == choices.GroupKindChoices.ORGANIZATION and not is_workspace_admin(
+            self.workspace, self.request.user
+        ):
+            raise drf.exceptions.ValidationError(
+                {"kind": _("Only administrators create organizations.")}
+            )
+        serializer.save(workspace=self.workspace, created_by=self.request.user)
+
+    def _check_owner(self, group):
+        if not group.get_abilities(self.request.user)["update"]:
+            raise drf.exceptions.PermissionDenied()
 
     def perform_update(self, serializer):
-        """Administrators rename groups."""
-        self.check_workspace_admin()
+        """Administrators and the creator rename the group."""
+        self._check_owner(serializer.instance)
+        if (
+            serializer.validated_data.get("kind")
+            == choices.GroupKindChoices.ORGANIZATION
+            and serializer.instance.kind != choices.GroupKindChoices.ORGANIZATION
+            and not is_workspace_admin(self.workspace, self.request.user)
+        ):
+            raise drf.exceptions.ValidationError(
+                {"kind": _("Only administrators create organizations.")}
+            )
         serializer.save()
 
     def perform_destroy(self, instance):
-        """Administrators delete groups, and the accesses granted to them."""
-        self.check_workspace_admin()
+        """Administrators and the creator delete it, and the accesses granted to it."""
+        self._check_owner(instance)
         with transaction.atomic():
             models.DocumentAccess.objects.filter(team=instance.team).delete()
             instance.delete()
@@ -640,10 +674,42 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
         serializer.save(group=self.group)
 
     def perform_update(self, serializer):
-        """Only workspace administrators appoint group managers."""
-        if not is_workspace_admin(self.group.workspace, self.request.user):
+        """Workspace administrators and the group's creator appoint managers."""
+        if not self.group.get_abilities(self.request.user)["manage_managers"]:
             raise drf.exceptions.PermissionDenied()
         serializer.save()
+
+    @drf.decorators.action(detail=False, methods=["post"], url_path="transfer")
+    def transfer(self, request, *args, **kwargs):
+        """
+        POST {user_ids, to_group_id, mode: "move" | "copy"}: put members of
+        this group in another group of the workspace, and, to move them, take
+        them out of this one. Needs the right to manage the members of both
+        (administrators, the groups' creator or managers).
+        """
+        self._check_manager()
+        target = models.Group.objects.filter(
+            id=request.data.get("to_group_id"), workspace=self.group.workspace
+        ).first()
+        if target is None or target == self.group:
+            raise drf.exceptions.ValidationError(
+                {"to_group_id": _("Choose another group of this workspace.")}
+            )
+        if not target.get_abilities(request.user)["manage_members"]:
+            raise drf.exceptions.PermissionDenied()
+        mode = request.data.get("mode", "move")
+        if mode not in ("move", "copy"):
+            raise drf.exceptions.ValidationError({"mode": _("Move or copy.")})
+        user_ids = [str(user_id) for user_id in request.data.get("user_ids") or []]
+        memberships = list(self.group.memberships.filter(user_id__in=user_ids))
+        with transaction.atomic():
+            for membership in memberships:
+                models.GroupMembership.objects.get_or_create(
+                    group=target, user_id=membership.user_id
+                )
+                if mode == "move":
+                    membership.delete()
+        return drf.response.Response({"count": len(memberships)})
 
     def perform_destroy(self, instance):
         """Managers remove members; members can leave."""

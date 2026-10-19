@@ -2639,6 +2639,7 @@ class Workspace(BaseModel):
         role = self.get_role(user)
         is_privileged = role in WORKSPACE_PRIVILEGED_ROLES
         return {
+            "create_groups": role is not None,
             "destroy": role == WorkspaceRoleChoices.OWNER,
             "manage_accesses": is_privileged,
             "manage_groups": is_privileged,
@@ -2683,8 +2684,10 @@ class WorkspaceAccess(BaseModel):
 
 class Group(BaseModel):
     """
-    A set of collaborators managed by the administrators of a workspace: a team
-    working on a task, or the people of an organization.
+    A set of collaborators of a workspace: a team working on a task, or the
+    people of an organization. Any member can create a team; administrators
+    also create organizations. The creator manages their groups, like the
+    administrators.
     """
 
     workspace = models.ForeignKey(
@@ -2695,6 +2698,13 @@ class Group(BaseModel):
         max_length=20, choices=GroupKindChoices.choices, default=GroupKindChoices.TEAM
     )
     description = models.TextField(_("description"), blank=True, default="")
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="created_groups",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = "collaborators_group"
@@ -2720,18 +2730,27 @@ class Group(BaseModel):
         return make_team(TEAM_GROUP, self.id)
 
     def get_abilities(self, user):
-        """Workspace administrators manage groups; group managers manage members."""
-        is_admin = self.workspace.get_role(user) in WORKSPACE_PRIVILEGED_ROLES
+        """
+        Workspace administrators and the group's creator manage the group;
+        group managers manage its members.
+        """
+        role = self.workspace.get_role(user)
+        is_owner = role in WORKSPACE_PRIVILEGED_ROLES or (
+            role is not None
+            and self.created_by_id is not None
+            and self.created_by_id == user.id
+        )
         is_manager = (
             user.is_authenticated
             and self.memberships.filter(user=user, is_manager=True).exists()
         )
         return {
-            "destroy": is_admin,
-            "manage_members": is_admin or is_manager,
-            "partial_update": is_admin,
-            "retrieve": self.workspace.get_role(user) is not None,
-            "update": is_admin,
+            "destroy": is_owner,
+            "manage_managers": is_owner,
+            "manage_members": is_owner or is_manager,
+            "partial_update": is_owner,
+            "retrieve": role is not None,
+            "update": is_owner,
         }
 
 

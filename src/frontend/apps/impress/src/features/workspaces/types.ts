@@ -39,6 +39,8 @@ export interface Workspace {
   abilities: {
     destroy: boolean;
     manage_accesses: boolean;
+    /** Any member creates teams; administrators also organizations */
+    create_groups: boolean;
     manage_groups: boolean;
     partial_update: boolean;
     retrieve: boolean;
@@ -69,8 +71,12 @@ export interface Group {
   description: string;
   team: string;
   nb_members: number;
+  /** Who created it; they manage it like the workspace's administrators */
+  created_by: { id: string; full_name: string } | null;
   abilities: {
     destroy: boolean;
+    /** Appoint the group's managers */
+    manage_managers: boolean;
     manage_members: boolean;
     partial_update: boolean;
     retrieve: boolean;

@@ -202,19 +202,24 @@ def test_api_workspace_accesses_hidden_from_outsiders():
 
 
 def test_api_groups_admins_manage_groups():
-    """Administrators create groups; members only list them."""
+    """Administrators create organizations; members create teams only."""
     owner, member = factories.UserFactory.create_batch(2)
     workspace = make_workspace(owner, members=[member])
     url = f"/api/v1.0/workspaces/{workspace.id}/groups/"
 
-    assert client_for(member).post(url, {"name": "Q4"}).status_code == 403
+    assert (
+        client_for(member).post(url, {"name": "Q4", "kind": "organization"}).status_code
+        == 400
+    )
     response = client_for(owner).post(url, {"name": "Acme", "kind": "organization"})
     assert response.status_code == 201
     assert response.json()["team"].startswith("group:")
+    assert client_for(member).post(url, {"name": "Q4"}).status_code == 201
 
     listed = client_for(member).get(url).json()
     assert [(g["name"], g["kind"], g["nb_members"]) for g in listed] == [
-        ("Acme", "organization", 0)
+        ("Acme", "organization", 0),
+        ("Q4", "team", 0),
     ]
 
 

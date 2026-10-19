@@ -24,17 +24,15 @@ export const FooterActions = ({ withLogin }: FooterActionsProps) => {
   const { user } = useAuth();
   const { data: config } = useConfig();
   const singleLanguage = config?.theme_customization?.single_language;
-  const accountUrl = config?.COLLABORATORS_ACCOUNT_URL;
-  // Collaborators: where to add or remove the providers one signs in with
+  // Collaborators: where to add or remove the providers one signs in with,
+  // a page of the app (it links to the sign-in server's own when needed)
   const signInMethods =
-    user && accountUrl ? (
+    user && config?.COLLABORATORS_SIGNIN_PROVIDERS?.length ? (
       <Button
         size="small"
         variant="tertiary"
         color="neutral"
-        href={accountUrl}
-        target="_blank"
-        rel="noopener noreferrer"
+        href="/account/sign-in-methods/"
         icon={<Icon iconName="key" $size="18px" $color="inherit" />}
       >
         {t('Sign-in methods', {

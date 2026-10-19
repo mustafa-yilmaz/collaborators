@@ -93,12 +93,17 @@ In development the page also has **Use a test account**. It opens Keycloak's own
   - Choose **Add to existing account**, then confirm by signing in with the first method, or by the emailed link.
   - From then on, both providers sign in to the same account.
   - Google and LinkedIn emails are trusted as verified. Microsoft emails aren't (work accounts' are set by each organisation): the first time, Keycloak sends a link to confirm the address before entering.
-  - **Sign-in methods** in the account menu (bottom left) opens Keycloak's *Linked accounts* page: add or remove providers there. The page URL is `COLLABORATORS_ACCOUNT_URL`.
+- **Sign-in methods** in the account menu (bottom left) lists the providers, connected or not:
+  - **Connect** asks to sign in with that provider once, then links it.
+  - **Disconnect** removes one, never the last.
+  - The backend reads and removes the links through Keycloak's admin API, with its own client `collaborators-backend`. `make sso-providers` creates it (with the dev secret already in `env.d/development/common`, `COLLABORATORS_KEYCLOAK_*`). In production, give that client its own secret.
+  - Linking is allowed up to an hour after signing in (`max_auth_age` of Keycloak's `idp_link` action); later, Keycloak asks to sign in again first.
 - **Joining workspaces:** in a workspace's settings, admins can create a **join link**. They can also open the workspace to an **email domain**, optionally adding joiners to an organisation group:
   - Whoever signs in with a verified email at that domain joins as a member.
   - An admin can only add the domain of their own verified email.
   - Public domains (Gmail, Outlook…) are refused.
 - **Email invitations** to documents are turned off (`COLLABORATORS_EMAIL_INVITATIONS`). Documents are shared with people who already have an account.
+- **No `acr_values` in development:** the upstream default (`eidas1`) makes Keycloak refuse linking with "strong authentication required", so `OIDC_AUTH_REQUEST_EXTRA_PARAMS` is empty.
 - **Restricting Microsoft to one organisation:** put that tenant's id in `MICROSOFT_TENANT_ID` instead of `common`.
 
 ## Production
@@ -110,4 +115,5 @@ Once the production addresses exist, typically Keycloak at `https://auth.collabo
   - Fill in the Branding page with the home page and privacy policy (on the verified domain).
   - Then **Publish app**, so every Google account can sign in. Basic sign-in (name and email) needs no review.
 - **Keycloak's emails:** set a real SMTP server instead of the mail catcher.
+- **Backend client:** set a new secret for `collaborators-backend` and put it in `COLLABORATORS_KEYCLOAK_CLIENT_SECRET`.
 - **Secrets:** keep them in the production secret store, never in the repository.

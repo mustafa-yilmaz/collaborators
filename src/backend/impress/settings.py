@@ -771,14 +771,15 @@ class Base(Configuration):
         {}, environ_name="OIDC_AUTH_REQUEST_EXTRA_PARAMS", environ_prefix=None
     )
     # Collaborators: "kc_idp_hint" sends the sign-in straight to the provider
-    # chosen on the sign-in page (Google, Microsoft, ...), past Keycloak's page
+    # chosen on the sign-in page (Google, Microsoft, ...), past Keycloak's page;
+    # "kc_action=idp_link:<provider>" connects one more provider to the account
     OIDC_AUTH_REQUEST_FORWARDED_PARAMS = values.ListValue(
-        ["login_hint", "kc_idp_hint"],
+        ["login_hint", "kc_idp_hint", "kc_action"],
         environ_name="OIDC_AUTH_REQUEST_FORWARDED_PARAMS",
         environ_prefix=None,
     )
     # The providers offered on the sign-in page, by their Keycloak alias, in
-    # order: google, microsoft, apple, linkedin, x
+    # order: google, microsoft, linkedin
     COLLABORATORS_SIGNIN_PROVIDERS = values.ListValue(
         [], environ_name="COLLABORATORS_SIGNIN_PROVIDERS", environ_prefix=None
     )
@@ -790,6 +791,22 @@ class Base(Configuration):
     # Where collaborators manage their sign-in methods (linked accounts)
     COLLABORATORS_ACCOUNT_URL = values.Value(
         "", environ_name="COLLABORATORS_ACCOUNT_URL", environ_prefix=None
+    )
+    # The in-app "Sign-in methods" page reads and removes the providers of an
+    # account through Keycloak's admin API, with a service client of its own
+    # (realm-management roles view-users and manage-users). Empty: the page
+    # links to Keycloak's own (COLLABORATORS_ACCOUNT_URL).
+    COLLABORATORS_KEYCLOAK_URL = values.Value(
+        "", environ_name="COLLABORATORS_KEYCLOAK_URL", environ_prefix=None
+    )
+    COLLABORATORS_KEYCLOAK_REALM = values.Value(
+        "", environ_name="COLLABORATORS_KEYCLOAK_REALM", environ_prefix=None
+    )
+    COLLABORATORS_KEYCLOAK_CLIENT_ID = values.Value(
+        "", environ_name="COLLABORATORS_KEYCLOAK_CLIENT_ID", environ_prefix=None
+    )
+    COLLABORATORS_KEYCLOAK_CLIENT_SECRET = values.Value(
+        "", environ_name="COLLABORATORS_KEYCLOAK_CLIENT_SECRET", environ_prefix=None
     )
     # Collaborators join by signing in: no account is created from an email
     # invitation to a document

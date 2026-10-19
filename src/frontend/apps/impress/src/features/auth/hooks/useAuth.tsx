@@ -5,7 +5,8 @@ import { useAnalytics } from '@/libs';
 
 import { useAuthQuery } from '../api';
 
-const regexpUrlsAuth = [/\/docs\/$/g, /\/docs$/g, /^\/$/g];
+// Pages that need a sign-in (Collaborators: the account pages too)
+const regexpUrlsAuth = [/\/docs\/$/g, /\/docs$/g, /^\/$/g, /^\/account\//g];
 
 export const useAuth = () => {
   const { data: user, isFetched, isLoading, isSuccess } = useAuthQuery();

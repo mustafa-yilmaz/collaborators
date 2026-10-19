@@ -63,6 +63,36 @@ for username in impress user-e2e-chromium user-e2e-webkit user-e2e-firefox; do
 done
 echo "Marked the dev and test accounts' emails as verified"
 
+# The in-app "Sign-in methods" page: connecting a provider goes through
+# Keycloak's "idp_link" action, which the app starts at sign-in
+if ! kc get authentication/required-actions/idp_link -r "${REALM}" >/dev/null 2>&1; then
+  kc create authentication/register-required-action -r "${REALM}" \
+    -s providerId=idp_link -s name="Link identity provider"
+fi
+kc update authentication/required-actions/idp_link -r "${REALM}" -s enabled=true
+# Connecting needs a sign-in from the last hour (Keycloak's default is five
+# minutes); past that, Keycloak asks to sign in again with a method one has
+kc update authentication/required-actions/idp_link/config -r "${REALM}" \
+  -b '{"config":{"max_auth_age":"3600"}}'
+echo "Let the app connect another provider to an account (idp_link)"
+
+# ...and the backend lists and removes a user's providers through a service
+# client of its own (dev secret, also in env.d/development/common)
+BACKEND_CLIENT="collaborators-backend"
+if [[ -z "$(kc get clients -r "${REALM}" -q clientId="${BACKEND_CLIENT}" --fields id --format csv --noquotes)" ]]; then
+  kc create clients -r "${REALM}" \
+    -s clientId="${BACKEND_CLIENT}" \
+    -s enabled=true \
+    -s publicClient=false \
+    -s serviceAccountsEnabled=true \
+    -s standardFlowEnabled=false \
+    -s directAccessGrantsEnabled=false \
+    -s secret=collaborators-backend-dev-secret
+fi
+kc add-roles -r "${REALM}" --uusername "service-account-${BACKEND_CLIENT}" \
+  --cclientid realm-management --rolename view-users --rolename manage-users
+echo "Let the backend read and remove the providers of an account (${BACKEND_CLIENT})"
+
 if [[ ! -f "${ENV_FILE}" ]]; then
   echo "No ${ENV_FILE} yet: copy ${ENV_FILE}.dist and fill in the client ids and secrets to add the providers." >&2
   exit 0

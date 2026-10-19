@@ -12,6 +12,7 @@ from core.api import (
     notifications,
     people,
     publishing,
+    signin_methods,
     viewsets,
     workspaces,
 )
@@ -91,6 +92,15 @@ urlpatterns = [
         f"api/{settings.API_VERSION}/",
         include(
             [
+                # before the router, whose users/<id>/ would take them
+                path(
+                    "users/me/sign-in-methods/",
+                    signin_methods.SignInMethodsView.as_view(),
+                ),
+                path(
+                    "users/me/sign-in-methods/<slug:provider>/",
+                    signin_methods.SignInMethodView.as_view(),
+                ),
                 *router.urls,
                 *oidc_urls,
                 path("groups/", workspaces.GrantableTeamsView.as_view()),

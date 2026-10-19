@@ -59,6 +59,23 @@ export const gotoProviderLogin = (provider?: string) => {
   );
 };
 
+/**
+ * Connect one more identity provider (its alias, e.g. "linkedin") to the
+ * signed-in account: the identity server asks to sign in with it once
+ * ("idp_link" action), then comes back to `next` (by default, here).
+ */
+export const gotoConnectProvider = (
+  provider: string,
+  next = window.location.href,
+) => {
+  window.location.assign(
+    `${LOGIN_URL}?${new URLSearchParams({
+      kc_action: `idp_link:${provider}`,
+      next,
+    }).toString()}`,
+  );
+};
+
 export const gotoSilentLogin = () => {
   // Already tried silent login, dont try again
   if (!hasTrySilent()) {

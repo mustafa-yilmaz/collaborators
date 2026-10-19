@@ -54,7 +54,10 @@ LOGIN_REDIRECT_URL_FAILURE=http://localhost:3000
 LOGOUT_REDIRECT_URL=http://localhost:3000
 
 OIDC_REDIRECT_ALLOWED_HOSTS="localhost:8083,localhost:3000"
-OIDC_AUTH_REQUEST_EXTRA_PARAMS={"acr_values": "eidas1"}
+# Collaborators: no "acr_values" (Docs asks "eidas1" for the French state's
+# ProConnect). Keycloak would take it as a demand for a stronger sign-in, and
+# ask for one before connecting another provider (Sign-in methods page).
+OIDC_AUTH_REQUEST_EXTRA_PARAMS={}
 
 # Resource Server Backend
 OIDC_OP_URL=http://localhost:8083/realms/docs
@@ -114,3 +117,9 @@ COLLABORATORS_WIKI_BASE_DOMAIN=localhost
 COLLABORATORS_APP_HOSTS=localhost,127.0.0.1
 COLLABORATORS_WIKI_DOMAIN_TARGET=wikis.localhost
 COLLABORATORS_ACCOUNT_URL=http://localhost:8083/realms/impress/account/account-security/linked-accounts
+# The in-app Sign-in methods page talks to Keycloak's admin API through this
+# service client (created by bin/setup-sso-providers.sh; dev secret only)
+COLLABORATORS_KEYCLOAK_URL=http://nginx:8083
+COLLABORATORS_KEYCLOAK_REALM=impress
+COLLABORATORS_KEYCLOAK_CLIENT_ID=collaborators-backend
+COLLABORATORS_KEYCLOAK_CLIENT_SECRET=collaborators-backend-dev-secret

@@ -96,16 +96,20 @@ See **section 3**: it is the largest single piece of work.
 - **Sign-in page** `/signin`: one *Continue with …* button per provider set up (Google, Microsoft, LinkedIn), each going straight to it; a test-account button in development only.
 - **Providers:** the setup script adds Google, Microsoft and LinkedIn (all Keycloak's own providers). Each needs its app made once at the provider by the owner of Collaborators (see `sso-setup.md`).
 - **Unverified emails** (Microsoft) are confirmed by a link the first time (Keycloak's *Verify email*); Google and LinkedIn emails are trusted.
-- **Account linking:** Keycloak's first sign-in flow links a second provider giving the same email, after confirmation (sign in with the first method, or a link by email). Google and LinkedIn emails count as verified; Microsoft's don't. *Sign-in methods* in the account menu opens Keycloak's linked-accounts page.
+- **Account linking:** Keycloak's first sign-in flow links a second provider giving the same email, after confirmation (sign in with the first method, or a link by email). Google and LinkedIn emails count as verified; Microsoft's don't.
 - **Joining a workspace:**
   - **Join link**, made, renewed or turned off by admins; `/join/<link>` asks to sign in, then joins.
   - **Email domain:** a verified email at the domain joins on sign-in, also into an organisation group if one is chosen. An admin can only add the domain of their own verified email; public domains (Gmail, Outlook…) are refused.
 - **Email invitations** to documents are turned off; documents are shared with people who have an account.
+- **Sign-in methods page** `/account/sign-in-methods/` (account menu): each provider with its logo, connected (with the account) or not.
+  - **Connect** starts Keycloak's `idp_link` action: the person signs in with that provider once (at most an hour after signing in, else they sign in again first).
+  - **Disconnect** removes the link, never the last way in.
+  - The backend reads and removes links through Keycloak's admin API, with its own service client `collaborators-backend` (`COLLABORATORS_KEYCLOAK_*`).
+- The sign-in buttons and the methods page show each provider's official logo.
 
 **Still to do:**
 - Joining by Google Workspace domain (`hd`) or Microsoft tenant (`tid`) claims.
 - Join requests approved by admins.
-- A sign-in-methods page inside Collaborators, rather than Keycloak's.
 
 ### F3 — Lean, customisable dashboard
 
@@ -388,8 +392,7 @@ Moved out of the table v1:
 Done: the Loop table tweaks, Loop table v2 (T9, T5, T56), and the wiki extras (F8).
 
 1. Sign-in providers in production, once hosting is chosen: production redirect addresses, publishing the Google app (home page and privacy policy), a real SMTP server for Keycloak (F2, see `sso-setup.md` → Production). Locally, Google, Microsoft and LinkedIn sign-in work (apps registered 2026-10-19); Apple and X are dropped.
-2. A sign-in-methods page inside Collaborators, instead of Keycloak's (F2).
-3. Joining: join requests approved by admins; joining by Google Workspace domain or Microsoft organisation (F2).
+2. Joining: join requests approved by admins; joining by Google Workspace domain or Microsoft organisation (F2).
 
 ## 5. Open questions
 

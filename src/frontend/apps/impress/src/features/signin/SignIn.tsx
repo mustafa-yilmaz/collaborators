@@ -11,6 +11,8 @@ import { getAuthUrl, gotoProviderLogin, useAuth } from '@/features/auth';
 import { Footer } from '@/features/footer';
 import { useResponsiveStore } from '@/stores';
 
+import { ProviderLogo } from './ProviderLogo';
+
 /** How each identity provider is named on its button. */
 export const PROVIDER_NAMES: Record<string, string> = {
   google: 'Google',
@@ -80,6 +82,7 @@ export const SignIn = () => {
               key={provider}
               fullWidth
               variant="secondary"
+              icon={<ProviderLogo provider={provider} />}
               onClick={() => gotoProviderLogin(provider)}
               data-testid={`signin-${provider}`}
             >

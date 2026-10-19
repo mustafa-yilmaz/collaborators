@@ -9,7 +9,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { DropdownMenu, DropdownMenuItem } from '@gouvfr-lasuite/ui-components';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
@@ -51,9 +51,11 @@ interface DashboardCardProps {
   count: number;
   onChange: (changes: Partial<CardLayout>) => void;
   onMove: (to: number) => void;
+  /** The edge dragged to change the width: the outer one of its column */
+  edge: 'left' | 'right';
 }
 
-/** A card's handle and menu show on hover (or keyboard focus) only. */
+/** A card's handle, menu and resize edge show on hover (or focus) only. */
 const cardCss = css`
   .--collaborators--card-tool {
     visibility: hidden;
@@ -62,6 +64,63 @@ const cardCss = css`
   &:focus-within .--collaborators--card-tool,
   .--collaborators--card-tool[aria-expanded='true'] {
     visibility: visible;
+  }
+  .--collaborators--card-resize {
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    width: 12px;
+    &.is-right {
+      right: -6px;
+    }
+    &.is-left {
+      left: -6px;
+    }
+    cursor: col-resize;
+    touch-action: none;
+    z-index: 2;
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 5px;
+      width: 2px;
+      border-radius: 2px;
+      background: var(--c--globals--colors--brand-400);
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    &:hover::after,
+    &:focus-visible::after {
+      opacity: 1;
+    }
+  }
+  .--collaborators--card-resize-preview {
+    position: absolute;
+    top: -1px;
+    bottom: -1px;
+    border: 2px dashed var(--c--globals--colors--brand-400);
+    border-radius: var(--c--globals--spacings--xs);
+    background: color-mix(
+      in srgb,
+      var(--c--globals--colors--brand-400) 6%,
+      transparent
+    );
+    pointer-events: none;
+    z-index: 3;
+    transition: width 0.12s ease-out;
+    span {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--c--globals--colors--brand-500, #4f46e5);
+      background: var(--c--contextuals--background--surface--primary, #fff);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
   }
 `;
 
@@ -89,10 +148,28 @@ const DashboardCard = ({
   count,
   onChange,
   onMove,
+  edge,
 }: DashboardCardProps) => {
   const { t } = useTranslation();
   const { isMobile } = useResponsiveStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const sectionRef = useRef<HTMLElement | null>(null);
+  // While its edge is dragged: where the card would end, and whether it
+  // would then go across both columns
+  const [resize, setResize] = useState<{
+    /** The card, and the area of both columns, when the drag began */
+    box: DOMRect;
+    area: DOMRect;
+    column: number;
+    pointer: number;
+  } | null>(null);
+  // Past halfway between one and two columns, it goes across both
+  const resizeWide = resize
+    ? (edge === 'right'
+        ? resize.pointer - resize.box.left
+        : resize.box.right - resize.pointer) >
+      (resize.column + resize.area.width) / 2
+    : !!card.wide;
   const definition = CARDS.find((item) => item.id === card.id);
   const drag = useDraggable({ id: card.id });
   const drop = useDroppable({ id: card.id });
@@ -114,20 +191,6 @@ const DashboardCard = ({
       isDisabled: index === count - 1,
       callback: () => onMove(index + 1),
     },
-    {
-      label: card.wide
-        ? t('Show in one column', { description: 'Dashboard card action' })
-        : t('Show across both columns', {
-            description: 'Dashboard card action',
-          }),
-      icon: (
-        <Icon
-          iconName={card.wide ? 'view_column' : 'width_full'}
-          $size="18px"
-        />
-      ),
-      callback: () => onChange({ wide: !card.wide }),
-    },
     { type: 'separator' },
     {
       label: t('Hide this card', { description: 'Dashboard card action' }),
@@ -139,7 +202,10 @@ const DashboardCard = ({
   return (
     <Box
       as="section"
-      ref={drop.setNodeRef}
+      ref={(node: HTMLElement | null) => {
+        drop.setNodeRef(node);
+        sectionRef.current = node;
+      }}
       aria-label={title}
       $css={css`
         border: 1px solid var(--c--contextuals--border--surface--primary);
@@ -225,6 +291,96 @@ const DashboardCard = ({
           <Body wide={!!card.wide && !isMobile} />
         </Box>
       )}
+      {!isMobile && (
+        // The right edge: drag it to make the card one or two columns wide,
+        // like the border of a table cell
+        <div
+          className={`--collaborators--card-resize is-${edge}`}
+          role="separator"
+          aria-orientation="vertical"
+          aria-valuenow={card.wide ? 2 : 1}
+          aria-valuemin={1}
+          aria-valuemax={2}
+          aria-label={t('Width of the {{name}} card', {
+            description: 'Accessible name of a dashboard card resize edge',
+            name: title,
+          })}
+          title={t('Drag to make it one or two columns wide', {
+            description: 'Tooltip of a dashboard card resize edge',
+          })}
+          tabIndex={0}
+          onKeyDown={(event) => {
+            // Outward makes it wide, inward narrow
+            const outward = edge === 'right' ? 'ArrowRight' : 'ArrowLeft';
+            const inward = edge === 'right' ? 'ArrowLeft' : 'ArrowRight';
+            if (event.key === outward && !card.wide) {
+              event.preventDefault();
+              onChange({ wide: true });
+            }
+            if (event.key === inward && card.wide) {
+              event.preventDefault();
+              onChange({ wide: false });
+            }
+          }}
+          onPointerDown={(event) => {
+            const section = sectionRef.current;
+            const columns = section?.closest(
+              '.--collaborators--dashboard-columns',
+            );
+            if (!section || !columns) {
+              return;
+            }
+            event.preventDefault();
+            event.currentTarget.setPointerCapture(event.pointerId);
+            const area = columns.getBoundingClientRect();
+            const gap = 16;
+            setResize({
+              box: section.getBoundingClientRect(),
+              area,
+              column: (area.width - gap) / 2,
+              pointer: event.clientX,
+            });
+          }}
+          onPointerMove={(event) => {
+            if (resize) {
+              setResize({ ...resize, pointer: event.clientX });
+            }
+          }}
+          onPointerUp={() => {
+            if (resize && resizeWide !== !!card.wide) {
+              onChange({ wide: resizeWide });
+            }
+            setResize(null);
+          }}
+          onPointerCancel={() => setResize(null)}
+        />
+      )}
+      {resize && (
+        // Where the card would end, snapped to one or two columns
+        <div
+          className="--collaborators--card-resize-preview"
+          style={
+            resizeWide
+              ? {
+                  left: resize.area.left - resize.box.left - 1,
+                  width: resize.area.width,
+                }
+              : {
+                  left:
+                    edge === 'right'
+                      ? -1
+                      : resize.box.width - resize.column - 1,
+                  width: resize.column,
+                }
+          }
+        >
+          <span>
+            {resizeWide
+              ? t('Two columns', { description: 'Dashboard card width' })
+              : t('One column', { description: 'Dashboard card width' })}
+          </span>
+        </div>
+      )}
     </Box>
   );
 };
@@ -232,7 +388,8 @@ const DashboardCard = ({
 /**
  * The landing screen after sign-in: lean by default (search and three
  * cards). Each collaborator collapses, hides, shows and reorders cards right
- * there: drag a card by its handle, or use its "⋯" menu.
+ * there: drag a card by its handle, or use its "⋯" menu; drag its right edge
+ * to make it one or two columns wide.
  */
 export const Dashboard = () => {
   const { t } = useTranslation();
@@ -283,7 +440,10 @@ export const Dashboard = () => {
   };
 
   const firstName = user?.short_name || user?.full_name?.split(' ')[0];
-  const renderCard = ({ card, index }: { card: CardLayout; index: number }) => (
+  const renderCard = (
+    { card, index }: { card: CardLayout; index: number },
+    edge: 'left' | 'right' = 'right',
+  ) => (
     <DashboardCard
       key={card.id}
       card={card}
@@ -291,6 +451,7 @@ export const Dashboard = () => {
       count={visible.length}
       onChange={(changes) => change(card.id, changes)}
       onMove={(to) => move(card.id, to)}
+      edge={edge}
     />
   );
 
@@ -318,6 +479,58 @@ export const Dashboard = () => {
               })
             : t('Welcome back', { description: 'Dashboard greeting' })}
         </Text>
+        {/* Hidden cards come back from here; the layout can be reset too */}
+        <DropdownMenu
+          options={[
+            ...hidden.flatMap((card) => {
+              const definition = CARDS.find((item) => item.id === card.id);
+              return definition
+                ? [
+                    {
+                      label: definition.title(t),
+                      icon: <Icon iconName={definition.icon} $size="18px" />,
+                      callback: () => change(card.id, { hidden: false }),
+                    },
+                  ]
+                : [];
+            }),
+            ...(hidden.length ? [{ type: 'separator' as const }] : []),
+            {
+              label: t('Reset the dashboard', {
+                description: 'Dashboard action putting the default cards back',
+              }),
+              icon: <Icon iconName="restart_alt" $size="18px" />,
+              callback: () => update(DEFAULT_LAYOUT),
+            },
+          ]}
+          isOpen={isAddMenuOpen}
+          onOpenChange={setIsAddMenuOpen}
+        >
+          <BoxButton
+            onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
+            aria-expanded={isAddMenuOpen}
+            $direction="row"
+            $align="center"
+            $gap="3xs"
+            $padding={{ horizontal: 'xs', vertical: '3xs' }}
+            $css={css`
+              border-radius: var(--c--globals--spacings--3xs);
+              color: var(
+                --c--contextuals--content--semantic--neutral--secondary
+              );
+              &:hover {
+                background: var(
+                  --c--contextuals--background--semantic--contextual--primary
+                );
+              }
+            `}
+          >
+            <Icon iconName="add" $size="18px" $color="inherit" />
+            <Text $size="sm" $color="inherit">
+              {t('Add a card', { description: 'Dashboard hidden cards menu' })}
+            </Text>
+          </BoxButton>
+        </DropdownMenu>
       </Box>
 
       <BoxButton
@@ -377,7 +590,10 @@ export const Dashboard = () => {
                         (_item, position) =>
                           isMobile || position % 2 === column,
                       )
-                      .map(renderCard)}
+                      .map((item) =>
+                        // A card on the right widens from its left edge
+                        renderCard(item, column === 1 ? 'left' : 'right'),
+                      )}
                   </Box>
                 ))}
               </Box>
@@ -385,61 +601,6 @@ export const Dashboard = () => {
           )}
         </Box>
       </DndContext>
-
-      {/* Hidden cards come back from here; the layout can be reset too */}
-      <Box $direction="row">
-        <DropdownMenu
-          options={[
-            ...hidden.flatMap((card) => {
-              const definition = CARDS.find((item) => item.id === card.id);
-              return definition
-                ? [
-                    {
-                      label: definition.title(t),
-                      icon: <Icon iconName={definition.icon} $size="18px" />,
-                      callback: () => change(card.id, { hidden: false }),
-                    },
-                  ]
-                : [];
-            }),
-            ...(hidden.length ? [{ type: 'separator' as const }] : []),
-            {
-              label: t('Reset the dashboard', {
-                description: 'Dashboard action putting the default cards back',
-              }),
-              icon: <Icon iconName="restart_alt" $size="18px" />,
-              callback: () => update(DEFAULT_LAYOUT),
-            },
-          ]}
-          isOpen={isAddMenuOpen}
-          onOpenChange={setIsAddMenuOpen}
-        >
-          <BoxButton
-            onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
-            aria-expanded={isAddMenuOpen}
-            $direction="row"
-            $align="center"
-            $gap="3xs"
-            $padding={{ horizontal: 'xs', vertical: '3xs' }}
-            $css={css`
-              border-radius: var(--c--globals--spacings--3xs);
-              color: var(
-                --c--contextuals--content--semantic--neutral--secondary
-              );
-              &:hover {
-                background: var(
-                  --c--contextuals--background--semantic--contextual--primary
-                );
-              }
-            `}
-          >
-            <Icon iconName="add" $size="18px" $color="inherit" />
-            <Text $size="sm" $color="inherit">
-              {t('Add a card', { description: 'Dashboard hidden cards menu' })}
-            </Text>
-          </BoxButton>
-        </DropdownMenu>
-      </Box>
     </Box>
   );
 };

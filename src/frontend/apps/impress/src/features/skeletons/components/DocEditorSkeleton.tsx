@@ -1,6 +1,6 @@
 import { css, keyframes } from 'styled-components';
 
-import { Box, BoxType } from '@/components';
+import { Box, BoxType, SCREEN_MAX_WIDTH } from '@/components';
 import { useResponsiveStore } from '@/stores';
 
 import { SkeletonLine } from './SkeletionUI';
@@ -11,7 +11,7 @@ export const DocEditorSkeleton = () => {
       <SkeletonEditorFloatingBar />
       {/* Main Editor Container */}
       <Box
-        $maxWidth="868px"
+        $maxWidth={SCREEN_MAX_WIDTH}
         $width="100%"
         $height="100%"
         className="--docs--doc-editor-skeleton"

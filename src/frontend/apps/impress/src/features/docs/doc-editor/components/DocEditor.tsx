@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { PropsWithChildren, useEffect, useState } from 'react';
 import { css } from 'styled-components';
 
-import { Box } from '@/components';
+import { Box, SCREEN_MAX_WIDTH } from '@/components';
 import { DocHeader } from '@/docs/doc-header/';
 import {
   Doc,
@@ -40,7 +40,7 @@ export const DocEditorContainer = ({
   return (
     <>
       <Box
-        $maxWidth="868px"
+        $maxWidth={SCREEN_MAX_WIDTH}
         $width="100%"
         $flex="1"
         className={DOCS_EDITOR_CLASS}

@@ -10,7 +10,14 @@ import { PropsWithChildren, ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
-import { Box, BoxButton, Icon, StyledLink, Text } from '@/components';
+import {
+  Box,
+  BoxButton,
+  Icon,
+  SCREEN_MAX_WIDTH,
+  StyledLink,
+  Text,
+} from '@/components';
 import { useAuth } from '@/features/auth';
 import { Role } from '@/features/docs/doc-management';
 import { SearchUserRow } from '@/features/docs/doc-share/components/SearchUserRow';
@@ -788,7 +795,7 @@ export const WorkspaceSettings = ({ workspaceId }: { workspaceId: string }) => {
   return (
     <Box
       $width="100%"
-      $maxWidth="880px"
+      $maxWidth={SCREEN_MAX_WIDTH}
       $margin={{ horizontal: 'auto' }}
       $padding={{ horizontal: 'md', vertical: 'lg' }}
       $gap="md"

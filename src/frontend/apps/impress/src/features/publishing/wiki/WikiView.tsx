@@ -5,7 +5,15 @@ import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 import { useDebounce } from 'use-debounce';
 
-import { Box, BoxButton, Icon, Loading, StyledLink, Text } from '@/components';
+import {
+  Box,
+  BoxButton,
+  Icon,
+  Loading,
+  SCREEN_MAX_WIDTH,
+  StyledLink,
+  Text,
+} from '@/components';
 import { Title } from '@/components/Title';
 import { useConfig } from '@/core';
 import { BlockNoteReader } from '@/docs/doc-editor/components/BlockNoteEditor';
@@ -647,7 +655,7 @@ export const WikiView = ({
             id="wiki-content"
           >
             <Box
-              $maxWidth="868px"
+              $maxWidth={SCREEN_MAX_WIDTH}
               $width="100%"
               $margin={{ horizontal: 'auto' }}
               $padding={{ vertical: 'md' }}

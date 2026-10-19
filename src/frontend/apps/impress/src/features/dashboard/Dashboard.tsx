@@ -17,7 +17,7 @@ import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
-import { Box, BoxButton, Icon, Text } from '@/components';
+import { Box, BoxButton, Icon, SCREEN_MAX_WIDTH, Text } from '@/components';
 import { AccountHints } from '@/features/account/AccountHints';
 import { useAuth } from '@/features/auth';
 import { useResponsiveStore } from '@/stores';
@@ -515,7 +515,7 @@ export const Dashboard = () => {
   return (
     <Box
       $width="100%"
-      $maxWidth="1100px"
+      $maxWidth={SCREEN_MAX_WIDTH}
       $margin={{ horizontal: 'auto' }}
       $padding={{ horizontal: isMobile ? 'sm' : 'lg', vertical: 'lg' }}
       $gap="md"

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { InView } from 'react-intersection-observer';
 import { css } from 'styled-components';
 
-import { Box, Card, Loading, Text } from '@/components';
+import { Box, Card, Loading, SCREEN_MAX_WIDTH, Text } from '@/components';
 import { FadeComponent } from '@/components/Effect';
 import { useImport } from '@/docs/doc-management/hooks/useImport';
 import { DocDefaultFilter, DocsOrdering } from '@/docs/doc-management/types';
@@ -87,7 +87,7 @@ export const DocsGrid = ({
         vertical: isSmallMobile ? '0' : 'sm',
       }}
       $width="100%"
-      $maxWidth="960px"
+      $maxWidth={SCREEN_MAX_WIDTH}
       $minHeight="0"
       $align="center"
     >

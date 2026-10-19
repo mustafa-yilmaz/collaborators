@@ -1,3 +1,4 @@
+import { forgetLeftPanel } from '@/features/left-panel/stores/useLeftPanelStore';
 import { safeLocalStorage, safeSessionStorage } from '@/utils/storages';
 
 import {
@@ -49,6 +50,8 @@ export const gotoLogin = (withRedirect = true) => {
  * page.
  */
 export const gotoProviderLogin = (provider?: string) => {
+  // Each sign-in opens on the dashboard with the side panel hidden
+  forgetLeftPanel();
   window.location.assign(
     provider
       ? `${LOGIN_URL}?${new URLSearchParams({ kc_idp_hint: provider }).toString()}`

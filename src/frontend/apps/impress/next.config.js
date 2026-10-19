@@ -28,6 +28,11 @@ const nextConfig = {
     // whole tsconfig project (test files included) and chokes on vitest globals.
     // Keep the compiler-API checker, which skips test files. Safe on TypeScript 6.
     useTypeScriptCli: false,
+    // Turbopack's on-disk cache for `next dev` made the dev server abort
+    // ("Restore of All for task … failed": an internal Turbopack panic), and
+    // the server then stays down. Without it, a restart recompiles a little
+    // more, and the server stays up.
+    turbopackFileSystemCacheForDev: false,
   },
   generateBuildId: () => buildId,
   env: {

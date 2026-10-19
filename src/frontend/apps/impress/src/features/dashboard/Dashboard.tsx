@@ -1,8 +1,12 @@
 import {
+  CollisionDetection,
   DndContext,
   DragEndEvent,
   KeyboardSensor,
   PointerSensor,
+  UniqueIdentifier,
+  closestCenter,
+  pointerWithin,
   useDraggable,
   useDroppable,
   useSensor,
@@ -123,6 +127,38 @@ const cardCss = css`
     }
   }
 `;
+
+/**
+ * The card a dragged one is dropped on: the one under the pointer, else
+ * (in the space around the cards) the nearest other one.
+ */
+const cardNearPointer: CollisionDetection = (args) => {
+  const under = pointerWithin(args);
+  if (under.length) {
+    return under;
+  }
+  const others = args.droppableContainers.filter(
+    (container) => container.id !== args.active.id,
+  );
+  const pointer = args.pointerCoordinates;
+  if (!pointer) {
+    return closestCenter({ ...args, droppableContainers: others });
+  }
+  let nearest: { id: UniqueIdentifier; distance: number } | null = null;
+  for (const container of others) {
+    const rect = args.droppableRects.get(container.id);
+    if (!rect) {
+      continue;
+    }
+    const dx = Math.max(rect.left - pointer.x, 0, pointer.x - rect.right);
+    const dy = Math.max(rect.top - pointer.y, 0, pointer.y - rect.bottom);
+    const distance = Math.hypot(dx, dy);
+    if (!nearest || distance < nearest.distance) {
+      nearest = { id: container.id, distance };
+    }
+  }
+  return nearest ? [{ id: nearest.id }] : [];
+};
 
 /**
  * The cards shown, cut into runs of cards side by side and wide cards; each
@@ -415,28 +451,48 @@ export const Dashboard = () => {
       layout.map((card) => (card.id === id ? { ...card, ...changes } : card)),
     );
   /** Move a visible card to another place among the visible cards. */
-  const move = (id: string, toVisibleIndex: number) => {
-    const target = visible[toVisibleIndex];
-    if (!target || target.id === id) {
-      return;
-    }
+  /** Put a card just before or just after another one. */
+  const place = (id: string, targetId: string, side: 'before' | 'after') => {
     const moving = layout.find((card) => card.id === id);
-    if (!moving) {
+    if (!moving || id === targetId) {
       return;
     }
     const rest = layout.filter((card) => card.id !== id);
-    const at = rest.findIndex((card) => card.id === target.id);
-    const from = visible.findIndex((card) => card.id === id);
-    rest.splice(from < toVisibleIndex ? at + 1 : at, 0, moving);
+    const at = rest.findIndex((card) => card.id === targetId);
+    rest.splice(side === 'after' ? at + 1 : at, 0, moving);
     update(rest);
   };
-  const onDragEnd = (event: DragEndEvent) => {
-    if (event.over && event.over.id !== event.active.id) {
-      move(
-        String(event.active.id),
-        visible.findIndex((card) => card.id === event.over?.id),
-      );
+  /** Move a card to another place among the shown cards (its menu). */
+  const move = (id: string, toVisibleIndex: number) => {
+    const target = visible[toVisibleIndex];
+    const from = visible.findIndex((card) => card.id === id);
+    if (target) {
+      place(id, target.id, from < toVisibleIndex ? 'after' : 'before');
     }
+  };
+  const onDragEnd = (event: DragEndEvent) => {
+    const { active, over, delta, activatorEvent } = event;
+    if (!over || over.id === active.id) {
+      return;
+    }
+    const from = visible.findIndex((card) => card.id === active.id);
+    const to = visible.findIndex((card) => card.id === over.id);
+    // Dropped on a card: it takes that card's place
+    let side: 'before' | 'after' = from < to ? 'after' : 'before';
+    // Dropped in the space around (e.g. below the last card): it goes on the
+    // side of the nearest card where it was dropped
+    const start = activatorEvent as Partial<PointerEvent> | null;
+    if (start?.clientX !== undefined && start.clientY !== undefined) {
+      const x = start.clientX + delta.x;
+      const y = start.clientY + delta.y;
+      const { top, bottom, left, right } = over.rect;
+      if (y > bottom || (y >= top && x > right)) {
+        side = 'after';
+      } else if (y < top || (y <= bottom && x < left)) {
+        side = 'before';
+      }
+    }
+    place(String(active.id), String(over.id), side);
   };
 
   const firstName = user?.short_name || user?.full_name?.split(' ')[0];
@@ -568,7 +624,11 @@ export const Dashboard = () => {
         </Text>
       </BoxButton>
 
-      <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={cardNearPointer}
+        onDragEnd={onDragEnd}
+      >
         <Box $gap="sm" className="--collaborators--dashboard-columns">
           {/* Runs of cards in two columns that stack independently (cards
               in turn left and right), a wide card across both; one column

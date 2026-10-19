@@ -65,15 +65,20 @@ export const CornerHeader = ({
       layout.header,
       (patch) => setLayoutFormat(table, 'header', patch),
       {
-        background: t('Header row colour', {
-          description: 'Loop table corner menu',
-        }),
-        alignment: t('Header row alignment', {
-          description: 'Loop table corner menu',
-        }),
-        clear: t('Clear header row formatting', {
-          description: 'Loop table corner menu',
-        }),
+        labels: {
+          background: t('Header row colour', {
+            description: 'Loop table corner menu',
+          }),
+          horizontal: t('Header row horizontal alignment', {
+            description: 'Loop table corner menu',
+          }),
+          vertical: t('Header row vertical alignment', {
+            description: 'Loop table corner menu',
+          }),
+          clear: t('Clear header row formatting', {
+            description: 'Loop table corner menu',
+          }),
+        },
       },
     ),
     { type: 'separator' },
@@ -82,15 +87,22 @@ export const CornerHeader = ({
       layout.numbers,
       (patch) => setLayoutFormat(table, 'numbers', patch),
       {
-        background: t('Numbers column colour', {
-          description: 'Loop table corner menu',
-        }),
-        alignment: t('Numbers column alignment', {
-          description: 'Loop table corner menu',
-        }),
-        clear: t('Clear numbers column formatting', {
-          description: 'Loop table corner menu',
-        }),
+        // Row numbers sit in the middle of their cell unless chosen otherwise
+        shown: { align: 'center', valign: 'middle' },
+        labels: {
+          background: t('Numbers column colour', {
+            description: 'Loop table corner menu',
+          }),
+          horizontal: t('Numbers column horizontal alignment', {
+            description: 'Loop table corner menu',
+          }),
+          vertical: t('Numbers column vertical alignment', {
+            description: 'Loop table corner menu',
+          }),
+          clear: t('Clear numbers column formatting', {
+            description: 'Loop table corner menu',
+          }),
+        },
       },
     ),
   ];

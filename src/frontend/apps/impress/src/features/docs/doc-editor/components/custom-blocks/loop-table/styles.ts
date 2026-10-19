@@ -73,9 +73,14 @@ export const LoopTableStyle = createGlobalStyle`
     border-right: 1px solid var(--lt-border);
     border-bottom: 1px solid var(--lt-border);
     padding: 0;
-    vertical-align: top;
     position: relative;
     background: var(--c--contextuals--background--surface--primary, white);
+  }
+  /* Text sits in the middle of its cell unless chosen otherwise; "table"
+     outweighs the editor's own rule for tables (top) */
+  table.loop-table__grid th,
+  table.loop-table__grid td {
+    vertical-align: middle;
   }
   .loop-table__grid th:last-child,
   .loop-table__grid td:last-child {
@@ -138,6 +143,12 @@ export const LoopTableStyle = createGlobalStyle`
   }
   .loop-table__header:hover {
     background: var(--lt-hover);
+  }
+  .loop-table__header.is-readonly {
+    cursor: default;
+  }
+  .loop-table__header.is-readonly:hover {
+    background: none;
   }
   .loop-table__header-name {
     flex: 1;

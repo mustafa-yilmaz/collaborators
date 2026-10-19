@@ -28,7 +28,7 @@ import { CornerHeader } from './CornerHeader';
 import { SummaryRow } from './SummaryRow';
 import { Toolbar } from './Toolbar';
 import { formatCell, labelOptionsOf } from './format';
-import { formatMenuItems, formatStyle } from './formatMenu';
+import { columnDefaults, formatMenuItems, formatStyle } from './formatMenu';
 import {
   CellFormat,
   Column,
@@ -727,9 +727,18 @@ export const LoopTableView = ({
                               (patch) =>
                                 setCellFormat(table, row.id, column.id, patch),
                               {
-                                clear: t('Clear cell formatting', {
-                                  description: 'Loop table cell menu',
-                                }),
+                                // What the cell inherits from its row and
+                                // column, then the defaults
+                                shown: mergeFormats(
+                                  row.format,
+                                  column.format,
+                                  columnDefaults(column),
+                                ),
+                                labels: {
+                                  clear: t('Clear cell formatting', {
+                                    description: 'Loop table cell menu',
+                                  }),
+                                },
                               },
                             )}
                             isOpen={cellMenuFor === `${row.id}:${column.id}`}

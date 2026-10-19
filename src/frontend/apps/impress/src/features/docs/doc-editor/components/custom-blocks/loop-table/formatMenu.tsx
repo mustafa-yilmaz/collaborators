@@ -6,9 +6,12 @@ import { Icon } from '@/components';
 import {
   CLEAR_FORMAT,
   CellFormat,
+  Column,
+  ColumnType,
   FormatPatch,
   HorizontalAlign,
   VerticalAlign,
+  mergeFormats,
 } from './model';
 
 /** Light colours that keep text readable, as in Loop. */
@@ -91,72 +94,102 @@ const vertical = (t: T): [VerticalAlign, string, string][] => [
   ],
 ];
 
+/** Where text sits when nothing is chosen: left, and in the middle. */
+export const DEFAULT_ALIGNMENT: CellFormat = {
+  align: 'left',
+  valign: 'middle',
+};
+
 /**
  * Menu entries changing the background colour and the text alignment of a
- * column, a row, a cell, the header row or the numbers column.
+ * column, a row, a cell, the header row or the numbers column. Horizontal and
+ * vertical alignments are chosen apart, so both hold at once.
+ *
+ * `format` is the element's own format; `shown` is what applies to it, its
+ * own format completed by what it inherits and the defaults, which the menu
+ * ticks.
  */
 export const formatMenuItems = (
   t: T,
   format: CellFormat | undefined,
   onChange: (patch: FormatPatch) => void,
-  labels?: { background?: string; alignment?: string; clear?: string },
-): DropdownMenuItem[] => [
-  {
-    label:
-      labels?.background ??
-      t('Background colour', { description: 'Loop table format menu' }),
-    icon: <Icon iconName="format_color_fill" $size="18px" />,
-    children: [
-      {
-        label: t('None', { description: 'No background colour' }),
-        icon: <Swatch />,
-        isChecked: !format?.background,
-        callback: () => onChange({ background: null }),
-      },
-      ...BACKGROUND_COLOURS.map((colour) => ({
-        label: colourName(t, colour.name),
-        icon: <Swatch colour={colour.value} />,
-        isChecked: format?.background === colour.value,
-        callback: () => onChange({ background: colour.value }),
-      })),
-    ],
+  options?: {
+    shown?: CellFormat;
+    labels?: {
+      background?: string;
+      horizontal?: string;
+      vertical?: string;
+      clear?: string;
+    };
   },
-  {
-    label:
-      labels?.alignment ??
-      t('Text alignment', { description: 'Loop table format menu' }),
-    icon: <Icon iconName="format_align_left" $size="18px" />,
-    children: [
-      ...horizontal(t).map(([value, icon, label]) => ({
+): DropdownMenuItem[] => {
+  const shown = mergeFormats(format, options?.shown, DEFAULT_ALIGNMENT);
+  const labels = options?.labels;
+  return [
+    {
+      label:
+        labels?.background ??
+        t('Background colour', { description: 'Loop table format menu' }),
+      icon: <Icon iconName="format_color_fill" $size="18px" />,
+      children: [
+        {
+          label: t('None', { description: 'No background colour' }),
+          icon: <Swatch />,
+          isChecked: !shown.background,
+          callback: () => onChange({ background: null }),
+        },
+        ...BACKGROUND_COLOURS.map((colour) => ({
+          label: colourName(t, colour.name),
+          icon: <Swatch colour={colour.value} />,
+          isChecked: shown.background === colour.value,
+          callback: () => onChange({ background: colour.value }),
+        })),
+      ],
+    },
+    {
+      label:
+        labels?.horizontal ??
+        t('Horizontal alignment', { description: 'Loop table format menu' }),
+      icon: <Icon iconName="format_align_left" $size="18px" />,
+      children: horizontal(t).map(([value, icon, label]) => ({
         label,
         icon: <Icon iconName={icon} $size="18px" />,
-        isChecked: format?.align === value,
-        callback: () =>
-          onChange({ align: format?.align === value ? null : value }),
+        isChecked: shown.align === value,
+        callback: () => onChange({ align: value }),
       })),
-      { type: 'separator' as const },
-      ...vertical(t).map(([value, icon, label]) => ({
+    },
+    {
+      label:
+        labels?.vertical ??
+        t('Vertical alignment', { description: 'Loop table format menu' }),
+      icon: <Icon iconName="vertical_align_center" $size="18px" />,
+      children: vertical(t).map(([value, icon, label]) => ({
         label,
         icon: <Icon iconName={icon} $size="18px" />,
-        isChecked: format?.valign === value,
-        callback: () =>
-          onChange({ valign: format?.valign === value ? null : value }),
+        isChecked: shown.valign === value,
+        callback: () => onChange({ valign: value }),
       })),
-    ],
-  },
-  {
-    label:
-      labels?.clear ??
-      t('Clear formatting', { description: 'Loop table format menu' }),
-    icon: <Icon iconName="format_clear" $size="18px" />,
-    isHidden: !format?.background && !format?.align && !format?.valign,
-    callback: () => onChange(CLEAR_FORMAT),
-  },
-];
+    },
+    {
+      label:
+        labels?.clear ??
+        t('Clear formatting', { description: 'Loop table format menu' }),
+      icon: <Icon iconName="format_clear" $size="18px" />,
+      isHidden: !format?.background && !format?.align && !format?.valign,
+      callback: () => onChange(CLEAR_FORMAT),
+    },
+  ];
+};
 
 /** Inline styles of a cell (td or th) for a format. */
 export const formatStyle = (format: CellFormat): React.CSSProperties => ({
   background: format.background,
   textAlign: format.align,
   verticalAlign: format.valign,
+});
+
+/** A column's alignment when nothing is chosen: numbers sit on the right. */
+export const columnDefaults = (column: Column): CellFormat => ({
+  ...DEFAULT_ALIGNMENT,
+  ...(column.type === ColumnType.NUMBER ? { align: 'right' } : {}),
 });

@@ -12,7 +12,7 @@ import {
   columnTypeLabel,
   numberFormatLabel,
 } from './columnTypes';
-import { formatMenuItems, formatStyle } from './formatMenu';
+import { columnDefaults, formatMenuItems, formatStyle } from './formatMenu';
 import {
   Column,
   ColumnType,
@@ -133,8 +133,11 @@ export const ColumnHeader = ({
             { type: 'separator' as const },
             // The whole column: its cells, and its header unless the header
             // row has its own format
-            ...formatMenuItems(t, column.format, (patch) =>
-              setColumnFormat(table, column.id, patch),
+            ...formatMenuItems(
+              t,
+              column.format,
+              (patch) => setColumnFormat(table, column.id, patch),
+              { shown: columnDefaults(column) },
             ),
           ]
         : []),
@@ -210,6 +213,23 @@ export const ColumnHeader = ({
   const width = liveWidth ?? column.width;
   // The header row's own format comes first, then the column's
   const look = mergeFormats(snapshot.layout.header, column.format);
+  const headerContent = (
+    <>
+      <Icon iconName={columnTypeIcon[column.type]} $size="16px" />
+      <span
+        className="loop-table__header-name"
+        style={{ textAlign: look.align }}
+      >
+        {column.name}
+      </span>
+      {sortedHere && (
+        <Icon
+          iconName={sortedHere === 'asc' ? 'arrow_upward' : 'arrow_downward'}
+          $size="14px"
+        />
+      )}
+    </>
+  );
 
   return (
     <th
@@ -250,6 +270,9 @@ export const ColumnHeader = ({
             }
           }}
         />
+      ) : !isEditable ? (
+        // Reading: the column's name only, nothing opens a menu
+        <div className="loop-table__header is-readonly">{headerContent}</div>
       ) : (
         <DropdownMenu
           options={options}
@@ -274,36 +297,20 @@ export const ColumnHeader = ({
               type: columnTypeLabel(t, column.type),
             })}
           >
-            {isEditable && (
-              <span
-                className="loop-table__handle"
-                aria-label={t('Move the {{name}} column', {
-                  description: 'Accessible name of a column drag handle',
-                  name: column.name,
-                })}
-                {...drag.listeners}
-                {...drag.attributes}
-                ref={drag.setNodeRef}
-                onClick={(event) => event.stopPropagation()}
-              >
-                <Icon iconName="drag_indicator" $size="16px" />
-              </span>
-            )}
-            <Icon iconName={columnTypeIcon[column.type]} $size="16px" />
             <span
-              className="loop-table__header-name"
-              style={{ textAlign: look.align }}
+              className="loop-table__handle"
+              aria-label={t('Move the {{name}} column', {
+                description: 'Accessible name of a column drag handle',
+                name: column.name,
+              })}
+              {...drag.listeners}
+              {...drag.attributes}
+              ref={drag.setNodeRef}
+              onClick={(event) => event.stopPropagation()}
             >
-              {column.name}
+              <Icon iconName="drag_indicator" $size="16px" />
             </span>
-            {sortedHere && (
-              <Icon
-                iconName={
-                  sortedHere === 'asc' ? 'arrow_upward' : 'arrow_downward'
-                }
-                $size="14px"
-              />
-            )}
+            {headerContent}
             <Icon iconName="expand_more" $size="16px" />
           </div>
         </DropdownMenu>

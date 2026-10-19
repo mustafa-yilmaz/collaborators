@@ -15,6 +15,12 @@ export interface Workspace {
   slug: string;
   description: string;
   publishing_policy: PublishingPolicy;
+  /** Verified emails at these domains join when signing in (admins only) */
+  join_domains: string[];
+  /** The organisation group those people join too */
+  join_group: string | null;
+  /** The secret of the join link, for admins; none when it is off */
+  join_token: string | null;
   user_role: WorkspaceRole | null;
   abilities: {
     destroy: boolean;

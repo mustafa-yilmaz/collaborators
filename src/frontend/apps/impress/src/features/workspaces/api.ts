@@ -94,6 +94,8 @@ export function useUpdateWorkspace() {
       name?: string;
       description?: string;
       publishing_policy?: PublishingPolicy;
+      join_domains?: string[];
+      join_group?: string | null;
     }
   >({
     mutationFn: ({ id, ...data }) =>
@@ -460,4 +462,69 @@ export function useWorkspaceGrantMutations(spaceId: string) {
       onSuccess,
     }),
   };
+}
+
+// -- Joining without an invitation
+
+export interface JoinPreview {
+  id: string;
+  name: string;
+  description: string;
+  member_count: number;
+  is_member: boolean;
+}
+
+export const KEY_JOIN_PREVIEW = 'join-preview';
+
+/** Where a join link leads; anyone holding the link may see it. */
+export function useJoinPreview(token: string) {
+  return useQuery<JoinPreview, APIError>({
+    queryKey: [KEY_JOIN_PREVIEW, token],
+    queryFn: () =>
+      request<JoinPreview>(`join/${token}/`, 'This join link does not work'),
+    enabled: !!token,
+    retry: false,
+  });
+}
+
+export function useJoinWorkspace(token: string) {
+  const queryClient = useQueryClient();
+  return useMutation<JoinPreview, APIError, void>({
+    mutationFn: () =>
+      request<JoinPreview>(
+        `join/${token}/`,
+        'Failed to join the workspace',
+        jsonInit('POST'),
+      ),
+    onSuccess: (data) => {
+      queryClient.setQueryData([KEY_JOIN_PREVIEW, token], data);
+      void queryClient.invalidateQueries({ queryKey: [KEY_LIST_WORKSPACE] });
+    },
+  });
+}
+
+/** Turn a workspace's join link on (or give it a new secret), or off. */
+export function useJoinLinkMutations(workspaceId: string) {
+  const queryClient = useQueryClient();
+  const onSuccess = () =>
+    void queryClient.invalidateQueries({ queryKey: [KEY_LIST_WORKSPACE] });
+  const renew = useMutation<{ join_token: string }, APIError, void>({
+    mutationFn: () =>
+      request(
+        `workspaces/${workspaceId}/join-link/`,
+        'Failed to create the join link',
+        jsonInit('POST'),
+      ),
+    onSuccess,
+  });
+  const remove = useMutation<{ join_token: null }, APIError, void>({
+    mutationFn: () =>
+      request(
+        `workspaces/${workspaceId}/join-link/`,
+        'Failed to turn the join link off',
+        jsonInit('DELETE'),
+      ),
+    onSuccess,
+  });
+  return { renew, remove };
 }

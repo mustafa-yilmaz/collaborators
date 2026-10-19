@@ -35,6 +35,7 @@ import { useWorkspaceStore } from '../stores/useWorkspaceStore';
 import { Group, GroupKind, Space, Workspace, WorkspaceRole } from '../types';
 
 import { ConfirmModal } from './ConfirmModal';
+import { JoiningSection } from './JoiningSection';
 import { UserPicker } from './UserPicker';
 
 /** Turn an API error into a toast. */
@@ -803,6 +804,7 @@ export const WorkspaceSettings = ({ workspaceId }: { workspaceId: string }) => {
       <MembersSection workspace={workspace} />
       <GroupsSection workspace={workspace} />
       <SpacesSection workspace={workspace} />
+      <JoiningSection workspace={workspace} Section={Section} />
       <PublishingSection workspace={workspace} Section={Section} />
     </Box>
   );

@@ -57,7 +57,7 @@ Space and page access can be granted to a collaborator or to a **group**.
 | # | Feature | Docs today |
 |---|---|---|
 | F1 | Loop-style table, with @mentions and groups in cells | ❌ only simple BlockNote tables |
-| F2 | Self sign-up through SSO only | 🟡 OIDC login exists; providers, self sign-up rules and account linking to build |
+| F2 | Self sign-up through SSO only | ✅ phase 6 (see what is left below) |
 | F3 | Lean dashboard each collaborator can customise | ✅ phase 4 |
 | F4 | @mentions with notifications in pages, comments and table cells | 🟡 user mentions + email exist; inbox, groups, table cells to build |
 | F5 | Groups managed by workspace admins (Teams, Organizations) | 🟡 a `team` access hook exists but is empty |
@@ -92,6 +92,21 @@ See **section 3**: it is the largest single piece of work.
 - Turn off invitation-based sign-up in the UI and API; keep the model only until migration cleanup.
 - Account linking and "Sign-in methods" settings.
 - Store provider, tenant id and domain claims on the collaborator for F5 auto-join.
+
+**Built in phase 6:**
+- **Sign-in page** `/signin`: one *Continue with …* button per provider set up (Google, Microsoft, Apple, LinkedIn, X), each going straight to it; a test-account button in development only.
+- **Providers:** the setup script adds LinkedIn and X (Keycloak's own providers) and Apple (with the Keycloak Apple extension). Each needs its app made at the provider (see `sso-setup.md`).
+- **Account linking:** Keycloak's first sign-in flow links a second provider giving the same email, after confirmation (sign in with the first method, or a link by email). Google, Apple and LinkedIn emails count as verified; Microsoft work accounts and X don't. *Sign-in methods* in the account menu opens Keycloak's linked-accounts page.
+- **Joining a workspace:**
+  - **Join link**, made, renewed or turned off by admins; `/join/<link>` asks to sign in, then joins.
+  - **Email domain:** a verified email at the domain joins on sign-in, also into an organisation group if one is chosen. An admin can only add the domain of their own verified email; public domains (Gmail, Outlook…) are refused.
+- **Email invitations** to documents are turned off; documents are shared with people who have an account.
+
+**Still to do:**
+- Asking X users for an email and verifying it ourselves (Keycloak asks for one, unverified).
+- Joining by Google Workspace domain (`hd`) or Microsoft tenant (`tid`) claims.
+- Join requests approved by admins.
+- A sign-in-methods page inside Collaborators, rather than Keycloak's.
 
 ### F3 — Lean, customisable dashboard
 
@@ -335,7 +350,7 @@ Loop's public documentation doesn't cover the following. Before building them, w
 
 Each phase ends with something you can click through. Requirements may change after each one.
 
-**Status (2026-10-19):** phases 0, 1, 2 (Loop table v1), 3 (mentions and notifications), 4 (the dashboard) and 5 (public pages and wikis) are built, on branches `collaborators/phase-0` to `-phase-5`. Email digests (F4) are not built yet: emails are sent right away, or not at all.
+**Status (2026-10-19):** phases 0, 1, 2 (Loop table v1), 3 (mentions and notifications), 4 (the dashboard), 5 (public pages and wikis) and 6 (sign-in providers, account linking, joining) are built, on branches `collaborators/phase-0` to `-phase-6`. Email digests (F4) are not built yet: emails are sent right away, or not at all.
 
 Moved out of the table v1:
 - **Moved to v2 (not built yet):** rich formatting in Text cells (T9), "expand to margins" (T5), drawing only the visible rows of very large tables (T56).

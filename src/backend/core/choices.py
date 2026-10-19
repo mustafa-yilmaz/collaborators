@@ -162,6 +162,21 @@ class GroupKindChoices(TextChoices):
     ORGANIZATION = "organization", _("Organization")
 
 
+class JoinViaChoices(TextChoices):
+    """How someone came to ask to join a workspace."""
+
+    LINK = "link", _("Join link")
+    DOMAIN = "domain", _("Email domain")
+    ORGANIZATION = "organization", _("Organisation")
+
+
+class JoinRequestStatusChoices(TextChoices):
+    """Whether the admins answered a request to join."""
+
+    PENDING = "pending", _("Pending")
+    DECLINED = "declined", _("Declined")
+
+
 class SpaceVisibilityChoices(TextChoices):
     """Who can read a space when it is created."""
 

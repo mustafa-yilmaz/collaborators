@@ -2,13 +2,20 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { APIError, errorCauses, fetchAPI } from '@/api';
 
-export type NotificationKind = 'mention' | 'comment_mention' | 'assignment';
+export type NotificationKind =
+  | 'mention'
+  | 'comment_mention'
+  | 'assignment'
+  | 'join_request'
+  | 'join_approved';
 
 export interface Notification {
   id: string;
   kind: NotificationKind;
   actor: { id: string; full_name: string } | null;
-  document: { id: string; title: string | null };
+  /** Where: a document, or a workspace for joining */
+  document: { id: string; title: string | null } | null;
+  workspace: { id: string; name: string } | null;
   anchor_id: string;
   thread_id: string | null;
   team: string;

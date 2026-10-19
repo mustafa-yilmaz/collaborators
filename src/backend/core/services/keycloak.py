@@ -6,7 +6,14 @@ The backend talks to Keycloak's admin API with a service client of its own
 (COLLABORATORS_KEYCLOAK_*), which may read users and remove their links to
 providers. Connecting a provider is not done here: the app starts Keycloak's
 "idp_link" action at sign-in, where the person proves the account is theirs.
+
+At sign-in, the backend also reads the ID tokens Keycloak stored from the
+providers (with the person's own access token), for the organisation they
+vouch for: a Google Workspace domain ("hd"), a Microsoft tenant ("tid").
 """
+
+import base64
+import json
 
 from django.conf import settings
 from django.core.cache import cache
@@ -107,3 +114,36 @@ def sign_in_methods(user_id):
 def unlink(user_id, provider):
     """Remove a provider from the account."""
     _request("delete", f"/users/{user_id}/federated-identity/{provider}")
+
+
+def provider_id_token_claims(access_token, provider):
+    """
+    The claims of the ID token Keycloak stored at the person's last sign-in
+    with this provider, or None (not linked, no token stored yet).
+
+    The token came to Keycloak straight from the provider's token endpoint,
+    and to us straight from Keycloak: its signature isn't checked again.
+    """
+    try:
+        response = requests.get(
+            f"{_realm_url()}/broker/{provider}/token",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=TIMEOUT,
+        )
+    except requests.RequestException as err:
+        raise KeycloakError(f"Keycloak unreachable for the {provider} token") from err
+    if response.status_code in (400, 403, 404):
+        # not linked to this provider, or nothing stored
+        return None
+    if not response.ok:
+        raise KeycloakError(
+            f"Keycloak answered {response.status_code} for the {provider} token"
+        )
+    try:
+        id_token = response.json().get("id_token")
+        if not id_token:
+            return None
+        payload = id_token.split(".")[1]
+        return json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+    except ValueError, IndexError, AttributeError:
+        return None

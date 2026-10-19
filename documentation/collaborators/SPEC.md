@@ -100,6 +100,8 @@ See **section 3**: it is the largest single piece of work.
 - **Joining a workspace:**
   - **Join link**, made, renewed or turned off by admins; `/join/<link>` asks to sign in, then joins.
   - **Email domain:** a verified email at the domain joins on sign-in, also into an organisation group if one is chosen. An admin can only add the domain of their own verified email; public domains (Gmail, Outlook…) are refused.
+  - **Organisation:** whoever signs in with an account of a chosen Google Workspace (`hd`) or Microsoft work tenant (`tid`) joins. An admin can only add an organisation they signed in with themselves; personal Google and Microsoft accounts have none. The backend reads these claims at sign-in from the provider ID tokens Keycloak stores (`storeToken`), with the person's own access token (`broker` `read-token` role).
+  - **Admins approve who joins** (a workspace setting): joining by link, domain or organisation then sends the admins a request, in their inbox and the workspace settings. Approving lets the person in and notifies them; a declined request is kept, so it isn't made again.
 - **Email invitations** to documents are turned off; documents are shared with people who have an account.
 - **Sign-in methods page** `/account/sign-in-methods/` (account menu): each provider with its logo, connected (with the account) or not.
   - **Connect** starts Keycloak's `idp_link` action: the person signs in with that provider once (at most an hour after signing in, else they sign in again first).
@@ -107,9 +109,7 @@ See **section 3**: it is the largest single piece of work.
   - The backend reads and removes links through Keycloak's admin API, with its own service client `collaborators-backend` (`COLLABORATORS_KEYCLOAK_*`).
 - The sign-in buttons and the methods page show each provider's official logo.
 
-**Still to do:**
-- Joining by Google Workspace domain (`hd`) or Microsoft tenant (`tid`) claims.
-- Join requests approved by admins.
+**Still to do:** emailing admins about requests to join (they reach the in-app inbox only).
 
 ### F3 — Lean, customisable dashboard
 
@@ -389,10 +389,9 @@ Moved out of the table v1:
 
 ### To do next, in order
 
-Done: the Loop table tweaks, Loop table v2 (T9, T5, T56), and the wiki extras (F8).
+Done: the Loop table tweaks, Loop table v2 (T9, T5, T56), the wiki extras (F8), the in-app sign-in methods page, and the joining extras (join requests approved by admins; joining by Google Workspace or Microsoft organisation) (F2).
 
 1. Sign-in providers in production, once hosting is chosen: production redirect addresses, publishing the Google app (home page and privacy policy), a real SMTP server for Keycloak (F2, see `sso-setup.md` → Production). Locally, Google, Microsoft and LinkedIn sign-in work (apps registered 2026-10-19); Apple and X are dropped.
-2. Joining: join requests approved by admins; joining by Google Workspace domain or Microsoft organisation (F2).
 
 ## 5. Open questions
 

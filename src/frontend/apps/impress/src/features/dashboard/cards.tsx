@@ -6,7 +6,10 @@ import { css } from 'styled-components';
 
 import { Box, Icon, StyledLink, Text } from '@/components';
 import { getEmojiAndTitle, useTrans } from '@/features/docs/doc-management';
-import { useNotificationText } from '@/features/notifications/NotificationBell';
+import {
+  useNotificationTarget,
+  useNotificationText,
+} from '@/features/notifications/NotificationBell';
 import {
   useNotificationMutations,
   useNotifications,
@@ -232,6 +235,7 @@ const NotificationsBody = () => {
   const { t } = useTranslation();
   const { relativeDate } = useDate();
   const textOf = useNotificationText();
+  const targetOf = useNotificationTarget();
   const { data = [], isLoading } = useNotifications(true);
   const { markRead } = useNotificationMutations();
   if (!isLoading && !data.length) {
@@ -243,20 +247,26 @@ const NotificationsBody = () => {
   }
   return (
     <>
-      {data.slice(0, 5).map((notification) => (
-        <Row
-          key={notification.id}
-          href={`/docs/${notification.document.id}/${
-            notification.anchor_id ? `#${notification.anchor_id}` : ''
-          }`}
-          icon={notification.read_at ? 'notifications' : 'notifications_active'}
-          title={textOf(notification)}
-          detail={relativeDate(notification.created_at)}
-          onClick={() =>
-            !notification.read_at && markRead.mutate({ id: notification.id })
-          }
-        />
-      ))}
+      {data.slice(0, 5).map((notification) => {
+        const target = targetOf(notification);
+        return (
+          <Row
+            key={notification.id}
+            href={target.href}
+            icon={
+              notification.read_at ? 'notifications' : 'notifications_active'
+            }
+            title={textOf(notification)}
+            detail={relativeDate(notification.created_at)}
+            onClick={() => {
+              target.beforeOpen?.();
+              if (!notification.read_at) {
+                markRead.mutate({ id: notification.id });
+              }
+            }}
+          />
+        );
+      })}
     </>
   );
 };

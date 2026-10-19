@@ -98,10 +98,14 @@ In development the page also has **Use a test account**. It opens Keycloak's own
   - **Disconnect** removes one, never the last.
   - The backend reads and removes the links through Keycloak's admin API, with its own client `collaborators-backend`. `make sso-providers` creates it (with the dev secret already in `env.d/development/common`, `COLLABORATORS_KEYCLOAK_*`). In production, give that client its own secret.
   - Linking is allowed up to an hour after signing in (`max_auth_age` of Keycloak's `idp_link` action); later, Keycloak asks to sign in again first.
-- **Joining workspaces:** in a workspace's settings, admins can create a **join link**. They can also open the workspace to an **email domain**, optionally adding joiners to an organisation group:
+- **Joining workspaces:** in a workspace's settings, admins can create a **join link**. They can also open the workspace to an **email domain** or an **organisation**, optionally adding joiners to an organisation group:
   - Whoever signs in with a verified email at that domain joins as a member.
   - An admin can only add the domain of their own verified email.
   - Public domains (Gmail, Outlook…) are refused.
+  - **Organisation:** whoever signs in with an account of that Google Workspace or Microsoft work tenant joins. Admins see the organisations they signed in with themselves, and can add only those.
+    - Keycloak keeps the Google and Microsoft tokens of each sign-in (`storeToken`), and everyone may read their own (the `broker` `read-token` role, given by default). At sign-in, the backend reads the Google Workspace domain (`hd`) and Microsoft tenant (`tid`) from them. `make sso-providers` sets this up.
+    - An organisation is known from the next sign-in with that provider.
+  - **Admins approve each person who joins** (a switch): joining by link, domain or organisation then waits for an admin's answer. The request reaches the admins' notifications and the workspace settings.
 - **Email invitations** to documents are turned off (`COLLABORATORS_EMAIL_INVITATIONS`). Documents are shared with people who already have an account.
 - **No `acr_values` in development:** the upstream default (`eidas1`) makes Keycloak refuse linking with "strong authentication required", so `OIDC_AUTH_REQUEST_EXTRA_PARAMS` is empty.
 - **Restricting Microsoft to one organisation:** put that tenant's id in `MICROSOFT_TENANT_ID` instead of `common`.

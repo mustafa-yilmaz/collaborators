@@ -1,6 +1,7 @@
 """
 The notification inbox of the logged-in collaborator: mentions, mentions of
-their groups, and assignments in Loop tables.
+their groups, assignments in Loop tables, and requests to join a workspace
+(for its admins) and their approval.
 
 GET  /api/v1.0/notifications/?unread=true  — latest notifications
 GET  /api/v1.0/notifications/unread-count/
@@ -9,6 +10,7 @@ POST /api/v1.0/notifications/read-all/
 GET, PATCH /api/v1.0/notifications/preferences/  — {"email": bool}
 """
 
+from django.db.models import Q
 from django.utils import timezone
 
 import rest_framework as drf
@@ -27,6 +29,7 @@ class NotificationSerializer(serializers.ModelSerializer):
 
     actor = serializers.SerializerMethodField()
     document = serializers.SerializerMethodField()
+    workspace = serializers.SerializerMethodField()
     team_label = serializers.SerializerMethodField()
 
     class Meta:
@@ -36,6 +39,7 @@ class NotificationSerializer(serializers.ModelSerializer):
             "kind",
             "actor",
             "document",
+            "workspace",
             "anchor_id",
             "thread_id",
             "team",
@@ -56,7 +60,15 @@ class NotificationSerializer(serializers.ModelSerializer):
 
     def get_document(self, instance):
         """Where."""
+        if instance.document is None:
+            return None
         return {"id": str(instance.document.id), "title": instance.document.title}
+
+    def get_workspace(self, instance):
+        """The workspace someone asks to join, or was let in."""
+        if instance.workspace is None:
+            return None
+        return {"id": str(instance.workspace.id), "name": instance.workspace.name}
 
     def get_team_label(self, instance):
         """The group the recipient was reached through, if any."""
@@ -73,9 +85,9 @@ class NotificationViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     def get_queryset(self):
         """Only my notifications, on documents that still exist."""
         queryset = models.Notification.objects.filter(
+            Q(document__isnull=True) | Q(document__ancestors_deleted_at__isnull=True),
             recipient=self.request.user,
-            document__ancestors_deleted_at__isnull=True,
-        ).select_related("actor", "document")
+        ).select_related("actor", "document", "workspace")
         if self.request.query_params.get("unread") in ("true", "1"):
             queryset = queryset.filter(read_at__isnull=True)
         return queryset

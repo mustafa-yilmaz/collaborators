@@ -61,6 +61,8 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
         """Keep the user info: whether the email is verified is read later."""
         user_info = super().get_userinfo(access_token, id_token, payload)
         self.collaborators_user_info = user_info
+        # To read the organisations the identity providers vouch for
+        self.collaborators_access_token = access_token
         return user_info
 
     def get_existing_user(self, sub, email):
@@ -96,8 +98,9 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
 
     def collaborators_after_sign_in(self, user):
         """
-        Record whether the identity provider verified the email, and join the
-        workspaces open to its domain.
+        Record whether the identity provider verified the email and which
+        organisations the providers vouch for, and join the workspaces open to
+        them (or ask their admins).
         """
         user_info = getattr(self, "collaborators_user_info", None) or {}
         verified = user_info.get("email_verified") is True
@@ -105,6 +108,10 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
             User.objects.filter(pk=user.pk).update(collaborator_email_verified=verified)
             user.collaborator_email_verified = verified
         joining.join_by_domain(user)
+        joining.read_organizations(
+            user, getattr(self, "collaborators_access_token", None)
+        )
+        joining.join_by_organization(user)
 
 
 class SessionAuthentication(BaseSessionAuthentication):

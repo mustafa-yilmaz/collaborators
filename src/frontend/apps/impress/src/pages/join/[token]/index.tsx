@@ -12,7 +12,8 @@ import { NextPageWithLayout } from '@/types/next';
 
 /**
  * /join/<token>: a workspace's join link. Signed out, it asks to sign in
- * first (and comes back here); signed in, one click joins.
+ * first (and comes back here); signed in, one click joins, or asks the
+ * admins when they approve who joins.
  */
 const Page: NextPageWithLayout = () => {
   const { t } = useTranslation();
@@ -69,13 +70,41 @@ const Page: NextPageWithLayout = () => {
               description: 'Join page, already a member',
             })}
           </Button>
+        ) : workspace.request_status === 'pending' ? (
+          <Text $textAlign="center" role="status">
+            {t(
+              'Your request was sent. You will be notified when an admin lets you in.',
+              { description: 'Join page, request to join waiting' },
+            )}
+          </Text>
+        ) : workspace.request_status === 'declined' ? (
+          <Text $variation="secondary" $textAlign="center">
+            {t('An admin declined your request to join.', {
+              description: 'Join page, request to join declined',
+            })}
+          </Text>
         ) : authenticated ? (
-          <Button
-            disabled={join.isPending}
-            onClick={() => join.mutate(undefined, { onSuccess: open })}
-          >
-            {t('Join the workspace', { description: 'Join page button' })}
-          </Button>
+          <>
+            <Button
+              disabled={join.isPending}
+              onClick={() =>
+                join.mutate(undefined, {
+                  onSuccess: (data) => data.is_member && open(),
+                })
+              }
+            >
+              {workspace.join_approval
+                ? t('Ask to join', { description: 'Join page button' })
+                : t('Join the workspace', { description: 'Join page button' })}
+            </Button>
+            {workspace.join_approval && (
+              <Text $size="sm" $variation="secondary" $textAlign="center">
+                {t('An admin of this workspace approves each new member.', {
+                  description: 'Join page, joining needs approval',
+                })}
+              </Text>
+            )}
+          </>
         ) : (
           <Button onClick={() => gotoLogin()}>
             {t('Sign in to join', { description: 'Join page button' })}

@@ -93,6 +93,14 @@ kc add-roles -r "${REALM}" --uusername "service-account-${BACKEND_CLIENT}" \
   --cclientid realm-management --rolename view-users --rolename manage-users
 echo "Let the backend read and remove the providers of an account (${BACKEND_CLIENT})"
 
+# Joining by organisation: Keycloak keeps the Google and Microsoft tokens of
+# each sign-in (storeToken, below), and everyone may read their own, which
+# the backend does at sign-in with the person's access token for the Google
+# Workspace domain ("hd") or Microsoft tenant ("tid") in them
+kc add-roles -r "${REALM}" --rname "default-roles-${REALM}" \
+  --cclientid broker --rolename read-token
+echo "Let everyone read the provider tokens of their own sign-ins"
+
 if [[ ! -f "${ENV_FILE}" ]]; then
   echo "No ${ENV_FILE} yet: copy ${ENV_FILE}.dist and fill in the client ids and secrets to add the providers." >&2
   exit 0
@@ -124,6 +132,7 @@ if [[ -n "${GOOGLE_CLIENT_ID}" ]]; then
   "providerId": "google",
   "enabled": true,
   "trustEmail": true,
+  "storeToken": true,
   "firstBrokerLoginFlowAlias": "first broker login",
   "config": {
     "clientId": "${GOOGLE_CLIENT_ID}",
@@ -150,6 +159,7 @@ if [[ -n "${MICROSOFT_CLIENT_ID}" ]]; then
   "providerId": "microsoft",
   "enabled": true,
   "trustEmail": false,
+  "storeToken": true,
   "firstBrokerLoginFlowAlias": "first broker login",
   "config": {
     "clientId": "${MICROSOFT_CLIENT_ID}",

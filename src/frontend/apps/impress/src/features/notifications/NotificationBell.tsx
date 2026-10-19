@@ -7,6 +7,7 @@ import { css } from 'styled-components';
 import { Box, BoxButton, Icon, Text } from '@/components';
 import { AnchoredPanel } from '@/components/popover/AnchoredPanel';
 import { useAuth } from '@/features/auth';
+import { useWorkspaceStore } from '@/features/workspaces/stores/useWorkspaceStore';
 import { useDate } from '@/hooks/useDate';
 
 import {
@@ -17,6 +18,38 @@ import {
   useUnreadCount,
 } from './api';
 
+/**
+ * Where a notification leads: its place in a document, or, for joining, the
+ * workspace's settings (a request to answer) or the workspace (let in).
+ */
+export const useNotificationTarget = () => {
+  const { setCurrentWorkspaceId } = useWorkspaceStore();
+  return (notification: Notification) => {
+    if (notification.kind === 'join_request' && notification.workspace) {
+      return { href: `/workspaces/${notification.workspace.id}/settings/` };
+    }
+    if (notification.kind === 'join_approved' && notification.workspace) {
+      const workspaceId = notification.workspace.id;
+      return {
+        href: '/',
+        beforeOpen: () => setCurrentWorkspaceId(workspaceId),
+      };
+    }
+    const anchor = notification.anchor_id ? `#${notification.anchor_id}` : '';
+    return { href: `/docs/${notification.document?.id}/${anchor}` };
+  };
+};
+
+/** The icon of a notification, by its kind. */
+export const notificationIcon = (notification: Notification) =>
+  ({
+    assignment: 'assignment_ind',
+    comment_mention: 'chat',
+    join_request: 'person_add',
+    join_approved: 'how_to_reg',
+    mention: 'alternate_email',
+  })[notification.kind] ?? 'alternate_email';
+
 /** The sentence describing a notification, e.g. "Ada mentioned you in Plan". */
 export const useNotificationText = () => {
   const { t } = useTranslation();
@@ -24,8 +57,23 @@ export const useNotificationText = () => {
     const name =
       notification.actor?.full_name ??
       t('Someone', { description: 'Unknown author of a notification' });
+    const workspace = notification.workspace?.name ?? '';
+    if (notification.kind === 'join_request') {
+      return t('{{name}} asks to join {{workspace}}', {
+        description: 'Notification of a request to join a workspace',
+        name,
+        workspace,
+      });
+    }
+    if (notification.kind === 'join_approved') {
+      return t('{{name}} let you in {{workspace}}', {
+        description: 'Notification of an approved request to join',
+        name,
+        workspace,
+      });
+    }
     const doc =
-      notification.document.title ||
+      notification.document?.title ||
       t('Untitled document', { description: 'Name of a doc without title' });
     const group = notification.team_label;
 
@@ -89,6 +137,7 @@ export const NotificationBell = () => {
   );
   const { relativeDate } = useDate();
   const textOf = useNotificationText();
+  const targetOf = useNotificationTarget();
 
   if (!authenticated) {
     return null;
@@ -101,8 +150,9 @@ export const NotificationBell = () => {
       markRead.mutate({ id: notification.id });
     }
     setOpened(false);
-    const anchor = notification.anchor_id ? `#${notification.anchor_id}` : '';
-    void router.push(`/docs/${notification.document.id}/${anchor}`);
+    const target = targetOf(notification);
+    target.beforeOpen?.();
+    void router.push(target.href);
   };
 
   return (
@@ -229,13 +279,7 @@ export const NotificationBell = () => {
                   `}
                 >
                   <Icon
-                    iconName={
-                      notification.kind === 'assignment'
-                        ? 'assignment_ind'
-                        : notification.kind === 'comment_mention'
-                          ? 'chat'
-                          : 'alternate_email'
-                    }
+                    iconName={notificationIcon(notification)}
                     $size="20px"
                     $variation="secondary"
                   />

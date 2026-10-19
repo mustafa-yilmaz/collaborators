@@ -38,6 +38,8 @@ from core.choices import (
     WORKSPACE_PRIVILEGED_ROLES,
     DocumentKindChoices,
     GroupKindChoices,
+    JoinRequestStatusChoices,
+    JoinViaChoices,
     LinkReachChoices,
     LinkRoleChoices,
     PublicationActionChoices,
@@ -188,6 +190,9 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
     # The identity provider vouched for the email at the last sign-in: it
     # can join workspaces by domain
     collaborator_email_verified = models.BooleanField(default=False)
+    # The organisations the identity providers vouch for, read at sign-in:
+    # [{"id": "google:<Workspace domain>" | "microsoft:<tenant id>", "name"}]
+    collaborator_organizations = models.JSONField(default=list, blank=True)
     # The dashboard as this collaborator arranged it: [{id, hidden, collapsed}]
     collaborator_dashboard = models.JSONField(default=list, blank=True)
     # Derived from workspace and group memberships, see `teams`
@@ -2544,8 +2549,14 @@ class Workspace(BaseModel):
         null=True,
         blank=True,
     )
+    # Collaborators of these organisations (a Google Workspace, a Microsoft
+    # tenant) join when they sign in: [{"id", "name"}], see
+    # User.collaborator_organizations
+    join_organizations = models.JSONField(default=list, blank=True)
     # The secret of the workspace's join link, or none when it is turned off
     join_token = models.CharField(max_length=43, unique=True, null=True, blank=True)
+    # People joining by link, domain or organisation wait for an admin's yes
+    join_approval = models.BooleanField(default=False)
 
     class Meta:
         db_table = "collaborators_workspace"
@@ -2764,15 +2775,66 @@ def get_team_label(team):
     return team
 
 
+class WorkspaceJoinRequest(BaseModel):
+    """
+    Someone asking to join a workspace whose admins approve who joins. A
+    declined request is kept, so joining by domain doesn't ask again at each
+    sign-in.
+    """
+
+    workspace = models.ForeignKey(
+        Workspace, on_delete=models.CASCADE, related_name="join_requests"
+    )
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="workspace_join_requests"
+    )
+    via = models.CharField(
+        max_length=20,
+        choices=JoinViaChoices.choices,
+        default=JoinViaChoices.LINK,
+    )
+    # The organisation group they also join once approved
+    group = models.ForeignKey(
+        "Group",
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=JoinRequestStatusChoices.choices,
+        default=JoinRequestStatusChoices.PENDING,
+    )
+
+    class Meta:
+        db_table = "collaborators_workspace_join_request"
+        ordering = ("created_at",)
+        verbose_name = _("Workspace join request")
+        verbose_name_plural = _("Workspace join requests")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["workspace", "user"],
+                name="unique_workspace_join_request",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.user!s} asks to join {self.workspace!s}"
+
+
 class Notification(BaseModel):
     """
     An entry of a collaborator's notification inbox: they were mentioned
-    (directly or through a group) or assigned somewhere in a document.
+    (directly or through a group) or assigned somewhere in a document, or
+    someone asks to join a workspace they administer, or they were let in.
     """
 
     KIND_MENTION = "mention"
     KIND_COMMENT_MENTION = "comment_mention"
     KIND_ASSIGNMENT = "assignment"
+    KIND_JOIN_REQUEST = "join_request"
+    KIND_JOIN_APPROVED = "join_approved"
 
     recipient = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="notifications"
@@ -2790,11 +2852,25 @@ class Notification(BaseModel):
             (KIND_MENTION, _("Mention")),
             (KIND_COMMENT_MENTION, _("Mention in a comment")),
             (KIND_ASSIGNMENT, _("Assignment")),
+            (KIND_JOIN_REQUEST, _("Request to join a workspace")),
+            (KIND_JOIN_APPROVED, _("Request to join approved")),
         ],
         default=KIND_MENTION,
     )
+    # Where: a document, or a workspace for joining
     document = models.ForeignKey(
-        Document, on_delete=models.CASCADE, related_name="notifications"
+        Document,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+        null=True,
+        blank=True,
+    )
+    workspace = models.ForeignKey(
+        Workspace,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+        null=True,
+        blank=True,
     )
     # Where to go: a block id, or "cell:<table>:<row>:<column>" for a table cell
     anchor_id = models.TextField(blank=True, default="")
@@ -2822,7 +2898,9 @@ class Notification(BaseModel):
         ]
 
     def __str__(self):
-        return f"{self.kind} for {self.recipient!s} on {self.document!s}"
+        return (
+            f"{self.kind} for {self.recipient!s} on {self.document or self.workspace!s}"
+        )
 
 
 class TableAssignment(BaseModel):

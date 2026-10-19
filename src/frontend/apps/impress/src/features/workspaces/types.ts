@@ -9,6 +9,12 @@ export enum WorkspaceRole {
 
 export type PublishingPolicy = 'space_admins' | 'workspace_admins';
 
+/** A Google Workspace ("google:<domain>") or Microsoft tenant ("microsoft:<id>") */
+export interface Organization {
+  id: string;
+  name: string;
+}
+
 export interface Workspace {
   id: string;
   name: string;
@@ -19,6 +25,14 @@ export interface Workspace {
   join_domains: string[];
   /** The organisation group those people join too */
   join_group: string | null;
+  /** People of these organisations join when signing in (admins only) */
+  join_organizations: Organization[];
+  /** The organisations the admin signed in with, which they may add */
+  join_organization_choices: Organization[];
+  /** People joining by link, domain or organisation wait for an admin's yes */
+  join_approval: boolean;
+  /** How many wait for that (admins only) */
+  pending_join_requests: number;
   /** The secret of the join link, for admins; none when it is off */
   join_token: string | null;
   user_role: WorkspaceRole | null;

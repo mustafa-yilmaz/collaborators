@@ -39,6 +39,10 @@ class WorkspaceSerializer(serializers.ModelSerializer):
     join_group = serializers.PrimaryKeyRelatedField(
         queryset=models.Group.objects.all(), required=False, allow_null=True
     )
+    # Written as a list of organisation ids, read as [{"id", "name"}]
+    join_organizations = serializers.JSONField(required=False)
+    join_organization_choices = serializers.SerializerMethodField(read_only=True)
+    pending_join_requests = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = models.Workspace
@@ -48,9 +52,13 @@ class WorkspaceSerializer(serializers.ModelSerializer):
             "slug",
             "description",
             "publishing_policy",
+            "join_approval",
             "join_domains",
             "join_group",
+            "join_organizations",
+            "join_organization_choices",
             "join_token",
+            "pending_join_requests",
             "abilities",
             "user_role",
             "created_at",
@@ -79,13 +87,44 @@ class WorkspaceSerializer(serializers.ModelSerializer):
             return instance.join_token
         return None
 
+    def get_join_organization_choices(self, instance):
+        """The organisations an admin signed in with, which they may add."""
+        user = self.context["request"].user
+        if is_workspace_admin(instance, user):
+            return user.collaborator_organizations or []
+        return []
+
+    def get_pending_join_requests(self, instance):
+        """How many people wait for an admin's answer, for admins."""
+        if is_workspace_admin(instance, self.context["request"].user):
+            return instance.join_requests.filter(
+                status=choices.JoinRequestStatusChoices.PENDING
+            ).count()
+        return 0
+
     def to_representation(self, instance):
         """Only admins see how people join without an invitation."""
         data = super().to_representation(instance)
         if not is_workspace_admin(instance, self.context["request"].user):
             data["join_domains"] = []
             data["join_group"] = None
+            data["join_organizations"] = []
+            data["join_approval"] = False
         return data
+
+    def validate_join_organizations(self, value):
+        """Organisations the admin signed in with, or already there."""
+        if not isinstance(value, list):
+            raise serializers.ValidationError(_("Expected a list."))
+        ids = [item.get("id") if isinstance(item, dict) else item for item in value]
+        try:
+            return joining.check_join_organizations(
+                ids,
+                self.context["request"].user,
+                self.instance.join_organizations if self.instance else [],
+            )
+        except ValueError as error:
+            raise serializers.ValidationError(str(error)) from error
 
     def validate_join_domains(self, value):
         """Domains the admin's own verified email proves they hold."""
@@ -359,6 +398,52 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
         )
         workspace.save(update_fields=["join_token", "updated_at"])
         return drf.response.Response({"join_token": workspace.join_token})
+
+    @drf.decorators.action(detail=True, methods=["get"], url_path="join-requests")
+    def join_requests(self, request, *args, **kwargs):
+        """The people waiting for an admin's answer. For the workspace's admins."""
+        workspace = self.get_object()
+        if not is_workspace_admin(workspace, request.user):
+            raise drf.exceptions.PermissionDenied()
+        pending = workspace.join_requests.filter(
+            status=choices.JoinRequestStatusChoices.PENDING
+        ).select_related("user")
+        return drf.response.Response(
+            [
+                {
+                    "id": str(item.id),
+                    "user": UserSerializer(item.user).data,
+                    "via": item.via,
+                    "created_at": item.created_at,
+                }
+                for item in pending
+            ]
+        )
+
+    @drf.decorators.action(
+        detail=True,
+        methods=["post"],
+        url_path=r"join-requests/(?P<request_id>[^/.]+)/(?P<decision>approve|decline)",
+    )
+    def answer_join_request(self, request, request_id, decision, *args, **kwargs):
+        """Let someone in, or decline. For the workspace's admins."""
+        workspace = self.get_object()
+        if not is_workspace_admin(workspace, request.user):
+            raise drf.exceptions.PermissionDenied()
+        join_request = (
+            workspace.join_requests.filter(
+                pk=request_id, status=choices.JoinRequestStatusChoices.PENDING
+            )
+            .select_related("user", "group", "workspace")
+            .first()
+        )
+        if join_request is None:
+            raise drf.exceptions.NotFound()
+        if decision == "approve":
+            joining.approve(join_request, request.user)
+        else:
+            joining.decline(join_request)
+        return drf.response.Response(status=status.HTTP_204_NO_CONTENT)
 
     def perform_create(self, serializer):
         """The creator becomes the owner of the workspace."""
@@ -932,7 +1017,8 @@ def get_object_or_404_space(pk):
 class JoinWorkspaceView(APIView):
     """
     GET  /join/<token>/ — which workspace the link opens, for anyone holding it
-    POST /join/<token>/ — join it, signed in
+    POST /join/<token>/ — join it, signed in; or ask its admins, when they
+    approve who joins
     """
 
     def get_permissions(self):
@@ -955,6 +1041,9 @@ class JoinWorkspaceView(APIView):
             "member_count": workspace.accesses.count(),
             "is_member": user.is_authenticated
             and workspace.accesses.filter(user=user).exists(),
+            "join_approval": workspace.join_approval,
+            # "pending" or "declined" once asked
+            "request_status": joining.request_status(workspace, user),
         }
 
     def get(self, request, token):
@@ -963,7 +1052,7 @@ class JoinWorkspaceView(APIView):
         return drf.response.Response(self._describe(workspace, request.user))
 
     def post(self, request, token):
-        """Join the workspace as a member."""
+        """Join the workspace as a member, or ask to."""
         workspace = self._workspace(token)
-        joining.join(workspace, request.user)
+        joining.admit(workspace, request.user)
         return drf.response.Response(self._describe(workspace, request.user))

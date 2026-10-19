@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-query';
 
 import { APIError, errorCauses, fetchAPI } from '@/api';
+import { User } from '@/features/auth';
 import { KEY_DOC, KEY_LIST_DOC } from '@/features/docs/doc-management';
 
 import {
@@ -96,6 +97,9 @@ export function useUpdateWorkspace() {
       publishing_policy?: PublishingPolicy;
       join_domains?: string[];
       join_group?: string | null;
+      /** Organisation ids */
+      join_organizations?: string[];
+      join_approval?: boolean;
     }
   >({
     mutationFn: ({ id, ...data }) =>
@@ -473,6 +477,10 @@ export interface JoinPreview {
   description: string;
   member_count: number;
   is_member: boolean;
+  /** The admins approve who joins */
+  join_approval: boolean;
+  /** Where the request to join stands, once asked */
+  request_status: 'pending' | 'declined' | null;
 }
 
 export const KEY_JOIN_PREVIEW = 'join-preview';
@@ -528,4 +536,53 @@ export function useJoinLinkMutations(workspaceId: string) {
     onSuccess,
   });
   return { renew, remove };
+}
+
+// -- Requests to join, when admins approve who joins
+
+export interface JoinRequest {
+  id: string;
+  user: User;
+  via: 'link' | 'domain' | 'organization';
+  created_at: string;
+}
+
+export const KEY_LIST_JOIN_REQUEST = 'workspace-join-requests';
+
+export function useJoinRequests(workspaceId: string, enabled: boolean) {
+  return useQuery<JoinRequest[], APIError>({
+    queryKey: [KEY_LIST_JOIN_REQUEST, workspaceId],
+    queryFn: () =>
+      request<JoinRequest[]>(
+        `workspaces/${workspaceId}/join-requests/`,
+        'Failed to get the requests to join',
+      ),
+    enabled,
+  });
+}
+
+/** Let someone in, or decline. */
+export function useAnswerJoinRequest(workspaceId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<
+    void,
+    APIError,
+    { id: string; decision: 'approve' | 'decline' }
+  >({
+    mutationFn: ({ id, decision }) =>
+      request<void>(
+        `workspaces/${workspaceId}/join-requests/${id}/${decision}/`,
+        'Failed to answer the request to join',
+        jsonInit('POST'),
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: [KEY_LIST_JOIN_REQUEST, workspaceId],
+      });
+      void queryClient.invalidateQueries({ queryKey: [KEY_LIST_WORKSPACE] });
+      void queryClient.invalidateQueries({
+        queryKey: [KEY_LIST_WORKSPACE_ACCESS],
+      });
+    },
+  });
 }

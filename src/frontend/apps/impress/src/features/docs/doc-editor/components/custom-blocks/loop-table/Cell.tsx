@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Y from 'yjs';
 
@@ -6,12 +6,11 @@ import { Icon } from '@/components';
 
 import { PersonPicker } from './PersonPicker';
 import { Popover } from './Popover';
+import { RichCellEditor } from './RichCellEditor';
 import { formatCell, labelOptionsOf } from './format';
 import {
   PageRef,
   cellAnchor,
-  mentionToken,
-  notifyCell,
   plainText,
   splitMentions,
   syncAssignments,
@@ -23,9 +22,9 @@ import {
   PersonValue,
   TableSnapshot,
   setCellValue,
-  setTextCell,
   toggleVote,
 } from './model';
+import { RichRun, formatTokenDate, runStyle, safeLink } from './richText';
 import { LABEL_COLORS } from './styles';
 
 export type Direction = 'up' | 'down' | 'left' | 'right' | 'next' | 'prev';
@@ -41,6 +40,8 @@ interface CellProps {
   userId?: string;
   isEditable: boolean;
   isEditing: boolean;
+  /** A text cell's formatting, when it has any */
+  rich?: RichRun[];
   onStartEdit: () => void;
   /** Leave editing, optionally moving the active cell. */
   onStopEdit: (move?: Direction) => void;
@@ -73,111 +74,6 @@ const editorKeyMove = (
     return 'down';
   }
   return null;
-};
-
-const TextEditor = ({
-  table,
-  tableId,
-  docId,
-  rowId,
-  column,
-  initial,
-  onStopEdit,
-}: {
-  table: Y.Map<unknown>;
-  tableId: string;
-  docId: string;
-  rowId: string;
-  column: Column;
-  initial: string;
-  onStopEdit: CellProps['onStopEdit'];
-}) => {
-  const ref = useRef<HTMLTextAreaElement>(null);
-  const [draft, setDraft] = useState(initial);
-  const [isPicking, setIsPicking] = useState(false);
-  const caretRef = useRef(0);
-
-  // "@" at the start of a word opens the people and groups picker
-  const insertMention = (person: PersonValue | PageRef) => {
-    const at = caretRef.current;
-    const next = `${draft.slice(0, at)}${mentionToken(person)} ${draft.slice(at)}`;
-    setDraft(next);
-    setTextCell(table, rowId, column.id, next);
-    setIsPicking(false);
-    // People and groups are notified; a linked page has no one to tell
-    if (docId && person.kind !== 'page') {
-      void notifyCell(
-        docId,
-        cellAnchor(tableId, rowId, column.id),
-        person,
-        'mention',
-      ).catch(() => undefined);
-    }
-    requestAnimationFrame(() => ref.current?.focus());
-  };
-
-  // Show the edits other people make to the same cell while I edit it
-  useEffect(() => {
-    if (ref.current !== document.activeElement || draft === initial) {
-      return;
-    }
-    setDraft(initial);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initial]);
-
-  useEffect(() => {
-    const element = ref.current;
-    if (element) {
-      element.focus();
-      element.setSelectionRange(element.value.length, element.value.length);
-    }
-  }, []);
-
-  return (
-    <>
-      <textarea
-        ref={ref}
-        className="loop-table__input"
-        rows={Math.max(1, draft.split('\n').length)}
-        value={draft}
-        onChange={(event) => {
-          setDraft(event.target.value);
-          setTextCell(table, rowId, column.id, event.target.value);
-        }}
-        onBlur={() => !isPicking && onStopEdit()}
-        onKeyDown={(event) => {
-          if (event.key === '@') {
-            const element = event.currentTarget;
-            const at = element.selectionStart ?? element.value.length;
-            const before = element.value.slice(Math.max(0, at - 1), at);
-            if (!before || /\s/.test(before)) {
-              event.preventDefault();
-              caretRef.current = at;
-              setIsPicking(true);
-              return;
-            }
-          }
-          const move = editorKeyMove(event, true);
-          if (move) {
-            event.preventDefault();
-            onStopEdit(move === 'stay' ? undefined : move);
-          }
-        }}
-      />
-      {isPicking && (
-        <PersonPicker
-          docId={docId}
-          value={[]}
-          onChange={(people) => people[0] && insertMention(people[0])}
-          onPickPage={insertMention}
-          onClose={() => {
-            setIsPicking(false);
-            requestAnimationFrame(() => ref.current?.focus());
-          }}
-        />
-      )}
-    </>
-  );
 };
 
 const NumberEditor = ({
@@ -244,6 +140,7 @@ export const Cell = ({
   userId,
   isEditable,
   isEditing,
+  rich,
   onStartEdit,
   onStopEdit,
 }: CellProps) => {
@@ -287,13 +184,12 @@ export const Cell = ({
     switch (column.type) {
       case ColumnType.TEXT:
         return (
-          <TextEditor
+          <RichCellEditor
             table={table}
             tableId={tableId}
             docId={docId}
             rowId={rowId}
             column={column}
-            initial={typeof value === 'string' ? value : ''}
             onStopEdit={onStopEdit}
           />
         );
@@ -415,15 +311,7 @@ export const Cell = ({
     content = <PersonChips value={value} />;
   }
   if (column.type === ColumnType.TEXT && typeof value === 'string') {
-    content = splitMentions(value).map((part, index) =>
-      typeof part === 'string' ? (
-        part
-      ) : part.kind === 'page' ? (
-        <PageChip key={index} page={part} />
-      ) : (
-        <PersonChips key={index} value={[part]} />
-      ),
-    );
+    content = <RichContent runs={rich ?? [{ text: value }]} />;
   }
 
   return (
@@ -433,6 +321,83 @@ export const Cell = ({
     >
       {content || ' '}
     </div>
+  );
+};
+
+/** A Text cell's runs: formatted text, links and inline elements. */
+const RichContent = ({ runs }: { runs: RichRun[] }) => {
+  const { i18n } = useTranslation();
+  return (
+    <>
+      {runs.map((run, runIndex) => {
+        const parts = splitMentions(run.text).map((part, index) => {
+          const key = `${runIndex}-${index}`;
+          if (typeof part === 'string') {
+            return part;
+          }
+          switch (part.kind) {
+            case 'page':
+              return (
+                <PageChip
+                  key={key}
+                  page={{ kind: 'page', id: part.id, label: part.label }}
+                />
+              );
+            case 'date':
+              return (
+                <span
+                  key={key}
+                  className="loop-table__chip loop-table__token is-date"
+                >
+                  {formatTokenDate(part.id, i18n.language)}
+                </span>
+              );
+            case 'label':
+              return <LabelChip key={key} label={part.label} color={part.id} />;
+            case 'image':
+              return (
+                <img
+                  key={key}
+                  className="loop-table__inline-image"
+                  src={part.id.replace(/%29/g, ')')}
+                  alt={part.label}
+                />
+              );
+            default:
+              return (
+                <PersonChips
+                  key={key}
+                  value={[{ kind: part.kind, id: part.id, label: part.label }]}
+                />
+              );
+          }
+        });
+        const style = runStyle(run.marks);
+        const href = run.marks?.link ? safeLink(run.marks.link) : null;
+        if (href) {
+          return (
+            <a
+              key={runIndex}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="loop-table__link"
+              style={style}
+              onClick={(event) => event.stopPropagation()}
+            >
+              {parts}
+            </a>
+          );
+        }
+        return style ? (
+          <span key={runIndex} style={style}>
+            {parts}
+          </span>
+        ) : (
+          <Fragment key={runIndex}>{parts}</Fragment>
+        );
+      })}
+    </>
   );
 };
 

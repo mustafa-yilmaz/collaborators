@@ -838,6 +838,7 @@ export const LoopTableView = ({
                           userId={user?.id}
                           isEditable={isEditable}
                           isEditing={isActive && isEditing}
+                          rich={row.rich?.[column.id]}
                           onStartEdit={() => {
                             setActive({ rowId: row.id, columnId: column.id });
                             setIsEditing(true);

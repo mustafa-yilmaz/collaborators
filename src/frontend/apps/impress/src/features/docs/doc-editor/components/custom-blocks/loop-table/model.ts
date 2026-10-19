@@ -29,6 +29,8 @@
  */
 import * as Y from 'yjs';
 
+import { RichRun, readRichCell, writeRuns } from './richText';
+
 export const LOOP_TABLES_KEY = 'loop-tables';
 
 export enum ColumnType {
@@ -143,6 +145,8 @@ export interface Row {
   format?: CellFormat;
   /** Formats of single cells, by column id */
   cellFormats?: Record<string, CellFormat>;
+  /** Text cells with formatting (bold, colours, links…), by column id */
+  rich?: Record<string, RichRun[]>;
 }
 
 /** The header row and the numbers column (the row numbers on the left). */
@@ -336,6 +340,13 @@ export const cloneTable = (ydoc: Y.Doc, snapshot: TableSnapshot): string => {
         .toArray()
         .forEach((yrow, index) => {
           const row = snapshot.rows[index];
+          // The formatting of text cells comes along
+          Object.entries(row?.rich ?? {}).forEach(([columnId, runs]) => {
+            const text = (yrow.get('cells') as Y.Map<unknown>).get(columnId);
+            if (text instanceof Y.Text) {
+              writeRuns(text, runs);
+            }
+          });
           if (row?.format) {
             yrow.set('format', row.format);
           }
@@ -380,6 +391,14 @@ export const readTable = (table: Y.Map<unknown>): TableSnapshot => {
     .map((yrow) => {
       const cells = yrow.get('cells') as Y.Map<unknown>;
       const cellFormats = yrow.get('cellFormats') as Y.Map<unknown> | undefined;
+      const rich: Record<string, RichRun[]> = {};
+      columns.forEach((column) => {
+        const value = cells.get(column.id);
+        const runs = value instanceof Y.Text ? readRichCell(value) : undefined;
+        if (runs) {
+          rich[column.id] = runs;
+        }
+      });
       return {
         id: yrow.get('id') as string,
         cells: Object.fromEntries(
@@ -390,6 +409,7 @@ export const readTable = (table: Y.Map<unknown>): TableSnapshot => {
         ),
         format: yrow.get('format') as CellFormat | undefined,
         cellFormats: cellFormats?.toJSON(),
+        ...(Object.keys(rich).length ? { rich } : {}),
       };
     });
   const labelGroups = Array.from(getLabelGroups(table).entries()).map(

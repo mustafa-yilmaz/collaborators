@@ -27,7 +27,10 @@ def base64_yjs_to_xml(base64_string):
 # frontend .../custom-blocks/loop-table/model.ts
 LOOP_TABLES_KEY = "loop-tables"
 # Mentions inside Text cells: "@[Label](user:<id>)", searched as "@Label"
-LOOP_MENTION_RE = re.compile(r"@\[([^\]]+)\]\((user|group|page):[^)]+\)")
+# Inline elements of Text cells: people, groups, pages, dates, labels, images
+LOOP_MENTION_RE = re.compile(
+    r"@\[([^\]]+)\]\((user|group|page|date|label|image):[^)]+\)"
+)
 BUILTIN_LABELS = {
     "low": "Low",
     "medium": "Medium",
@@ -54,7 +57,9 @@ def _loop_cell_texts(value, column_type, labels):
     if isinstance(value, pycrdt.Text):
         # "@Label" for people and groups, a linked page as its title
         yield LOOP_MENTION_RE.sub(
-            lambda match: match[1] if match[2] == "page" else f"@{match[1]}",
+            lambda match: (
+                f"@{match[1]}" if match[2] in ("user", "group") else match[1]
+            ),
             str(value),
         )
     elif column_type == "label" and value:

@@ -34,7 +34,9 @@ def make_update():
                         {
                             "c1": pycrdt.Text(
                                 "Write the proposal @[Ada](user:abc) "
-                                "see @[Budget](page:p1)"
+                                "see @[Budget](page:p1) by "
+                                "@[2026-10-19](date:2026-10-19) "
+                                "@[Urgent](label:red)"
                             ),
                             "c2": "high",
                             "c3": [
@@ -58,7 +60,7 @@ def test_utils_yjs_to_text_includes_loop_tables():
     for expected in [
         "Task",
         "Priority",
-        "Write the proposal @Ada see Budget",
+        "Write the proposal @Ada see Budget by 2026-10-19 Urgent",
         "High",
         "Q4 Launch",
         "1200",
@@ -66,3 +68,4 @@ def test_utils_yjs_to_text_includes_loop_tables():
         assert expected in text
     assert "user:abc" not in text
     assert "page:p1" not in text
+    assert "label:red" not in text

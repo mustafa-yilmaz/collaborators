@@ -65,4 +65,33 @@ describe('Loop tables in conversions', () => {
     expect(markdown).toContain('Write the proposal');
     expect(markdown).toContain('Q4 Launch');
   });
+
+  test('keeps the formatting and links of text cells', async () => {
+    const ydoc = makeDoc();
+    const rows = (ydoc.getMap('loop-tables').get('t1') as Y.Map<unknown>).get(
+      'rows',
+    ) as Y.Array<Y.Map<unknown>>;
+    const text = (rows.get(0).get('cells') as Y.Map<unknown>).get(
+      'c1',
+    ) as Y.Text;
+    text.format(0, 5, { bold: true });
+    text.insert(text.length, ' by @[2026-10-19](date:2026-10-19) ', {});
+    text.insert(text.length, 'spec', { link: 'https://example.com/spec' });
+
+    const editor = ServerBlockNoteEditor.create({
+      schema: docsBlockNoteSchema,
+    });
+    const blocks = expandLoopTables(
+      [{ id: 'b1', type: 'loopTable', props: { tableId: 't1' }, children: [] }],
+      ydoc,
+    );
+    const markdown = await editor.blocksToMarkdownLossy(blocks as any);
+
+    expect(markdown).toContain('**Write**');
+    expect(markdown).toContain('by 2026-10-19');
+    expect(markdown).toContain('[spec](https://example.com/spec)');
+    expect(loopTableRows(ydoc, 't1')[1][0]).toBe(
+      'Write the proposal by 2026-10-19 spec',
+    );
+  });
 });

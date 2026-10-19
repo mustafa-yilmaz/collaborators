@@ -1,16 +1,21 @@
 /**
- * Mentions inside Text cells, written in the cell's text as
- * "@[Label](user:<id>)", "@[Label](group:<team>)" or "@[Title](page:<id>)",
- * so they travel with the collaborative text. They are shown as chips (a
- * page's opens it), and exported and searched as "@Label" (a page as its
- * title).
+ * Mentions and other inline elements of Text cells, written in the cell's
+ * text as "@[Label](kind:<id>)", so they travel with the collaborative text:
+ * - "@[Label](user:<id>)", "@[Label](group:<team>)": a person or a group;
+ * - "@[Title](page:<id>)": a linked page;
+ * - "@[2026-10-19](date:2026-10-19)": a date;
+ * - "@[Text](label:<colour>)": a coloured label;
+ * - "@[Name](image:<address>)": a small image.
+ * They are shown as chips, and exported and searched as "@Label" (a page,
+ * date or label as its text, an image as its name).
  */
 import { fetchAPI } from '@/api';
 import { postMention } from '@/features/notifications/api';
 
-import { PersonValue } from './model';
+import type { PersonValue } from './model';
 
-export const MENTION_TOKEN_RE = /@\[([^\]]+)\]\((user|group|page):([^)]+)\)/g;
+export const MENTION_TOKEN_RE =
+  /@\[([^\]]+)\]\((user|group|page|date|label|image):([^)]+)\)/g;
 
 /** A page linked from a cell. */
 export interface PageRef {
@@ -19,10 +24,18 @@ export interface PageRef {
   label: string;
 }
 
-export const mentionToken = (item: PersonValue | PageRef) =>
-  `@[${item.label.replace(/[[\]]/g, '')}](${item.kind}:${item.id})`;
+/** Any inline element of a Text cell. */
+export interface InlineRef {
+  kind: 'user' | 'group' | 'page' | 'date' | 'label' | 'image';
+  /** A user, team or page id, an ISO date, a colour name or an address */
+  id: string;
+  label: string;
+}
 
-export type TextPart = string | PersonValue | PageRef;
+export const mentionToken = (item: InlineRef) =>
+  `@[${item.label.replace(/[[\]]/g, '') || ' '}](${item.kind}:${item.id.replace(/\)/g, '%29')})`;
+
+export type TextPart = string | InlineRef;
 
 /** Split a cell's text into plain text and mentions. */
 export const splitMentions = (text: string): TextPart[] => {
@@ -35,7 +48,7 @@ export const splitMentions = (text: string): TextPart[] => {
     }
     parts.push({
       label: match[1],
-      kind: match[2] as PersonValue['kind'] | 'page',
+      kind: match[2] as InlineRef['kind'],
       id: match[3],
     });
     last = index + match[0].length;
@@ -46,10 +59,10 @@ export const splitMentions = (text: string): TextPart[] => {
   return parts;
 };
 
-/** A cell's text with its mentions as "@Label" (a page as its title). */
+/** A cell's text with its mentions as "@Label" (other elements as text). */
 export const plainText = (text: string) =>
   text.replace(MENTION_TOKEN_RE, (_match, label: string, kind: string) =>
-    kind === 'page' ? label : `@${label}`,
+    kind === 'user' || kind === 'group' ? `@${label}` : label,
   );
 
 export const cellAnchor = (tableId: string, rowId: string, columnId: string) =>

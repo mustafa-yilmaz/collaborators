@@ -125,6 +125,10 @@ See **section 3**: it is the largest single piece of work.
 
 **Requirements**
 - `@` suggests **collaborators and groups** in page text, comments and **Loop table cells**.
+- Typing `@` alone lists, with nothing typed: the people one works with, all groups and all pages one can read. Typing narrows the list.
+  - **People** = members of one's workspaces + people one shares pages with. Never every account on the platform (user's decision).
+  - Anyone else is found by the platform-wide search after 3 letters.
+  - **Groups** = every group of every workspace one belongs to.
 - Assigning a collaborator or group in a table's **Person** column also notifies them.
 - **Notification inbox** (bell icon) with unread count, mark read / all read, and filters; each item links to the exact block, comment or **table cell** and highlights it.
 - **Email** per collaborator preference: right away, or off. (Daily digests were dropped.)

@@ -105,13 +105,19 @@ export const ConnectAccountsText = ({
         })}
       </Text>
       <Text $size="sm">
+        {t(
+          'Signing in with another Google, Microsoft or LinkedIn account under a different email opens a separate Collaborators account.',
+          { description: 'Note that only one sign-in method is connected' },
+        )}
+      </Text>
+      <Text $size="sm">
         {onSignInMethodsPage
           ? t(
-              'Signing in with another Google, Microsoft or LinkedIn account under a different email opens a separate Collaborators account. To sign in to this same account with it, connect it below.',
+              'To use the same single account every time, connect (merge) your accounts below.',
               { description: 'Hint to connect other sign-in methods' },
             )
           : t(
-              'Signing in with another Google, Microsoft or LinkedIn account under a different email opens a separate Collaborators account. To sign in to this same account with it, connect it on the sign-in methods page.',
+              'To use the same single account every time, connect (merge) your accounts on the sign-in methods page.',
               { description: 'Hint to connect other sign-in methods' },
             )}
       </Text>

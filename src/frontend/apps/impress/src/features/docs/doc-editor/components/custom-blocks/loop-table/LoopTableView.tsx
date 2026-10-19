@@ -309,7 +309,7 @@ export const LoopTableView = ({
     : null;
 
   // Line the controls up with their row
-  useLayoutEffect(() => {
+  const placeControls = useCallback(() => {
     const wrapper = wrapperRef.current;
     const tr = controlsRowId
       ? wrapper?.querySelector(`tr[data-row-id="${controlsRowId}"]`)
@@ -325,7 +325,23 @@ export const LoopTableView = ({
         ? box
         : { top, height: rowRect.height },
     );
-  }, [controlsRowId, snapshot, rows, columns]);
+  }, [controlsRowId]);
+  useLayoutEffect(placeControls, [placeControls, snapshot, rows, columns]);
+  // ...and again when the table moves inside its block, e.g. the toolbar
+  // wraps on a narrower page or a row grows with its text
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+    const observer = new ResizeObserver(() => placeControls());
+    observer.observe(wrapper);
+    const grid = wrapper.querySelector('.loop-table__grid');
+    if (grid) {
+      observer.observe(grid);
+    }
+    return () => observer.disconnect();
+  }, [placeControls]);
 
   const hasSnapshot = !!snapshot;
   // A link to one of this table's cells (e.g. from a notification) selects

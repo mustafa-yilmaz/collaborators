@@ -8,6 +8,7 @@ import {
   Doc,
   LinkReach,
   getDocLinkReach,
+  useIsDocEditable,
   useProviderStore,
 } from '@/docs/doc-management';
 import { useAuth } from '@/features/auth/';
@@ -84,7 +85,8 @@ interface DocEditorProps {
 
 export const DocEditor = ({ doc }: DocEditorProps) => {
   const isDeletedDoc = !!doc.deleted_at;
-  const readOnly = !doc.abilities.partial_update || isDeletedDoc;
+  // Collaborators: editable only in editing view (a page opens in reading view)
+  const readOnly = !useIsDocEditable(doc);
   // the collaboration providers are built from this too: a reader publishes no
   // presence, on either transport
   useCollaboration(doc.id, readOnly);

@@ -15,11 +15,14 @@ import {
   KEY_DOC,
   useDoc,
   useDocStore,
+  useDocViewMode,
+  useDocViewModeStore,
   useTrans,
 } from '@/docs/doc-management/';
 import { KEY_AUTH, setAuthUrl, useAuth } from '@/features/auth';
 import { PresenterRoot } from '@/features/docs/doc-presenter';
 import { getDocChildren, subPageToTree } from '@/features/docs/doc-tree/';
+import { useLeftPanelStore } from '@/features/left-panel/stores/useLeftPanelStore';
 import { usePublication } from '@/features/publishing/api';
 import { DocEditorSkeleton, useSkeletonStore } from '@/features/skeletons';
 import { MainLayout } from '@/layouts';
@@ -90,6 +93,18 @@ interface DocProps {
 
 const DocPage = ({ id }: DocProps) => {
   const { isSkeletonVisible, setIsSkeletonVisible } = useSkeletonStore();
+  // Collaborators: each page opens in reading view; while reading, the side
+  // panel follows its own choice (hidden at first)
+  const openDocView = useDocViewModeStore((state) => state.openDoc);
+  const viewMode = useDocViewMode(id);
+  const setReading = useLeftPanelStore((state) => state.setReading);
+  useEffect(() => {
+    openDocView(id);
+  }, [id, openDocView]);
+  useEffect(() => {
+    setReading(viewMode === 'reading');
+  }, [viewMode, setReading]);
+  useEffect(() => () => setReading(false), [setReading]);
   const {
     data: docQuery,
     isError,

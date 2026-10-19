@@ -26,3 +26,25 @@ describe('useLeftPanelStore', () => {
     expect(localStorage.getItem(LEFT_PANEL_STORAGE_KEY)).toBeNull();
   });
 });
+
+describe('useLeftPanelStore while reading', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useLeftPanelStore.setState({ isPanelOpen: true, isReading: false });
+  });
+
+  it('hides the panel at first, then keeps the reading choice apart', () => {
+    useLeftPanelStore.getState().setReading(true);
+    expect(useLeftPanelStore.getState().isPanelOpen).toBe(false);
+
+    useLeftPanelStore.getState().openPanel();
+    expect(localStorage.getItem('collaborators-left-panel-open-reading')).toBe(
+      'true',
+    );
+    expect(localStorage.getItem(LEFT_PANEL_STORAGE_KEY)).toBeNull();
+
+    useLeftPanelStore.getState().setReading(false);
+    useLeftPanelStore.getState().setReading(true);
+    expect(useLeftPanelStore.getState().isPanelOpen).toBe(true);
+  });
+});

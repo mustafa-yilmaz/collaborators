@@ -8,6 +8,7 @@ import { DocShareButton } from '@/docs/doc-share/components/DocShareButton';
 import { RightPanelCollapseButton } from '@/features/right-panel/components/RightPanelCollapseButton';
 
 import { DocLeftPanelCollapseButton } from './DocLeftPanelCollapseButton';
+import { DocViewModeSwitch } from './DocViewModeSwitch';
 
 export const DocFloatingBar = () => {
   const currentDoc = useDocStore((state) => state.currentDoc);
@@ -21,6 +22,10 @@ export const DocFloatingBar = () => {
         <FindReplace />
       ) : (
         <Box $direction="row" $align="center" $gap="2xs">
+          {/* Collaborators: reading or editing, for those who may edit */}
+          {!isDeletedDoc && currentDoc?.abilities.partial_update && (
+            <DocViewModeSwitch doc={currentDoc} />
+          )}
           {!isDeletedDoc && currentDoc && <DocShareButton doc={currentDoc} />}
           <CardFloatingBar>
             <RightPanelCollapseButton />

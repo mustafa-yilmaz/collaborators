@@ -11,6 +11,7 @@ import {
   getEmojiAndTitle,
   useDocTitleUpdate,
   useDocUtils,
+  useIsDocEditable,
 } from '@/docs/doc-management';
 import { useIsOffline } from '@/features/service-worker/hooks/useOffline';
 
@@ -32,7 +33,7 @@ export const DocHeader = ({ doc }: DocHeaderProps) => {
   const { updateDocEmoji } = useDocTitleUpdate();
 
   const { isTopRoot } = useDocUtils(doc);
-  const displayEmojiButton = doc.abilities.partial_update && !isTopRoot;
+  const displayEmojiButton = useIsDocEditable(doc) && !isTopRoot;
   const latestTitleRef = useRef(doc.title ?? '');
 
   useEffect(() => {

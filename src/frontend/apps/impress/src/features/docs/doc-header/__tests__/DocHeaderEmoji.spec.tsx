@@ -14,6 +14,8 @@ vi.mock('@/docs/doc-management', async () => {
       updateDocEmoji: mockUpdateDocEmoji,
       updateDocTitle: mockUpdateDocTitle,
     }),
+    // Collaborators: the emoji is changed in editing view
+    useIsDocEditable: () => true,
   };
 });
 

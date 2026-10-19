@@ -12,20 +12,34 @@ import { safeLocalStorage } from '@/utils/storages';
  * forgotten at each sign-in, which therefore opens on a hidden panel.
  */
 export const LEFT_PANEL_STORAGE_KEY = 'collaborators-left-panel-open';
+/**
+ * Pages read (rather than edited) keep their own choice, hidden at first:
+ * shown once, the panel stays shown from page to page while reading.
+ */
+export const LEFT_PANEL_READING_STORAGE_KEY =
+  'collaborators-left-panel-open-reading';
 
-const wasLeftOpen = () =>
-  safeLocalStorage.getItem(LEFT_PANEL_STORAGE_KEY) === 'true';
+const storageKey = (isReading: boolean) =>
+  isReading ? LEFT_PANEL_READING_STORAGE_KEY : LEFT_PANEL_STORAGE_KEY;
+
+const wasLeftOpen = (isReading = false) =>
+  safeLocalStorage.getItem(storageKey(isReading)) === 'true';
 
 /** Keep the choice made on a computer; phones close the panel as they go. */
 const remember = (isPanelOpen: boolean) => {
   if (!useResponsiveStore.getState().isMobile) {
-    safeLocalStorage.setItem(LEFT_PANEL_STORAGE_KEY, String(isPanelOpen));
+    safeLocalStorage.setItem(
+      storageKey(useLeftPanelStore.getState().isReading),
+      String(isPanelOpen),
+    );
   }
 };
 
 /** Start the next sign-in with the side panel hidden. */
-export const forgetLeftPanel = () =>
+export const forgetLeftPanel = () => {
   safeLocalStorage.removeItem(LEFT_PANEL_STORAGE_KEY);
+  safeLocalStorage.removeItem(LEFT_PANEL_READING_STORAGE_KEY);
+};
 
 interface LeftPanelState {
   isPanelOpen: boolean;
@@ -38,6 +52,9 @@ interface LeftPanelState {
   closePanel: () => void;
   openPanel: () => void;
   autoClose: () => void;
+  /** A page is being read: the panel follows the reading choice */
+  isReading: boolean;
+  setReading: (isReading: boolean) => void;
 }
 
 const isMobileOnInit = () =>
@@ -61,6 +78,18 @@ export const useLeftPanelStore = create<LeftPanelState>((set, get) => ({
     remember(false);
   },
   autoClose: () => set({ isPanelOpen: false, wasAutoClosed: true }),
+  isReading: false,
+  setReading: (isReading) => {
+    if (get().isReading === isReading) {
+      return;
+    }
+    set({
+      isReading,
+      isPanelOpen:
+        !useResponsiveStore.getState().isMobile && wasLeftOpen(isReading),
+      wasAutoClosed: false,
+    });
+  },
 }));
 
 // Close the panel automatically whenever the responsive store switches to mobile.

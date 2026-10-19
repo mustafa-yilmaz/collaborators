@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { APIError, errorCauses, fetchAPI } from '@/api';
 import { KEY_LIST_SEARCH_DOC } from '@/docs/doc-search/api/useSearchDocs';
 
+import { useDocViewModeStore } from '../stores/useDocViewModeStore';
 import { Doc } from '../types';
 
 import { KEY_LIST_DOC } from './useDocs';
@@ -44,6 +45,8 @@ export function useCreateChildDoc({ onSuccess }: UseCreateChildDocProps) {
       void queryClient.resetQueries({
         queryKey: [KEY_LIST_SEARCH_DOC],
       });
+      // A new page opens in editing view, to be written
+      useDocViewModeStore.getState().editOnOpen(doc.id);
       onSuccess(doc);
     },
   });

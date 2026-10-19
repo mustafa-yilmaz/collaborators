@@ -45,6 +45,25 @@ def users_sharing_documents_with(user_id):
         .annotate(last_shared=db.Max("created_at"))
     )
     result = {item["user"]: item["last_shared"] for item in shared_qs}
+
+    # Collaborators: the members of my workspaces count as close too, so that
+    # they can be found by name to share with or to mention
+    my_workspaces_qs = models.WorkspaceAccess.objects.filter(
+        user__id=user_id
+    ).values_list("workspace_id", flat=True)
+    co_members_qs = (
+        models.WorkspaceAccess.objects.filter(
+            workspace_id__in=Subquery(my_workspaces_qs)
+        )
+        .exclude(user__id=user_id)
+        .values("user")
+        .annotate(last_shared=db.Max("created_at"))
+    )
+    for item in co_members_qs:
+        previous = result.get(item["user"])
+        if previous is None or item["last_shared"] > previous:
+            result[item["user"]] = item["last_shared"]
+
     cache.set(cache_key, result, 86400)  # Cache for 1 day
     elapsed = time.time() - start_time
     logger.info(

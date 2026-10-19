@@ -271,3 +271,14 @@ def test_api_workspaces_my_teams():
     assert sorted(response.json()) == sorted(
         [f"group:{group.id}", f"workspace:{workspace.id}"]
     )
+
+
+def test_api_users_search_finds_workspace_members_by_name():
+    """Members of my workspaces are found by name, without sharing a document."""
+    owner = factories.UserFactory(full_name="Owner Person", email="o@a.test")
+    member = factories.UserFactory(full_name="Grace Hopper", email="g@b.test")
+    make_workspace(owner, members=[member])
+
+    response = client_for(owner).get("/api/v1.0/users/?q=Grace")
+
+    assert [user["id"] for user in response.json()] == [str(member.id)]

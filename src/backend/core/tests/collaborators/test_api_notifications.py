@@ -200,3 +200,18 @@ def test_api_notifications_are_private():
         f"/api/v1.0/notifications/{notification.id}/read/"
     )
     assert response.status_code == 404
+
+
+def test_api_mention_in_the_first_block():
+    """BlockNote's first block has the fixed id "initialBlockId"."""
+    author, reader = factories.UserFactory.create_batch(2)
+    document = factories.DocumentFactory(
+        users=[(author, "editor"), (reader, "reader")]
+    )
+
+    response = client_for(author).post(
+        f"/api/v1.0/documents/{document.id}/mention/",
+        {"anchor_id": "initialBlockId", "mentioned_user_id": str(reader.id)},
+    )
+
+    assert response.status_code == 201

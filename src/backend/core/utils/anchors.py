@@ -12,7 +12,8 @@ def is_valid_anchor(anchor_id):
     """A block id (UUID) or a Loop table cell ("cell:<table>:<row>:<column>")."""
     if not isinstance(anchor_id, str):
         return False
-    if CELL_ANCHOR_RE.match(anchor_id):
+    # BlockNote gives the first block of every page this fixed id
+    if CELL_ANCHOR_RE.match(anchor_id) or anchor_id == "initialBlockId":
         return True
     try:
         uuid.UUID(anchor_id)

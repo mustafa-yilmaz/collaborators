@@ -1,11 +1,11 @@
 import { Button, Switch } from '@gouvfr-lasuite/ui-components';
-import { Popover } from '@mantine/core';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import { Box, BoxButton, Icon, Text } from '@/components';
+import { AnchoredPanel } from '@/components/popover/AnchoredPanel';
 import { useAuth } from '@/features/auth';
 import { useDate } from '@/hooks/useDate';
 
@@ -77,6 +77,7 @@ export const NotificationBell = () => {
   const router = useRouter();
   const { authenticated } = useAuth();
   const [opened, setOpened] = useState(false);
+  const bellRef = useRef<HTMLButtonElement>(null);
   const { data: unread } = useUnreadCount(authenticated);
   const { data: notifications = [], isLoading } = useNotifications(
     authenticated && opened,
@@ -104,188 +105,189 @@ export const NotificationBell = () => {
   };
 
   return (
-    <Popover
-      opened={opened}
-      onChange={setOpened}
-      position="bottom-start"
-      withinPortal
-      shadow="md"
-    >
-      <Popover.Target>
-        <BoxButton
-          onClick={() => setOpened((value) => !value)}
-          aria-label={
-            count
-              ? t('Notifications, {{count}} unread', {
-                  description: 'Accessible name of the notification bell',
-                  count,
-                })
-              : t('Notifications', {
-                  description: 'Accessible name of the notification bell',
-                })
-          }
-          aria-expanded={opened}
-          $position="relative"
-          $padding="3xs"
-          $css="border-radius: 4px;"
-        >
-          <Icon
-            iconName={count ? 'notifications_active' : 'notifications'}
-            $size="22px"
-            $variation="secondary"
-          />
-          {count > 0 && (
-            <Box
-              as="span"
-              aria-hidden="true"
-              $position="absolute"
-              $css={css`
-                top: 0;
-                right: 0;
-                min-width: 16px;
-                height: 16px;
-                padding: 0 4px;
-                border-radius: 999px;
-                background: var(--c--globals--colors--brand-500);
-                color: white;
-                font-size: 10px;
-                font-weight: 700;
-                line-height: 16px;
-                text-align: center;
-              `}
-            >
-              {count > 99 ? '99+' : count}
-            </Box>
-          )}
-        </BoxButton>
-      </Popover.Target>
-      <Popover.Dropdown p={0}>
-        <Box
-          $width="360px"
-          $css="max-width: calc(100vw - 32px);"
-          className="--collaborators--notifications"
-        >
-          <Box
-            $direction="row"
-            $align="center"
-            $justify="space-between"
-            $padding={{ horizontal: 'sm', vertical: 'xs' }}
-          >
-            <Text as="h2" $size="md" $weight="700" $margin="none">
-              {t('Notifications', {
+    <>
+      <BoxButton
+        ref={bellRef}
+        onClick={() => setOpened((value) => !value)}
+        aria-label={
+          count
+            ? t('Notifications, {{count}} unread', {
                 description: 'Accessible name of the notification bell',
-              })}
-            </Text>
-            {count > 0 && (
-              <Button
-                size="small"
-                variant="tertiary"
-                onClick={() => markAllRead.mutate()}
-              >
-                {t('Mark all as read', {
-                  description: 'Button of the notification inbox',
-                })}
-              </Button>
-            )}
-          </Box>
-          <Box $css="max-height: 420px; overflow-y: auto;" role="list">
-            {!isLoading && notifications.length === 0 && (
-              <Text
-                $size="sm"
-                $variation="secondary"
-                $padding={{ horizontal: 'sm', bottom: 'sm' }}
-              >
-                {t(
-                  'Nothing yet. You will see here when someone mentions you or assigns you a task.',
-                  { description: 'Empty notification inbox' },
-                )}
-              </Text>
-            )}
-            {notifications.map((notification) => (
-              <BoxButton
-                key={notification.id}
-                role="listitem"
-                onClick={() => open(notification)}
-                $direction="row"
-                $gap="xs"
-                $width="100%"
-                $padding={{ horizontal: 'sm', vertical: 'xs' }}
-                $css={css`
-                  text-align: left;
-                  border-top: 1px solid
-                    var(--c--contextuals--border--surface--primary);
-                  background: ${
-                    notification.read_at
-                      ? 'transparent'
-                      : 'var(--c--contextuals--background--semantic--brand--tertiary)'
-                  };
-                  &:hover {
-                    background: var(
-                      --c--contextuals--background--semantic--contextual--primary
-                    );
-                  }
-                `}
-              >
-                <Icon
-                  iconName={
-                    notification.kind === 'assignment'
-                      ? 'assignment_ind'
-                      : notification.kind === 'comment_mention'
-                        ? 'chat'
-                        : 'alternate_email'
-                  }
-                  $size="20px"
-                  $variation="secondary"
-                />
-                <Box $flex={1}>
-                  <Text
-                    $size="sm"
-                    $weight={notification.read_at ? '400' : '600'}
-                  >
-                    {textOf(notification)}
-                  </Text>
-                  <Text $size="xs" $variation="secondary">
-                    {relativeDate(notification.created_at)}
-                  </Text>
-                </Box>
-                {!notification.read_at && (
-                  <Box
-                    aria-label={t('Unread', {
-                      description: 'Marker of an unread notification',
-                    })}
-                    $css={css`
-                      width: 8px;
-                      height: 8px;
-                      margin-top: 6px;
-                      border-radius: 50%;
-                      background: var(--c--globals--colors--brand-500);
-                    `}
-                  />
-                )}
-              </BoxButton>
-            ))}
-          </Box>
+                count,
+              })
+            : t('Notifications', {
+                description: 'Accessible name of the notification bell',
+              })
+        }
+        aria-expanded={opened}
+        $position="relative"
+        $padding="3xs"
+        $css="border-radius: 4px;"
+      >
+        <Icon
+          iconName={count ? 'notifications_active' : 'notifications'}
+          $size="22px"
+          $variation="secondary"
+        />
+        {count > 0 && (
           <Box
-            $padding={{ horizontal: 'sm', vertical: 'xs' }}
+            as="span"
+            aria-hidden="true"
+            $position="absolute"
             $css={css`
-              border-top: 1px solid
-                var(--c--contextuals--border--surface--primary);
+              top: 0;
+              right: 0;
+              min-width: 16px;
+              height: 16px;
+              padding: 0 4px;
+              border-radius: 999px;
+              background: var(--c--globals--colors--brand-500);
+              color: white;
+              font-size: 10px;
+              font-weight: 700;
+              line-height: 16px;
+              text-align: center;
             `}
           >
-            <Switch
-              labelSide="right"
-              label={t('Also send me an email', {
-                description: 'Email preference of the notification inbox',
-              })}
-              checked={preferences.data?.email ?? true}
-              disabled={!preferences.data}
-              onChange={(event) =>
-                update.mutate({ email: event.target.checked })
-              }
-            />
+            {count > 99 ? '99+' : count}
           </Box>
-        </Box>
-      </Popover.Dropdown>
-    </Popover>
+        )}
+      </BoxButton>
+      {opened && (
+        <AnchoredPanel
+          anchorRef={bellRef}
+          onClose={() => setOpened(false)}
+          label={t('Notifications', {
+            description: 'Accessible name of the notification bell',
+          })}
+        >
+          <Box
+            $width="360px"
+            $css="max-width: calc(100vw - 32px);"
+            className="--collaborators--notifications"
+          >
+            <Box
+              $direction="row"
+              $align="center"
+              $justify="space-between"
+              $padding={{ horizontal: 'sm', vertical: 'xs' }}
+            >
+              <Text as="h2" $size="md" $weight="700" $margin="none">
+                {t('Notifications', {
+                  description: 'Accessible name of the notification bell',
+                })}
+              </Text>
+              {count > 0 && (
+                <Button
+                  size="small"
+                  variant="tertiary"
+                  onClick={() => markAllRead.mutate()}
+                >
+                  {t('Mark all as read', {
+                    description: 'Button of the notification inbox',
+                  })}
+                </Button>
+              )}
+            </Box>
+            <Box $css="max-height: 420px; overflow-y: auto;" role="list">
+              {!isLoading && notifications.length === 0 && (
+                <Text
+                  $size="sm"
+                  $variation="secondary"
+                  $padding={{ horizontal: 'sm', bottom: 'sm' }}
+                >
+                  {t(
+                    'Nothing yet. You will see here when someone mentions you or assigns you a task.',
+                    { description: 'Empty notification inbox' },
+                  )}
+                </Text>
+              )}
+              {notifications.map((notification) => (
+                <BoxButton
+                  key={notification.id}
+                  role="listitem"
+                  onClick={() => open(notification)}
+                  $direction="row"
+                  $gap="xs"
+                  $width="100%"
+                  $padding={{ horizontal: 'sm', vertical: 'xs' }}
+                  $css={css`
+                    text-align: left;
+                    border-top: 1px solid
+                      var(--c--contextuals--border--surface--primary);
+                    background: ${
+                      notification.read_at
+                        ? 'transparent'
+                        : 'var(--c--contextuals--background--semantic--brand--tertiary)'
+                    };
+                    &:hover {
+                      background: var(
+                        --c--contextuals--background--semantic--contextual--primary
+                      );
+                    }
+                  `}
+                >
+                  <Icon
+                    iconName={
+                      notification.kind === 'assignment'
+                        ? 'assignment_ind'
+                        : notification.kind === 'comment_mention'
+                          ? 'chat'
+                          : 'alternate_email'
+                    }
+                    $size="20px"
+                    $variation="secondary"
+                  />
+                  <Box $flex={1}>
+                    <Text
+                      $size="sm"
+                      $weight={notification.read_at ? '400' : '600'}
+                    >
+                      {textOf(notification)}
+                    </Text>
+                    <Text $size="xs" $variation="secondary">
+                      {relativeDate(notification.created_at)}
+                    </Text>
+                  </Box>
+                  {!notification.read_at && (
+                    <Box
+                      aria-label={t('Unread', {
+                        description: 'Marker of an unread notification',
+                      })}
+                      $css={css`
+                        width: 8px;
+                        height: 8px;
+                        margin-top: 6px;
+                        border-radius: 50%;
+                        background: var(--c--globals--colors--brand-500);
+                      `}
+                    />
+                  )}
+                </BoxButton>
+              ))}
+            </Box>
+            <Box
+              $padding={{ horizontal: 'sm', vertical: 'xs' }}
+              $css={css`
+                border-top: 1px solid
+                  var(--c--contextuals--border--surface--primary);
+              `}
+            >
+              <Switch
+                labelSide="right"
+                label={t('Also send me an email', {
+                  description: 'Email preference of the notification inbox',
+                })}
+                checked={preferences.data?.email ?? true}
+                disabled={!preferences.data}
+                onChange={(event) =>
+                  update.mutate({ email: event.target.checked })
+                }
+              />
+            </Box>
+          </Box>
+        </AnchoredPanel>
+      )}
+    </>
   );
 };

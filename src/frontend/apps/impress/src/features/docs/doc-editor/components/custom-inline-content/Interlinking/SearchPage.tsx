@@ -11,6 +11,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
+import { APIError } from '@/api';
 import DocIcon from '@/assets/icons/ui-kit/doc.svg';
 import ArrowIcon from '@/assets/icons/ui-kit/keyboard_return.svg';
 import {
@@ -116,18 +117,26 @@ export const SearchPage = ({
         docId: currentDoc.id,
         anchorId,
         target: { kind: candidate.kind, id: candidate.id },
-      }).catch(() =>
+      }).catch((error: APIError) => {
+        const noAccess = (error.cause ?? []).some((cause) =>
+          cause.includes('access'),
+        );
         toast(
-          t(
-            "{{name}} was not notified: they can't see this page yet. Share it with them first.",
-            {
-              description: 'Toast when a mentioned person has no access',
-              name: candidate.label,
-            },
-          ),
+          noAccess
+            ? t(
+                "{{name}} was not notified: they can't see this page yet. Share it with them first.",
+                {
+                  description: 'Toast when a mentioned person has no access',
+                  name: candidate.label,
+                },
+              )
+            : t('{{name}} could not be notified.', {
+                description: 'Toast when a mention notification failed',
+                name: candidate.label,
+              }),
           VariantType.WARNING,
-        ),
-      );
+        );
+      });
     }
   };
 

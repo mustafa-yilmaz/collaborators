@@ -84,3 +84,15 @@ def membership_changed(sender, instance, **kwargs):  # pylint: disable=unused-ar
     which decide the roles they get through team accesses on documents.
     """
     models.User.refresh_teams(instance.user_id)
+
+    # Workspace members are found by name in each other's user searches
+    if isinstance(instance, models.WorkspaceAccess):
+        member_ids = models.WorkspaceAccess.objects.filter(
+            workspace_id=instance.workspace_id
+        ).values_list("user_id", flat=True)
+        cache.delete_many(
+            [
+                get_users_sharing_documents_with_cache_key(member_id)
+                for member_id in [instance.user_id, *member_ids]
+            ]
+        )

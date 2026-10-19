@@ -1,5 +1,4 @@
-import { DropdownMenu } from '@gouvfr-lasuite/ui-components';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Y from 'yjs';
 
@@ -8,26 +7,23 @@ import { Icon } from '@/components';
 import { Popover } from './Popover';
 import { operatorLabel, operatorNeedsValue } from './columnTypes';
 import { labelOptionsOf } from './format';
-import { layoutMenuItems } from './formatMenu';
 import {
   ColumnType,
   FilterOperator,
   FilterRule,
   TableSnapshot,
-  addColumn,
   newId,
   setView,
-  updateColumn,
 } from './model';
+import { useLoopTableUiStore } from './tableMenu';
 import { operatorsFor } from './view';
 
 interface ToolbarProps {
   table: Y.Map<unknown>;
+  tableId: string;
   snapshot: TableSnapshot;
   isEditable: boolean;
   shownRows: number;
-  /** Adds a row at the end and starts typing in it */
-  onAddRow: () => void;
 }
 
 const FilterValueInput = ({
@@ -79,14 +75,12 @@ export const Toolbar = ({
   snapshot,
   isEditable,
   shownRows,
-  onAddRow,
+  tableId,
 }: ToolbarProps) => {
   const { t } = useTranslation();
-  const [open, setOpen] = useState<
-    'filter' | 'sort' | 'hidden' | 'layout' | null
-  >(null);
+  // The filter panel
+  const [open, setOpen] = useState(false);
   const { filters, sort } = snapshot.view;
-  const hiddenColumns = snapshot.columns.filter((column) => column.hidden);
   const visibleColumns = snapshot.columns.filter((column) => !column.hidden);
 
   const setFilters = (next: FilterRule[]) => setView(table, { filters: next });
@@ -96,50 +90,26 @@ export const Toolbar = ({
     );
   const sortColumn = snapshot.columns.find((c) => c.id === sort?.columnId);
 
-  if (!isEditable && !filters.length && !sort) {
-    return null;
+  // The block's "⋮⋮" menu asks for the filter panel of this table
+  const filterFor = useLoopTableUiStore((state) => state.filterFor);
+  useEffect(() => {
+    if (filterFor === tableId) {
+      setOpen(true);
+      useLoopTableUiStore.getState().clearFilterRequest();
+    }
+  }, [filterFor, tableId]);
+
+  // Nothing to show: only the place the filter panel opens from
+  if (!open && !filters.length && !sort) {
+    return <div className="loop-table__toolbar-anchor" />;
   }
 
   return (
     <div className="loop-table__toolbar" role="toolbar">
-      {isEditable && (
-        <>
-          <button
-            type="button"
-            className="loop-table__toolbar-button"
-            onClick={onAddRow}
-          >
-            <Icon iconName="add" $size="18px" />
-            {t('Add row', { description: 'Loop table toolbar' })}
-          </button>
-          <button
-            type="button"
-            className="loop-table__toolbar-button"
-            onClick={() => addColumn(table, snapshot.columns.length)}
-          >
-            <Icon iconName="view_column" $size="18px" />
-            {t('Add column', { description: 'Loop table toolbar' })}
-          </button>
-          <span className="loop-table__toolbar-separator" aria-hidden="true" />
-        </>
-      )}
       <div style={{ position: 'relative' }}>
-        <button
-          type="button"
-          className={`loop-table__toolbar-button ${filters.length ? 'is-active' : ''}`}
-          aria-expanded={open === 'filter'}
-          disabled={!isEditable}
-          onClick={() => setOpen(open === 'filter' ? null : 'filter')}
-        >
-          <Icon iconName="filter_list" $size="18px" />
-          {t('Filter', { description: 'Loop table toolbar' })}
-          {filters.length > 0 && (
-            <span className="loop-table__badge">{filters.length}</span>
-          )}
-        </button>
-        {open === 'filter' && (
+        {open && (
           <Popover
-            onClose={() => setOpen(null)}
+            onClose={() => setOpen(false)}
             label={t('Filter rows', { description: 'Loop table filter panel' })}
           >
             {filters.length === 0 && (
@@ -300,73 +270,21 @@ export const Toolbar = ({
         </button>
       )}
 
-      {hiddenColumns.length > 0 && isEditable && (
-        <div style={{ position: 'relative' }}>
-          <button
-            type="button"
-            className="loop-table__toolbar-button"
-            aria-expanded={open === 'hidden'}
-            onClick={() => setOpen(open === 'hidden' ? null : 'hidden')}
-          >
-            <Icon iconName="visibility_off" $size="18px" />
-            {t('{{count}} hidden columns', {
-              description: 'Loop table toolbar',
-              count: hiddenColumns.length,
-            })}
-          </button>
-          {open === 'hidden' && (
-            <Popover
-              onClose={() => setOpen(null)}
-              label={t('Hidden columns', { description: 'Loop table' })}
-            >
-              {hiddenColumns.map((column) => (
-                <button
-                  key={column.id}
-                  type="button"
-                  className="loop-table__popover-item"
-                  onClick={() =>
-                    updateColumn(table, column.id, { hidden: false })
-                  }
-                >
-                  <Icon iconName="visibility" $size="18px" />
-                  {t('Show {{name}}', {
-                    description: 'Shows a hidden column',
-                    name: column.name,
-                  })}
-                </button>
-              ))}
-            </Popover>
-          )}
-        </div>
-      )}
-
-      {isEditable && (
-        // The corner menu, also reachable when the numbers column is hidden
-        <DropdownMenu
-          options={layoutMenuItems(t, table, snapshot.layout)}
-          isOpen={open === 'layout'}
-          onOpenChange={(isOpen) => setOpen(isOpen ? 'layout' : null)}
-        >
-          <button
-            type="button"
-            className="loop-table__toolbar-button"
-            aria-expanded={open === 'layout'}
-            onClick={() => setOpen(open === 'layout' ? null : 'layout')}
-          >
-            <Icon iconName="format_list_numbered" $size="18px" />
-            {t('Header and numbers', { description: 'Loop table toolbar' })}
-          </button>
-        </DropdownMenu>
-      )}
-
       {filters.length > 0 && (
-        <span className="loop-table__muted">
+        <button
+          type="button"
+          className="loop-table__toolbar-button is-active"
+          disabled={!isEditable}
+          title={t('Filter rows', { description: 'Loop table filter panel' })}
+          onClick={() => setOpen(!open)}
+        >
+          <Icon iconName="filter_list" $size="18px" />
           {t('{{shown}} of {{total}} rows', {
             description: 'Loop table: rows shown by the filter',
             shown: shownRows,
             total: snapshot.rows.length,
           })}
-        </span>
+        </button>
       )}
     </div>
   );

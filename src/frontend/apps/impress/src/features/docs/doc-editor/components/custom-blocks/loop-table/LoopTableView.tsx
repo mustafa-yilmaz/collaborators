@@ -438,14 +438,6 @@ export const LoopTableView = ({
   const controlsRowIndex = rows.findIndex((row) => row.id === controlsRowId);
   const controlsRow = rows[controlsRowIndex];
 
-  const addRowAndEdit = () => {
-    const rowId = addRow(table);
-    if (columns[0]) {
-      setActive({ rowId, columnId: columns[0].id });
-      setIsEditing(true);
-    }
-  };
-
   const rowMenuOptions = (row: Row): DropdownMenuItem[] => {
     const index = snapshot.rows.findIndex((item) => item.id === row.id);
     return [
@@ -686,10 +678,10 @@ export const LoopTableView = ({
       <LoopTableStyle />
       <Toolbar
         table={table}
+        tableId={tableId}
         snapshot={snapshot}
         isEditable={isEditable}
         shownRows={rows.length}
-        onAddRow={addRowAndEdit}
       />
       <DndContext
         sensors={sensors}

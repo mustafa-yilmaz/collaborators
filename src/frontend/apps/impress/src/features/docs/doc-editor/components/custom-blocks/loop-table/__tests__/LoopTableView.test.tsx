@@ -6,6 +6,7 @@ import { AppWrapper } from '@/tests/utils';
 
 import { LoopTableView } from '../LoopTableView';
 import { createTable, getTable, readTable, setLayout } from '../model';
+import { tableMenuItems } from '../tableMenu';
 
 vi.mock('@/features/auth', () => ({
   useAuth: () => ({ user: undefined }),
@@ -19,7 +20,7 @@ const setup = (isEditable = true) => {
     <LoopTableView ydoc={ydoc} tableId={tableId} isEditable={isEditable} />,
     { wrapper: AppWrapper },
   );
-  return { table, container };
+  return { table, tableId, container };
 };
 
 /** The number of cells in each row of the grid: header, rows, summary. */
@@ -28,9 +29,24 @@ const cellCounts = (container: HTMLElement) =>
     (tr) => tr.children.length,
   );
 
+/** Choose an entry of the table's menu (in its block's "⋮⋮" menu). */
+const chooseInTableMenu = (
+  table: Y.Map<unknown>,
+  tableId: string,
+  label: string,
+) => {
+  const item = tableMenuItems(
+    ((key: string) => key) as never,
+    table,
+    tableId,
+    readTable(table),
+  ).find((entry) => 'label' in entry && entry.label === label);
+  act(() => (item as { callback: () => void }).callback());
+};
+
 describe('LoopTableView', () => {
-  it('adds rows and columns from the toolbar, the grid ending at the last column', () => {
-    const { table, container } = setup();
+  it('adds rows and columns from the table menu, the grid ending at the last column', () => {
+    const { table, tableId, container } = setup();
     const { columns, rows } = readTable(table);
 
     expect(screen.queryByRole('button', { name: 'New' })).toBeNull();
@@ -39,8 +55,9 @@ describe('LoopTableView', () => {
       Array(rows.length + 2).fill(columns.length + 1),
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Add row' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Add column' }));
+    expect(screen.queryByRole('button', { name: 'Add row' })).toBeNull();
+    chooseInTableMenu(table, tableId, 'Add row');
+    chooseInTableMenu(table, tableId, 'Add column');
     expect(readTable(table).rows).toHaveLength(rows.length + 1);
     expect(readTable(table).columns).toHaveLength(columns.length + 1);
     expect(cellCounts(container)).toEqual(
@@ -65,20 +82,26 @@ describe('LoopTableView', () => {
     expect(
       screen.getByRole('button', { name: 'Row 2 actions' }),
     ).toBeInTheDocument();
-    // The corner menu, to show the numbers again, is in the toolbar
+    // The table menu shows the numbers again
+    const layout = tableMenuItems(
+      ((key: string) => key) as never,
+      table,
+      'id',
+      readTable(table),
+    ).find((entry) => 'label' in entry && entry.label === 'Numbers column');
     expect(
-      screen.getByRole('button', { name: 'Header and numbers' }),
-    ).toBeInTheDocument();
+      (layout as { children: { label: string }[] }).children[0].label,
+    ).toBe('Show the numbers column');
   });
 
-  it('gives readers neither the toolbar actions nor the row controls', () => {
+  it('gives readers neither the table menu nor the row controls', () => {
     const { table, container } = setup(false);
     const { rows } = readTable(table);
 
     fireEvent.mouseOver(
       container.querySelector(`td[data-row-id="${rows[0].id}"]`)!,
     );
-    expect(screen.queryByRole('button', { name: 'Add row' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Table options' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Row 1 actions' })).toBeNull();
   });
 });

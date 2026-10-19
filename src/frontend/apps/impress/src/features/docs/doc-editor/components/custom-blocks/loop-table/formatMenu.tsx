@@ -272,3 +272,59 @@ export const layoutMenuItems = (
     },
   ),
 ];
+
+/** A heading inside a menu (drawn as a label by the block menu). */
+export type MenuHeading = { label: string; isHeading: true };
+
+/**
+ * The colour and alignment choices in one list, each group under a heading,
+ * for menus that can't open a third level (the block's "⋮⋮" menu).
+ */
+export const flatFormatEntries = (
+  t: T,
+  format: CellFormat | undefined,
+  onChange: (patch: FormatPatch) => void,
+): DropdownMenuItem[] => {
+  const shown = mergeFormats(format, DEFAULT_ALIGNMENT);
+  const heading = (label: string) =>
+    ({ label, isHeading: true }) as unknown as DropdownMenuItem;
+  return [
+    heading(t('Colour', { description: 'Heading of the colours in a menu' })),
+    {
+      label: t('None', { description: 'No background colour' }),
+      icon: <Swatch />,
+      isChecked: !shown.background,
+      callback: () => onChange({ background: null }),
+    },
+    ...BACKGROUND_COLOURS.map((colour) => ({
+      label: colourName(t, colour.name),
+      icon: <Swatch colour={colour.value} />,
+      isChecked: shown.background === colour.value,
+      callback: () => onChange({ background: colour.value }),
+    })),
+    { type: 'separator' },
+    heading(
+      t('Horizontal alignment', { description: 'Loop table format menu' }),
+    ),
+    ...horizontal(t).map(([value, icon, label]) => ({
+      label,
+      icon: <Icon iconName={icon} $size="18px" />,
+      isChecked: shown.align === value,
+      callback: () => onChange({ align: value }),
+    })),
+    { type: 'separator' },
+    heading(t('Vertical alignment', { description: 'Loop table format menu' })),
+    ...vertical(t).map(([value, icon, label]) => ({
+      label,
+      icon: <Icon iconName={icon} $size="18px" />,
+      isChecked: shown.valign === value,
+      callback: () => onChange({ valign: value }),
+    })),
+    {
+      label: t('Clear formatting', { description: 'Loop table format menu' }),
+      icon: <Icon iconName="format_clear" $size="18px" />,
+      isHidden: !format?.background && !format?.align && !format?.valign,
+      callback: () => onChange(CLEAR_FORMAT),
+    },
+  ];
+};

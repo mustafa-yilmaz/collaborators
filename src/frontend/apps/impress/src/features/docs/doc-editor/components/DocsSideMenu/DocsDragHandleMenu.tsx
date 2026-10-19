@@ -20,6 +20,7 @@ import TableHeaderRowIcon from '@/icons/table-header-row.svg';
 import TrashIcon from '@/icons/trash.svg';
 
 import { LinkToBlockItem } from './LinkToBlockItem';
+import { LoopTableMenuItems } from './LoopTableMenuItems';
 import { SideMenuSeparator } from './SideMenuSeparator';
 
 export const DocsDragHandleMenu = () => {
@@ -32,6 +33,8 @@ export const DocsDragHandleMenu = () => {
 
   return (
     <DragHandleMenu>
+      {/* Collaborators: a Loop table's own actions come first */}
+      <LoopTableMenuItems />
       <BlockColorsItem>
         <Box $align="center" $gap="xxs" $direction="row">
           <ColorIcon width="16" height="16" aria-hidden="true" />

@@ -25,12 +25,21 @@ export const LoopTableStyle = createGlobalStyle`
   .loop-table {
     position: relative;
   }
+  /* Where the filter panel opens from, when nothing else is shown above */
+  .loop-table__toolbar-anchor {
+    position: relative;
+    height: 0;
+  }
   .loop-table__toolbar {
     display: flex;
     gap: 4px;
     align-items: center;
     margin-bottom: 6px;
     flex-wrap: wrap;
+  }
+  /* Only the filter panel open: the table doesn't move */
+  .loop-table__toolbar:not(:has(> .loop-table__toolbar-button)) {
+    margin-bottom: 0;
   }
   .loop-table__toolbar-button {
     display: inline-flex;

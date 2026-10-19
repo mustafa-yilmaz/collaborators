@@ -66,6 +66,13 @@ export const WorkspaceSwitcher = () => {
         },
       },
       {
+        label: t('Discover workspaces', {
+          description: 'Menu entry opening the directory of workspaces',
+        }),
+        icon: <Icon iconName="travel_explore" $size="20px" />,
+        callback: () => void router.push('/workspaces/discover/'),
+      },
+      {
         label: t('Create a workspace', {
           description: 'Menu entry creating a workspace',
         }),

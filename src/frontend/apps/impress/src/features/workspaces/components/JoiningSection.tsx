@@ -196,9 +196,13 @@ export const JoiningSection = ({
                         ? t('by email domain', {
                             description: 'How a request to join was made',
                           })
-                        : t('by organisation', {
-                            description: 'How a request to join was made',
-                          })}
+                        : item.via === 'directory'
+                          ? t('from Discover workspaces', {
+                              description: 'How a request to join was made',
+                            })
+                          : t('by organisation', {
+                              description: 'How a request to join was made',
+                            })}
                   </Text>
                 </Box>
                 <Box $direction="row" $gap="xs">

@@ -168,6 +168,15 @@ class JoinViaChoices(TextChoices):
     LINK = "link", _("Join link")
     DOMAIN = "domain", _("Email domain")
     ORGANIZATION = "organization", _("Organisation")
+    DIRECTORY = "directory", _("Discover workspaces")
+
+
+class WorkspaceVisibilityChoices(TextChoices):
+    """Who can find a workspace (its name, description, public spaces)."""
+
+    PUBLIC = "public", _("Public on the internet")
+    PLATFORM = "platform", _("Everyone on Collaborators")
+    HIDDEN = "hidden", _("Only its members")
 
 
 class JoinRequestStatusChoices(TextChoices):

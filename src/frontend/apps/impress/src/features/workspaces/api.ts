@@ -21,6 +21,7 @@ import {
   WorkspaceAccess,
   WorkspaceGrant,
   WorkspaceRole,
+  WorkspaceVisibility,
 } from './types';
 
 export const KEY_LIST_WORKSPACE = 'workspaces';
@@ -95,6 +96,7 @@ export function useUpdateWorkspace() {
       name?: string;
       description?: string;
       publishing_policy?: PublishingPolicy;
+      visibility?: WorkspaceVisibility;
       join_domains?: string[];
       join_group?: string | null;
       /** Organisation ids */
@@ -566,7 +568,7 @@ export function useJoinLinkMutations(workspaceId: string) {
 export interface JoinRequest {
   id: string;
   user: User;
-  via: 'link' | 'domain' | 'organization';
+  via: 'link' | 'domain' | 'organization' | 'directory';
   created_at: string;
 }
 
@@ -731,5 +733,48 @@ export function useMakeSpaceIndependent(spaceId: string) {
       void queryClient.invalidateQueries({ queryKey: [KEY_LIST_SPACE] });
       void queryClient.invalidateQueries({ queryKey: [KEY_DOC] });
     },
+  });
+}
+
+// -- Finding workspaces
+
+export interface DirectoryWorkspace {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  visibility: WorkspaceVisibility;
+  member_count: number;
+  is_member: boolean;
+  request_status: 'pending' | 'declined' | null;
+  public_spaces: { id: string; title: string }[];
+}
+
+export const KEY_WORKSPACE_DIRECTORY = 'workspace-directory';
+
+/** The workspaces one can find: public ones, and more when signed in. */
+export function useWorkspaceDirectory(query: string) {
+  return useQuery<DirectoryWorkspace[], APIError>({
+    queryKey: [KEY_WORKSPACE_DIRECTORY, query],
+    queryFn: () =>
+      request<DirectoryWorkspace[]>(
+        `workspaces/discover/?q=${encodeURIComponent(query)}`,
+        'Failed to get the workspaces',
+      ),
+  });
+}
+
+/** Ask the administrators of a workspace found in the directory to join. */
+export function useAskToJoin() {
+  const queryClient = useQueryClient();
+  return useMutation<DirectoryWorkspace, APIError, { workspaceId: string }>({
+    mutationFn: ({ workspaceId }) =>
+      request<DirectoryWorkspace>(
+        `workspaces/${workspaceId}/ask-to-join/`,
+        'Failed to ask to join',
+        jsonInit('POST'),
+      ),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: [KEY_WORKSPACE_DIRECTORY] }),
   });
 }

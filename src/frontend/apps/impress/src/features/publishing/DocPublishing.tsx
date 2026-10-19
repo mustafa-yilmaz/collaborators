@@ -335,8 +335,8 @@ const WikiSettings = ({
 
 /**
  * The share dialog's "Publish to the web" settings: a space is published as
- * a wiki; a public page can let search engines find it; a sub-page can be
- * kept private, out of public links and wikis.
+ * a wiki; a public page can let search engines find it. (Keeping a sub-page
+ * private is one of the "Who can see this?" choices.)
  */
 export const DocPublishing = ({ doc }: { doc: Doc }) => {
   const { t } = useTranslation();
@@ -376,30 +376,10 @@ export const DocPublishing = ({ doc }: { doc: Doc }) => {
       {!isSpace && !publication.is_public && !isSubPage && (
         <Text $size="sm" $variation="secondary">
           {t(
-            'Set the link above to "Public" to publish this page: anyone with the link can read it, and its sub-pages.',
+            'Choose "Public on the internet" above to publish this page: anyone with the link can read it, and its sub-pages.',
             { description: 'Share dialog, how to publish a page' },
           )}
         </Text>
-      )}
-      {isSubPage && (
-        <Box $gap="3xs">
-          <Switch
-            labelSide="right"
-            label={t('Keep private', {
-              description: 'Switch keeping a sub-page out of public sharing',
-            })}
-            checked={publication.keep_private}
-            onChange={() =>
-              update.mutate({ keep_private: !publication.keep_private })
-            }
-          />
-          <Text $size="xs" $variation="secondary">
-            {t(
-              'Leaves this page and its sub-pages out of public links and wikis, even when the pages above are public. People invited keep their access.',
-              { description: 'Explanation of the Keep private switch' },
-            )}
-          </Text>
-        </Box>
       )}
       {!publication.can_publish && (
         <Text $size="xs" $variation="secondary">

@@ -6,7 +6,7 @@ import { Box, HorizontalSeparator, Icon } from '@/components';
 import { Doc, useCopyDocLink } from '@/docs/doc-management';
 import { DocPublishing } from '@/features/publishing/DocPublishing';
 
-import { DocVisibility } from './DocVisibility';
+import { WhoCanSee } from './WhoCanSee';
 
 type DocShareModalFooterProps = {
   doc: Doc;
@@ -28,7 +28,7 @@ export const DocShareModalFooter = ({
     >
       <HorizontalSeparator $margin={{ vertical: 'sm' }} />
 
-      <DocVisibility doc={doc} />
+      <WhoCanSee doc={doc} />
       <HorizontalSeparator $margin={{ vertical: 'sm' }} />
       {doc.abilities.link_configuration && (
         <>

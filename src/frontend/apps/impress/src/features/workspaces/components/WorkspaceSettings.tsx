@@ -41,7 +41,14 @@ import {
   useWorkspaces,
 } from '../api';
 import { useWorkspaceStore } from '../stores/useWorkspaceStore';
-import { Group, GroupKind, Space, Workspace, WorkspaceRole } from '../types';
+import {
+  Group,
+  GroupKind,
+  Space,
+  Workspace,
+  WorkspaceRole,
+  WorkspaceVisibility,
+} from '../types';
 
 import { ConfirmModal } from './ConfirmModal';
 import { JoiningSection } from './JoiningSection';
@@ -167,6 +174,52 @@ const GeneralSection = ({ workspace }: { workspace: Workspace }) => {
             {t('Save', { description: 'Button saving a change' })}
           </Button>
         )}
+      </Box>
+      <Box $gap="3xs">
+        <Select
+          fullWidth
+          label={t('Who can find this workspace', {
+            description: 'Label of the workspace visibility choice',
+          })}
+          clearable={false}
+          disabled={!workspace.abilities.update}
+          options={[
+            {
+              value: 'public',
+              label: t('Public on the internet', {
+                description: 'Visibility: anyone, even without an account',
+              }),
+            },
+            {
+              value: 'platform',
+              label: t('Everyone on Collaborators', {
+                description: 'Visibility: every signed-in collaborator',
+              }),
+            },
+            {
+              value: 'hidden',
+              label: t('Only its members', {
+                description: 'Visibility of a hidden workspace',
+              }),
+            },
+          ]}
+          value={workspace.visibility}
+          onChange={(event) =>
+            updateWorkspace(
+              {
+                id: workspace.id,
+                visibility: event.target.value as WorkspaceVisibility,
+              },
+              { onError },
+            )
+          }
+        />
+        <Text $size="xs" $variation="secondary">
+          {t(
+            'Findable workspaces are listed in "Discover workspaces" with their name, description and public spaces; people can ask to join, and administrators approve. Public ones are listed even to people without an account.',
+            { description: 'Explanation of the workspace visibility' },
+          )}
+        </Text>
       </Box>
       {workspace.abilities.destroy && (
         <Box $direction="row" $justify="flex-end">

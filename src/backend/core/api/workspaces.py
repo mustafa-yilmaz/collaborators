@@ -52,6 +52,7 @@ class WorkspaceSerializer(serializers.ModelSerializer):
             "slug",
             "description",
             "publishing_policy",
+            "visibility",
             "join_approval",
             "join_domains",
             "join_group",
@@ -1176,3 +1177,86 @@ class JoinWorkspaceView(APIView):
         workspace = self._workspace(token)
         joining.admit(workspace, request.user)
         return drf.response.Response(self._describe(workspace, request.user))
+
+
+# -- Finding workspaces
+
+
+def directory_card(workspace, user):
+    """What anyone allowed to find a workspace sees of it."""
+    is_member = user.is_authenticated and workspace.accesses.filter(user=user).exists()
+    public_spaces = models.Document.objects.filter(
+        workspace_links__workspace=workspace,
+        workspace_links__is_home=True,
+        kind=choices.DocumentKindChoices.SPACE,
+        link_reach=choices.LinkReachChoices.PUBLIC,
+        ancestors_deleted_at__isnull=True,
+    ).order_by("title")[:10]
+    return {
+        "id": str(workspace.id),
+        "name": workspace.name,
+        "slug": workspace.slug,
+        "description": workspace.description,
+        "visibility": workspace.visibility,
+        "member_count": workspace.accesses.count(),
+        "is_member": is_member,
+        "request_status": joining.request_status(workspace, user),
+        "public_spaces": [
+            {"id": str(space.id), "title": space.title} for space in public_spaces
+        ],
+    }
+
+
+def findable_workspaces(user):
+    """Public workspaces for anyone; those open to the platform when signed in."""
+    visibilities = [choices.WorkspaceVisibilityChoices.PUBLIC]
+    if user.is_authenticated:
+        visibilities.append(choices.WorkspaceVisibilityChoices.PLATFORM)
+    return models.Workspace.objects.filter(visibility__in=visibilities)
+
+
+class WorkspaceDirectoryView(APIView):
+    """
+    GET /api/v1.0/workspaces/discover/?q=<text> — the workspaces one can find:
+    public ones for anyone, and those open to everyone on Collaborators when
+    signed in. Hidden workspaces never show.
+    """
+
+    permission_classes = [drf.permissions.AllowAny]
+
+    def get(self, request):
+        """Matching findable workspaces, by name."""
+        workspaces = findable_workspaces(request.user)
+        query = (request.query_params.get("q") or "").strip()
+        if query:
+            workspaces = workspaces.filter(
+                Q(name__icontains=query) | Q(description__icontains=query)
+            )
+        return drf.response.Response(
+            [
+                directory_card(workspace, request.user)
+                for workspace in workspaces.order_by("name")[:100]
+            ]
+        )
+
+
+class AskToJoinView(APIView):
+    """
+    POST /api/v1.0/workspaces/<id>/ask-to-join/ — from "Discover workspaces":
+    the workspace's administrators get a request to approve.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, workspace_id):
+        """Ask to join a findable workspace."""
+        workspace = findable_workspaces(request.user).filter(id=workspace_id).first()
+        if workspace is None:
+            raise drf.exceptions.NotFound()
+        joining.admit(
+            workspace,
+            request.user,
+            via=choices.JoinViaChoices.DIRECTORY,
+            always_ask=True,
+        )
+        return drf.response.Response(directory_card(workspace, request.user))

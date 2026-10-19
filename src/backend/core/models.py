@@ -46,6 +46,7 @@ from core.choices import (
     PublishingPolicyChoices,
     RoleChoices,
     WorkspaceRoleChoices,
+    WorkspaceVisibilityChoices,
     get_equivalent_link_definition,
 )
 from core.services.yhub_services import YHubError, YHubService
@@ -2607,6 +2608,12 @@ class Workspace(BaseModel):
     join_token = models.CharField(max_length=43, unique=True, null=True, blank=True)
     # People joining by link, domain or organisation wait for an admin's yes
     join_approval = models.BooleanField(default=False)
+    # Who can find it in "Discover workspaces" and ask to join
+    visibility = models.CharField(
+        max_length=20,
+        choices=WorkspaceVisibilityChoices.choices,
+        default=WorkspaceVisibilityChoices.HIDDEN,
+    )
 
     class Meta:
         db_table = "collaborators_workspace"

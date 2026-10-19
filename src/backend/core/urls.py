@@ -15,6 +15,7 @@ from core.api import (
     publishing,
     signin_methods,
     viewsets,
+    visibility,
     workspaces,
 )
 from core.external_api import viewsets as external_api_viewsets
@@ -118,6 +119,18 @@ urlpatterns = [
                 path(
                     "documents/<uuid:pk>/space-links/<uuid:link_id>/",
                     page_links.PageSpaceLinkView.as_view(),
+                ),
+                path(
+                    "workspaces/discover/",
+                    workspaces.WorkspaceDirectoryView.as_view(),
+                ),
+                path(
+                    "workspaces/<uuid:workspace_id>/ask-to-join/",
+                    workspaces.AskToJoinView.as_view(),
+                ),
+                path(
+                    "documents/<uuid:resource_id>/visibility/",
+                    visibility.DocumentVisibilityView.as_view(),
                 ),
                 path(
                     "documents/<uuid:pk>/make-independent/",

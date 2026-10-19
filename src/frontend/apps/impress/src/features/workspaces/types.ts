@@ -9,6 +9,9 @@ export enum WorkspaceRole {
 
 export type PublishingPolicy = 'space_admins' | 'workspace_admins';
 
+/** Who can find a workspace in "Discover workspaces" and ask to join */
+export type WorkspaceVisibility = 'public' | 'platform' | 'hidden';
+
 /** A Google Workspace ("google:<domain>") or Microsoft tenant ("microsoft:<id>") */
 export interface Organization {
   id: string;
@@ -21,6 +24,7 @@ export interface Workspace {
   slug: string;
   description: string;
   publishing_policy: PublishingPolicy;
+  visibility: WorkspaceVisibility;
   /** Verified emails at these domains join when signing in (admins only) */
   join_domains: string[];
   /** The organisation group those people join too */

@@ -407,12 +407,15 @@ Done: the Loop table tweaks, Loop table v2 (T9, T5, T56), the wiki extras (F8), 
 
 1. ✅ **Group management by group creators** (built 2026-10-20): any workspace member can create a team (organizations stay with administrators) and manages it like an administrator: renames or deletes it, adds and removes people, appoints managers. People are moved or copied between the groups one manages (tick them, then *Move or copy*). A person can be in several groups.
 2. ✅ **Profile badge on mentions** (built 2026-10-20): hovering a mentioned person (in pages, comments, and table cells, text or Person columns) shows a card: initials, name, and, for someone the viewer works with, their email, shared workspaces and their groups there (`GET people/<id>/`). Once profile pages exist, the card shows what the profile lets the viewer see, with a link to it.
-3. **One visibility setting for workspaces, spaces and pages:** who can find and open each one:
-   1. public to the internet (and search engines, which can be refused separately);
-   2. inside the platform: (a) all collaborators, (b) the workspace's members, (c) the space's members;
-   3. hidden: only invited people.
-   - Much of this exists (pages' link reach, a space's visibility, wiki indexing); the work is one consistent control, plus a workspace's own visibility.
-   - To decide: inviting *people outside the platform* means reopening email invitations, turned off so far.
+3. ✅ **One visibility setting** (built 2026-10-20):
+   - **Pages and spaces:** the share dialog's "Who can see this?":
+     - Public on the internet; Everyone on Collaborators (both with "people can read / comment / edit");
+     - Members of <workspace> (each workspace the space belongs to);
+     - for a page in a space, "Same as <space>"; otherwise Only invited people.
+     - A page in a space can't be hidden from the space's people (accesses flow down): it is made independent first. A space published live as a wiki stays public until the wiki is unpublished. Search engines: the "Publish to the web" switch, for public pages and wikis.
+   - **Workspaces:** "Who can find this workspace" in its settings: public, everyone on Collaborators, or only its members. Findable ones are listed in **Discover workspaces** (`/workspaces/discover/`, also signed out for public ones) with their public spaces; "Ask to join" always sends the admins a request.
+   - **To decide:** inviting people from outside the platform needs email invitations, turned off so far.
+3b. **Table tweaks** (asked 2026-10-20): the row-number column hidden by default in new tables; and no lasting highlight of the whole table while editing it (a lighter way to show which table is active, or none).
 4. **Labels:** labels on workspaces, spaces and pages (a free, shared vocabulary, Web 2.0 style), with a **label cloud** card on the dashboard. Built before launch so content gets labels from the start; items 6–9 below build on them.
 5. **Profile pages** with visibility per piece of information (public / whole platform / chosen workspaces or spaces). A profile can't be fully hidden: at least the name stays visible to people who share a workspace or page with the person.
 

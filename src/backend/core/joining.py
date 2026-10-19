@@ -120,15 +120,16 @@ def join(workspace, user, group=None):
     return created
 
 
-def admit(workspace, user, group=None, via=JoinViaChoices.LINK):
+def admit(workspace, user, group=None, via=JoinViaChoices.LINK, always_ask=False):
     """
-    Let the user in, or, when the workspace's admins approve who joins, ask
-    them (once: a pending or declined request isn't made again). Return
-    JOINED, REQUESTED, or None when nothing changed.
+    Let the user in, or, when the workspace's admins approve who joins (or
+    `always_ask`, for a request from "Discover workspaces"), ask them (once:
+    a pending or declined request isn't made again). Return JOINED,
+    REQUESTED, or None when nothing changed.
     """
     if workspace.accesses.filter(user=user).exists():
         return None
-    if not workspace.join_approval:
+    if not workspace.join_approval and not always_ask:
         return JOINED if join(workspace, user, group) else None
     _join_request, created = models.WorkspaceJoinRequest.objects.get_or_create(
         workspace=workspace, user=user, defaults={"via": via, "group": group}

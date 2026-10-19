@@ -47,6 +47,7 @@
     {
       "username": "impress",
       "email": "impress@impress.world",
+      "emailVerified": true,
       "firstName": "John",
       "lastName": "Doe",
       "enabled": true,
@@ -61,6 +62,7 @@
     {
       "username": "user-e2e-chromium",
       "email": "user.test@chromium.test",
+      "emailVerified": true,
       "firstName": "E2E",
       "lastName": "Chromium",
       "enabled": true,
@@ -75,6 +77,7 @@
     {
       "username": "user-e2e-webkit",
       "email": "user.test@webkit.test",
+      "emailVerified": true,
       "firstName": "E2E",
       "lastName": "Webkit",
       "enabled": true,
@@ -89,6 +92,7 @@
     {
       "username": "user-e2e-firefox",
       "email": "user.test@firefox.test",
+      "emailVerified": true,
       "firstName": "E2E",
       "lastName": "Firefox",
       "enabled": true,

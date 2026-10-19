@@ -1,6 +1,6 @@
 # Sign-in providers (local development)
 
-Collaborators accounts are created only by signing in through a provider: Google, Microsoft, Apple, LinkedIn or X. Locally, Keycloak (http://localhost:8083) sits between the app and the providers: you create an app at each provider you want, then give its credentials to Keycloak.
+Collaborators accounts are created only by signing in through a provider: Google, Microsoft, LinkedIn or X. People sign in with their ordinary personal (or work) accounts; only the owner of Collaborators registers it once at each provider, as below. Locally, Keycloak (http://localhost:8083) sits between the app and the providers: you create an app at each provider you want, then give its credentials to Keycloak.
 
 Everything here is for **local development** (`localhost`). Production needs its own apps with the real domain.
 
@@ -26,14 +26,14 @@ Everything here is for **local development** (`localhost`). Production needs its
 
 ## 3. Create the LinkedIn app
 
-1. Open [LinkedIn Developers](https://www.linkedin.com/developers/apps) → **Create app** (it needs a LinkedIn company page; any page you manage works).
+1. Open [LinkedIn Developers](https://www.linkedin.com/developers/apps) → **Create app**. LinkedIn links every app to a LinkedIn **Page**: if you have none, create one for free from your personal account ([Create a Page](https://www.linkedin.com/company/setup/new/)). It only names who publishes the app; people still sign in with their personal profiles.
 2. **Products**: add **Sign In with LinkedIn using OpenID Connect**.
 3. **Auth** → Authorized redirect URL: `http://localhost:8083/realms/impress/broker/linkedin/endpoint`
 4. Copy the **Client ID** and **Primary client secret**.
 
 ## 4. Create the X app
 
-1. Open the [X developer portal](https://developer.x.com/) → a project and an app.
+1. Open the [X developer portal](https://developer.x.com/) and sign up for the **Free** plan with your X account (only you need it; people sign in with their ordinary X accounts). It gives a project and an app.
 2. **User authentication settings**: OAuth 1.0a, **Request email from users** on, app type *Web App*.
    - Callback URL: `http://localhost:8083/realms/impress/broker/x/endpoint`
    - Website, terms and privacy URLs: X asks for them before it gives emails.
@@ -41,23 +41,13 @@ Everything here is for **local development** (`localhost`). Production needs its
 
 X may give no email, or one it hasn't verified. Keycloak then asks the person for one. That email isn't trusted for linking accounts, nor for joining workspaces by domain.
 
-## 5. Apple (optional, needs a public https address)
-
-Keycloak has no Apple provider of its own:
-
-1. Download the [Apple identity provider extension](https://github.com/klausbetz/apple-identity-provider-keycloak/releases) release made for Keycloak 26.3 (1.15.0 or 1.16.0). Put its `.jar` in `docker/auth/providers/` (gitignored), then restart Keycloak: `docker compose restart keycloak`.
-2. In your [Apple Developer account](https://developer.apple.com/account/resources/identifiers/list) (paid membership):
-   - Create a **Services ID** with **Sign in with Apple**.
-   - Set its return URL to `https://<your public address>/realms/impress/broker/apple/endpoint`. Apple refuses `localhost` and `http`, so use a tunnel to your Keycloak.
-3. **Keys** → create a key with Sign in with Apple. Download the `.p8` file and keep it outside the repository. Note the **Key ID** and your **Team ID**.
-
-## 6. Give the credentials to Keycloak
+## 5. Give the credentials to Keycloak
 
 ```bash
 cp env.d/development/sso.local.dist env.d/development/sso.local
 ```
 
-Open `env.d/development/sso.local` and fill in the values of the providers you created; leave the others empty. For Apple, `APPLE_PRIVATE_KEY_FILE` is the path of the `.p8` file. This file is gitignored, so the secrets never get committed.
+Open `env.d/development/sso.local` and fill in the values of the providers you created; leave the others empty. This file is gitignored, so the secrets never get committed.
 
 With the stack running (`make run`), run:
 
@@ -65,9 +55,9 @@ With the stack running (`make run`), run:
 make sso-providers
 ```
 
-It adds or updates the providers and turns off Keycloak's own "Register" form. It also sends Keycloak's emails to the dev mail catcher (http://localhost:1081), and writes the list of providers to `env.d/development/common.local`. Restart the backend to apply that list (`docker compose up -d app-dev`). Run the script again any time you change a credential.
+It adds or updates the providers and turns off Keycloak's own "Register" form. It also asks for unverified emails (X, Microsoft) to be confirmed by a link before entering. It also sends Keycloak's emails to the dev mail catcher (http://localhost:1081), and writes the list of providers to `env.d/development/common.local`. Restart the backend to apply that list (`docker compose up -d app-dev`). Run the script again any time you change a credential.
 
-## 7. Try it
+## 6. Try it
 
 Open http://localhost:3000 and click **Start collaborating**. The Collaborators sign-in page shows one **Continue with …** button per provider; each goes straight to that provider. Signing in creates your Collaborators account on the spot; there's no invitation step.
 
@@ -77,7 +67,7 @@ In development the page also has **Use a test account**. It opens Keycloak's own
 
 - **Linking accounts:** signing in with a second provider that gives the email of an existing account offers to link them.
   - You confirm by signing in with the first method, or by a link sent to that email.
-  - Google, Apple and LinkedIn emails are trusted as verified. Microsoft work-account emails (set by each organisation) and X emails aren't.
+  - Google and LinkedIn emails are trusted as verified. Microsoft emails (work accounts' are set by each organisation) and X emails aren't: the first time, Keycloak sends a link to confirm the address before entering.
   - **Sign-in methods** in the account menu (bottom left) opens Keycloak's *Linked accounts* page: add or remove providers there. The page URL is `COLLABORATORS_ACCOUNT_URL`.
 - **Joining workspaces:** in a workspace's settings, admins can create a **join link**. They can also open the workspace to an **email domain**, optionally adding joiners to an organisation group:
   - Whoever signs in with a verified email at that domain joins as a member.

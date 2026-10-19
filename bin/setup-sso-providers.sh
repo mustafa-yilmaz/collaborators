@@ -47,6 +47,22 @@ kc update "realms/${REALM}" \
   -s smtpServer.fromDisplayName=Collaborators
 echo "Sent Keycloak's emails to the dev mail catcher"
 
+# An email nobody has checked (X, Microsoft) is confirmed by a link before
+# entering. Google and LinkedIn emails are trusted as verified (trustEmail),
+# so their users are never asked.
+kc update "realms/${REALM}" -s verifyEmail=true
+echo "Asked unverified emails to be confirmed by a link"
+
+# The built-in dev and test accounts (docker/auth/realm.json) have known
+# emails: they never need to confirm them
+for username in impress user-e2e-chromium user-e2e-webkit user-e2e-firefox; do
+  user_id="$(kc get users -r "${REALM}" -q "username=${username}" -q exact=true --fields id --format csv --noquotes || true)"
+  if [[ -n "${user_id}" ]]; then
+    kc update "users/${user_id}" -r "${REALM}" -s emailVerified=true
+  fi
+done
+echo "Marked the dev and test accounts' emails as verified"
+
 if [[ ! -f "${ENV_FILE}" ]]; then
   echo "No ${ENV_FILE} yet: copy ${ENV_FILE}.dist and fill in the client ids and secrets to add the providers." >&2
   exit 0
@@ -169,46 +185,10 @@ else
   echo "X_API_KEY is empty: skipping X"
 fi
 
-if [[ -n "${APPLE_SERVICES_ID}" ]]; then
-  # Keycloak has no Apple provider of its own: it comes from the extension
-  # put in docker/auth/providers (see documentation/collaborators/sso-setup.md)
-  if ! kc get serverinfo | grep -q '"id" : "apple"'; then
-    echo "The Apple extension isn't installed in Keycloak: skipping Apple (see sso-setup.md)" >&2
-  elif [[ ! -f "${APPLE_PRIVATE_KEY_FILE}" ]]; then
-    echo "APPLE_PRIVATE_KEY_FILE (${APPLE_PRIVATE_KEY_FILE}) not found: skipping Apple" >&2
-  else
-    # Apple verifies emails, its private relay addresses included. The key
-    # goes into the JSON escaped, as it spans several lines.
-    APPLE_KEY_JSON="$(python3 -c 'import json, sys; print(json.dumps(open(sys.argv[1]).read()))' "${APPLE_PRIVATE_KEY_FILE}")"
-    upsert_provider apple "$(cat <<EOF
-{
-  "alias": "apple",
-  "displayName": "Apple",
-  "providerId": "apple",
-  "enabled": true,
-  "trustEmail": true,
-  "firstBrokerLoginFlowAlias": "first broker login",
-  "config": {
-    "clientId": "${APPLE_SERVICES_ID}",
-    "clientSecret": ${APPLE_KEY_JSON},
-    "teamId": "${APPLE_TEAM_ID}",
-    "keyId": "${APPLE_KEY_ID}",
-    "defaultScope": "name email",
-    "syncMode": "IMPORT",
-    "guiOrder": "3"
-  }
-}
-EOF
-)"
-  fi
-else
-  echo "APPLE_SERVICES_ID is empty: skipping Apple"
-fi
-
 # Tell the app which providers to offer on its sign-in page, in this order
 PROVIDERS="$(kc get identity-provider/instances -r "${REALM}" | python3 -c '
 import json, sys
-order = ["google", "microsoft", "apple", "linkedin", "x"]
+order = ["google", "microsoft", "linkedin", "x"]
 enabled = {p["alias"] for p in json.load(sys.stdin) if p.get("enabled")}
 print(",".join(alias for alias in order if alias in enabled))
 ')"

@@ -15,7 +15,6 @@ import { useResponsiveStore } from '@/stores';
 export const PROVIDER_NAMES: Record<string, string> = {
   google: 'Google',
   microsoft: 'Microsoft',
-  apple: 'Apple',
   linkedin: 'LinkedIn',
   x: 'X',
 };

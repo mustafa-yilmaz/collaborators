@@ -27,12 +27,3 @@ LINKEDIN_CLIENT_SECRET=
 # http://localhost:8083/realms/impress/broker/x/endpoint
 X_API_KEY=
 X_API_KEY_SECRET=
-
-# Apple: needs the Keycloak Apple extension (see sso-setup.md), a Services ID
-# with "Sign in with Apple", and a key for it (.p8 file, kept outside the
-# repository). Return URL: http://localhost:8083/realms/impress/broker/apple/endpoint
-# Apple only accepts https and a real domain: use a tunnel to try it locally.
-APPLE_SERVICES_ID=
-APPLE_TEAM_ID=
-APPLE_KEY_ID=
-APPLE_PRIVATE_KEY_FILE=

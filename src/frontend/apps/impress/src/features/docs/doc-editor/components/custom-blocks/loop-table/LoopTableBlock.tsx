@@ -121,7 +121,9 @@ export const getLoopTableReactSlashMenuItems = (
 ) => [
   {
     key: 'loopTable',
-    title: t('Table', {
+    // Not just "Table": BlockNote's simple table already has that title, and
+    // the slash menu tells its items apart by title
+    title: t('Loop table', {
       description: 'Name of the editor block type: a Loop-style table',
     }),
     onItemClick: () => {

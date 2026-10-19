@@ -205,9 +205,7 @@ def test_api_notifications_are_private():
 def test_api_mention_in_the_first_block():
     """BlockNote's first block has the fixed id "initialBlockId"."""
     author, reader = factories.UserFactory.create_batch(2)
-    document = factories.DocumentFactory(
-        users=[(author, "editor"), (reader, "reader")]
-    )
+    document = factories.DocumentFactory(users=[(author, "editor"), (reader, "reader")])
 
     response = client_for(author).post(
         f"/api/v1.0/documents/{document.id}/mention/",

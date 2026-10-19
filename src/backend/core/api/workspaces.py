@@ -576,6 +576,7 @@ class SpaceViewSet(
 
     GET /api/v1.0/spaces/?workspace=<id> — spaces placed in a workspace
     GET /api/v1.0/spaces/?independent=true — my independent spaces
+    GET /api/v1.0/spaces/?mine=true — every space I was given a role on
     POST /api/v1.0/spaces/ — create a space (see SpaceCreateSerializer)
     POST /api/v1.0/spaces/<id>/move-to-workspace/ — give an independent space a home
     POST, DELETE /api/v1.0/spaces/<id>/links/ — share a space with another workspace
@@ -616,6 +617,12 @@ class SpaceViewSet(
             if workspace is None or workspace.get_role(user) is None:
                 return queryset.none()
             return queryset.filter(workspace_links__workspace=workspace)
+
+        # The spaces I was given a role on, directly or through my groups
+        if self.request.query_params.get("mine") in ("true", "1"):
+            return queryset.filter(
+                Q(accesses__user=user) | Q(accesses__team__in=user.teams)
+            )
 
         if self.request.query_params.get("independent") in ("true", "1"):
             return queryset.filter(workspace_links__isnull=True).filter(

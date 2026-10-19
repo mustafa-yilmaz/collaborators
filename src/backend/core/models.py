@@ -183,6 +183,8 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
     # Whether mentions and assignments are also sent by email (they always
     # reach the in-app notification inbox)
     collaborator_email_notifications = models.BooleanField(default=True)
+    # The dashboard as this collaborator arranged it: [{id, hidden, collapsed}]
+    collaborator_dashboard = models.JSONField(default=list, blank=True)
     # Derived from workspace and group memberships, see `teams`
     collaborator_teams = ArrayField(
         models.CharField(max_length=100), default=list, blank=True, editable=False
@@ -2741,3 +2743,61 @@ class Notification(BaseModel):
 
     def __str__(self):
         return f"{self.kind} for {self.recipient!s} on {self.document!s}"
+
+
+class TableAssignment(BaseModel):
+    """
+    A person or a group set in a Person cell of a Loop table. Tables live in
+    the documents' Yjs content, out of the database's reach: this index lets
+    the dashboard list what is assigned to someone. The browser keeps it up to
+    date as cells change.
+    """
+
+    document = models.ForeignKey(
+        Document, on_delete=models.CASCADE, related_name="table_assignments"
+    )
+    # "cell:<table>:<row>:<column>"
+    anchor_id = models.CharField(max_length=160)
+    assignee = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="table_assignments",
+        null=True,
+        blank=True,
+    )
+    team = models.CharField(max_length=100, blank=True, default="")
+    # What the row is about (its first text), as it was when assigned
+    row_label = models.CharField(max_length=255, blank=True, default="")
+    assigned_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="table_assignments_made",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        db_table = "collaborators_table_assignment"
+        ordering = ("-updated_at",)
+        verbose_name = _("Table assignment")
+        verbose_name_plural = _("Table assignments")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["document", "anchor_id", "assignee"],
+                condition=models.Q(assignee__isnull=False),
+                name="unique_table_assignment_user",
+            ),
+            models.UniqueConstraint(
+                fields=["document", "anchor_id", "team"],
+                condition=models.Q(team__gt=""),
+                name="unique_table_assignment_team",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(assignee__isnull=False, team="")
+                | models.Q(assignee__isnull=True, team__gt=""),
+                name="check_table_assignment_user_or_team",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.assignee or self.team} on {self.document!s}"

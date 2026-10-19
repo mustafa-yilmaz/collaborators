@@ -404,25 +404,26 @@ export function useSpace(spaceId: string, enabled = true) {
 // -- Grants to groups
 
 /**
- * The groups of the workspaces a document's space belongs to. For sharing,
- * groups that already have a role are left out; for mentions
- * (`includeGranted`), all are listed.
+ * The groups of the workspaces a document's space belongs to, for sharing
+ * (groups that already have a role are left out). For mentions
+ * (`forMention`), every group of every workspace one belongs to, the
+ * document's own first.
  */
 export function useGrantableTeams(
   docId: string,
   query: string,
-  includeGranted = false,
+  forMention = false,
 ) {
   return useQuery<GrantableTeam[], APIError>({
-    queryKey: [KEY_LIST_GRANTABLE_TEAM, docId, query, includeGranted],
+    queryKey: [KEY_LIST_GRANTABLE_TEAM, docId, query, forMention],
     queryFn: () =>
       request<GrantableTeam[]>(
         `groups/?document_id=${docId}&q=${encodeURIComponent(query)}${
-          includeGranted ? '&include_granted=true' : ''
+          forMention ? '&include_granted=true&every_workspace=true' : ''
         }`,
         'Failed to get the groups',
       ),
-    enabled: !!docId,
+    enabled: !!docId || forMention,
   });
 }
 

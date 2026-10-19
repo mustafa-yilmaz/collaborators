@@ -570,12 +570,15 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
 class GrantableTeamsView(APIView):
     """
     GET /api/v1.0/groups/?document_id=<id>&q=<text>[&include_granted=true]
+        [&every_workspace=true]
 
     The groups and workspaces the logged-in user can grant a role to on a
     document, or mention in it: those of the workspaces its space is placed in
     and that the user belongs to. Independent pages and spaces have none.
     Teams that already have a role on the document are left out, unless
-    `include_granted` (for mentions). Each comes with its number of members.
+    `include_granted` (for mentions). With `every_workspace` (for mentions),
+    all the groups of every workspace the user belongs to, those of the
+    document's own workspaces first. Each comes with its number of members.
     """
 
     permission_classes = [permissions.IsAuthenticated]
@@ -585,16 +588,34 @@ class GrantableTeamsView(APIView):
         document = models.Document.objects.filter(
             id=request.query_params.get("document_id")
         ).first()
-        if document is None:
+        every_workspace = request.query_params.get("every_workspace") in (
+            "true",
+            "1",
+        )
+        if document is None and not every_workspace:
             return drf.response.Response([])
 
-        root = document if document.is_root() else document.get_root()
-        workspaces = models.Workspace.objects.filter(
-            space_links__space=root, accesses__user=request.user
-        ).distinct()
+        own_workspaces = []
+        if document is not None:
+            root = document if document.is_root() else document.get_root()
+            own_workspaces = list(
+                models.Workspace.objects.filter(
+                    space_links__space=root, accesses__user=request.user
+                ).distinct()
+            )
+        workspaces = own_workspaces
+        if every_workspace:
+            others = models.Workspace.objects.filter(
+                accesses__user=request.user
+            ).exclude(id__in=[workspace.id for workspace in own_workspaces])
+            workspaces = own_workspaces + list(others.distinct().order_by("name"))
         query = (request.query_params.get("q") or "").strip().lower()
         # Teams that already have a role on the document itself are left out
-        granted = set(document.accesses.exclude(team="").values_list("team", flat=True))
+        granted = (
+            set(document.accesses.exclude(team="").values_list("team", flat=True))
+            if document is not None
+            else set()
+        )
 
         results = []
         for workspace in workspaces:
@@ -620,7 +641,7 @@ class GrantableTeamsView(APIView):
                     "workspace": {"id": str(workspace.id), "name": workspace.name},
                     "member_count": group.member_count,
                 }
-                for group in groups[:20]
+                for group in (groups if every_workspace else groups[:20])
             )
         if request.query_params.get("include_granted") in ("true", "1"):
             return drf.response.Response(results)

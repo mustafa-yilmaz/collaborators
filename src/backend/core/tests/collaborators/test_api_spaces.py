@@ -419,3 +419,42 @@ def test_api_groups_grantable_teams_leave_out_granted_ones():
 
     # "All members of Acme" already reads the space
     assert [r["team"] for r in results.json()] == [group.team]
+
+
+def test_api_groups_for_mentions_cover_every_workspace_of_the_user():
+    """For "@", the groups of all my workspaces show, the page's own first."""
+    owner = factories.UserFactory()
+    home = make_workspace(owner, name="Zeta")
+    other = make_workspace(owner, name="Acme")
+    stranger_workspace = models.Workspace.objects.create(name="Elsewhere")
+    home_group = models.Group.objects.create(workspace=home, name="Q4 Launch")
+    other_group = models.Group.objects.create(workspace=other, name="Design")
+    models.Group.objects.create(workspace=stranger_workspace, name="Hidden")
+    space_id = (
+        client_for(owner)
+        .post(
+            "/api/v1.0/spaces/",
+            {"title": "S", "workspace_id": str(home.id)},
+            format="json",
+        )
+        .json()["id"]
+    )
+
+    results = (
+        client_for(owner)
+        .get(
+            f"/api/v1.0/groups/?document_id={space_id}"
+            "&include_granted=true&every_workspace=true"
+        )
+        .json()
+    )
+
+    assert [r["team"] for r in results] == [
+        models.make_team(models.TEAM_WORKSPACE, home.id),
+        home_group.team,
+        models.make_team(models.TEAM_WORKSPACE, other.id),
+        other_group.team,
+    ]
+    # Without a page, too (e.g. a page of no workspace)
+    without = client_for(owner).get("/api/v1.0/groups/?every_workspace=true").json()
+    assert {r["team"] for r in without} == {r["team"] for r in results}

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { InView } from 'react-intersection-observer';
 import { useDebounce } from 'use-debounce';
 
 import { Icon } from '@/components';
 import { useTrans } from '@/docs/doc-management';
-import { useSearchDocs } from '@/docs/doc-search/api/useSearchDocs';
-import { useRecentDocs } from '@/features/dashboard/api';
+import { useInfiniteSearchDocs } from '@/docs/doc-search/api/useSearchDocs';
 import { usePeopleToMention } from '@/features/docs/doc-share/api/usePeopleToMention';
 import { useGrantableTeams } from '@/features/workspaces/api';
 
@@ -24,8 +24,9 @@ interface PersonPickerProps {
 
 /**
  * Pick collaborators and groups for a Person cell, or someone, a group or a
- * page to mention in a text cell. People one works with show from the first
- * letter (or none).
+ * page to mention in a text cell. Everyone one works with, every group of
+ * one's workspaces and every page one can read are listed before anything is
+ * typed; typing narrows them.
  */
 export const PersonPicker = ({
   docId,
@@ -42,35 +43,27 @@ export const PersonPicker = ({
   // Groups already given access to the page count too
   const { data: teams = [] } = useGrantableTeams(docId, debounced, true);
   const isSearching = debounced.trim().length > 0;
-  const { data: pages } = useSearchDocs(
+  // Every page one can read, a batch at a time as the list scrolls
+  const {
+    data: pages,
+    hasNextPage,
+    fetchNextPage,
+    isFetching: isFetchingPages,
+  } = useInfiniteSearchDocs(
     { q: debounced, page: 1 },
-    { enabled: !!onPickPage && isSearching },
+    { enabled: !!onPickPage },
   );
-  // Before anything is typed, the pages updated lately
-  const { data: recentPages } = useRecentDocs(!!onPickPage && !isSearching);
-  const pageItems = (
-    isSearching
-      ? (pages?.results ?? []).map((page) => ({
-          id: page.id,
-          title: page.title,
-          where: page.parent?.title,
-        }))
-      : (recentPages ?? []).map((page) => ({
-          id: page.id,
-          title: page.title,
-          where: page.space?.title,
-        }))
-  )
+  const pageItems = (pages?.pages ?? [])
+    .flatMap((batch) => batch.results)
     .filter((page) => page.id !== docId)
-    .slice(0, 5);
+    .map((page) => ({
+      id: page.id,
+      title: page.title,
+      where: page.parent?.title,
+    }));
   const selectedIds = value.map((person) => person.id);
-  const shownTeams = teams
-    .filter((team) => !selectedIds.includes(team.team))
-    .slice(0, onPickPage ? 4 : 8);
-  // In a text cell, a few people leave room for the pages below
-  const shownUsers = users
-    .filter((user) => !selectedIds.includes(user.id))
-    .slice(0, onPickPage ? 5 : undefined);
+  const shownTeams = teams.filter((team) => !selectedIds.includes(team.team));
+  const shownUsers = users.filter((user) => !selectedIds.includes(user.id));
   // Headings only where pages are mixed in
   const heading = (label: string) =>
     onPickPage && (
@@ -185,11 +178,7 @@ export const PersonPicker = ({
         ))}
         {onPickPage && (
           <>
-            {heading(
-              isSearching
-                ? t('Pages', { description: 'Mention picker section' })
-                : t('Recent pages', { description: 'Mention picker section' }),
-            )}
+            {heading(t('Pages', { description: 'Mention picker section' }))}
             {pageItems.map((page) => (
               <button
                 key={page.id}
@@ -210,6 +199,14 @@ export const PersonPicker = ({
                 )}
               </button>
             ))}
+            {hasNextPage && (
+              <InView
+                as="div"
+                onChange={(inView) =>
+                  inView && !isFetchingPages && void fetchNextPage()
+                }
+              />
+            )}
             {isSearching && pages && pageItems.length === 0 && (
               <div className="loop-table__muted" style={{ padding: '2px 8px' }}>
                 {t('No page found', {

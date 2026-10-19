@@ -156,11 +156,11 @@ export const SearchPage = ({
   /**
    * When the search page is opened, we set the search
    * target to 'current' to limit the search to the current
-   * document and its sub-documents.
+   * document and its sub-documents. "@" lists every page one can read.
    */
   useEffect(() => {
-    setFilter('current');
-  }, [setFilter]);
+    setFilter(trigger === '@' ? 'all' : 'current');
+  }, [setFilter, trigger]);
 
   /**
    * createReactInlineContentSpec add automatically the focus after
@@ -317,6 +317,12 @@ export const SearchPage = ({
               & .quick-search-container [cmdk-root] {
                 border-radius: inherit;
                 background: transparent;
+              }
+
+              /* Everyone, every group and every page are listed: it scrolls */
+              & [cmdk-list] {
+                max-height: min(420px, 50vh);
+                overflow-y: auto;
               }
             `}
           >

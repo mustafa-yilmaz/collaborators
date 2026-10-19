@@ -28,7 +28,10 @@ interface MentionSearchGroupProps {
   onSelect: (candidate: MentionCandidate) => void;
 }
 
-/** People and groups that "@" can mention, above the pages to link. */
+/**
+ * Everyone and every group that "@" can mention, above the pages to link,
+ * listed before anything is typed; typing narrows them.
+ */
 export const MentionSearchGroup = ({
   docId,
   search,
@@ -41,14 +44,14 @@ export const MentionSearchGroup = ({
   const { data: teams = [] } = useGrantableTeams(docId, query, true);
 
   const candidates: MentionCandidate[] = [
-    ...teams.slice(0, 5).map((team) => ({
+    ...teams.map((team) => ({
       kind: 'group' as const,
       id: team.team,
       label: team.label,
       detail: team.workspace.name,
       memberCount: team.member_count,
     })),
-    ...users.slice(0, 6).map((user) => ({
+    ...users.map((user) => ({
       kind: 'user' as const,
       id: user.id,
       label: user.full_name || user.email,

@@ -14,7 +14,8 @@ from core.api.filters import remove_accents
 from core.api.serializers import UserSerializer
 from core.utils.users import users_sharing_documents_with
 
-PEOPLE_LIMIT = 8
+# Everyone one works with, as a scrolling list; a safety bound only
+PEOPLE_LIMIT = 500
 
 
 class KnownPeopleView(APIView):

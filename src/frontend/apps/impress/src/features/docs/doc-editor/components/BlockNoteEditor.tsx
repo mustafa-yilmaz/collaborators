@@ -373,6 +373,23 @@ export const BlockNoteEditor = ({ doc, provider }: BlockNoteEditorProps) => {
 
   useScrollToBlockAnchor();
 
+  // Once another window takes the focus, the editor's selection is no longer
+  // shown in blue (see DocsEditorStyle), until the page is used again
+  useEffect(() => {
+    const root = document.documentElement;
+    const onBlur = () => root.classList.add('collaborators-window-inactive');
+    const onUse = () => root.classList.remove('collaborators-window-inactive');
+    window.addEventListener('blur', onBlur);
+    window.addEventListener('pointerdown', onUse, true);
+    window.addEventListener('keydown', onUse, true);
+    return () => {
+      window.removeEventListener('blur', onBlur);
+      window.removeEventListener('pointerdown', onUse, true);
+      window.removeEventListener('keydown', onUse, true);
+      onUse();
+    };
+  }, []);
+
   useEffect(() => {
     setEditor(editor);
 

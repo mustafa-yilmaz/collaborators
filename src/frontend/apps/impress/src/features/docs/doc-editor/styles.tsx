@@ -1,11 +1,24 @@
 import { createGlobalStyle } from 'styled-components';
 
 export const DocsEditorStyle = createGlobalStyle`
-  /* Collaborators: a selected block (e.g. a whole Loop table) is outlined in
-     blue only while the editor is in use; clicking elsewhere clears it */
-  .ProseMirror:not(:focus-within) .ProseMirror-selectednode,
-  .ProseMirror:not(:focus-within) .ProseMirror-selectednode > .bn-block-content {
-    outline: none !important;
+  /* Collaborators: a selected block (e.g. a whole Loop table) is shown in
+     blue only while the editor is in use; a click anywhere else on the
+     screen, or in another window, clears it. BlockNote draws it as an
+     outline plus an ::after overlay (a blue tint and ring). */
+  .ProseMirror:not(:focus-within),
+  .collaborators-window-inactive .ProseMirror {
+    .ProseMirror-selectednode,
+    .ProseMirror-selectednode > .bn-block-content,
+    .bn-block-content.ProseMirror-selectednode > *,
+    .ProseMirror-selectednode > .bn-block-content > * {
+      outline: none !important;
+    }
+    .bn-block-content.ProseMirror-selectednode > *::after,
+    .ProseMirror-selectednode > .bn-block-content > *::after,
+    .bn-block-content .ProseMirror-selectednode::after,
+    .bn-inline-content .ProseMirror-selectednode::after {
+      content: none !important;
+    }
   }
 
   .bn-container {

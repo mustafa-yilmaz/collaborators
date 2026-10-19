@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { sections } from '../Dashboard';
 import { CARDS, DEFAULT_LAYOUT, mergeLayout } from '../cards';
 
 vi.mock('@/features/notifications/NotificationBell', () => ({
@@ -7,10 +8,13 @@ vi.mock('@/features/notifications/NotificationBell', () => ({
 }));
 
 describe('dashboard layout', () => {
-  it('is lean by default: mentions, recent and assigned only', () => {
+  it('is lean by default: mentions and assigned, recent pages across', () => {
     expect(
       DEFAULT_LAYOUT.filter((card) => !card.hidden).map((card) => card.id),
-    ).toEqual(['notifications', 'recent', 'assigned']);
+    ).toEqual(['notifications', 'assigned', 'recent']);
+    expect(DEFAULT_LAYOUT.find((card) => card.id === 'recent')?.wide).toBe(
+      true,
+    );
     expect(DEFAULT_LAYOUT).toHaveLength(CARDS.length);
   });
 
@@ -39,5 +43,28 @@ describe('dashboard layout', () => {
     ]);
 
     expect(merged.slice(1).every((card) => card.hidden)).toBe(true);
+  });
+
+  it('lays wide cards across, the others two by two', () => {
+    const card = (id: string, wide = false) => ({
+      id,
+      hidden: false,
+      collapsed: false,
+      wide,
+    });
+    const cards = [card('a'), card('b'), card('c', true), card('d')];
+
+    expect(
+      sections(cards, false).map((section) => [
+        section.wide,
+        section.items.map((item) => `${item.card.id}${item.index}`),
+      ]),
+    ).toEqual([
+      [false, ['a0', 'b1']],
+      [true, ['c2']],
+      [false, ['d3']],
+    ]);
+    // Phones: one column, wide or not
+    expect(sections(cards, true)).toHaveLength(1);
   });
 });

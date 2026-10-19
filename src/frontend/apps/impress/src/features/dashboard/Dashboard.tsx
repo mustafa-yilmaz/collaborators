@@ -65,6 +65,24 @@ const cardCss = css`
   }
 `;
 
+/**
+ * The cards shown, cut into runs of cards side by side and wide cards; each
+ * keeps its place in the whole order (for moving it up or down).
+ */
+export const sections = (cards: CardLayout[], isMobile: boolean) =>
+  cards.reduce<
+    { wide: boolean; items: { card: CardLayout; index: number }[] }[]
+  >((result, card, index) => {
+    const wide = !!card.wide && !isMobile;
+    const last = result[result.length - 1];
+    if (!wide && last && !last.wide) {
+      last.items.push({ card, index });
+    } else {
+      result.push({ wide, items: [{ card, index }] });
+    }
+    return result;
+  }, []);
+
 const DashboardCard = ({
   card,
   index,
@@ -73,6 +91,7 @@ const DashboardCard = ({
   onMove,
 }: DashboardCardProps) => {
   const { t } = useTranslation();
+  const { isMobile } = useResponsiveStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const definition = CARDS.find((item) => item.id === card.id);
   const drag = useDraggable({ id: card.id });
@@ -94,6 +113,20 @@ const DashboardCard = ({
       icon: <Icon iconName="arrow_downward" $size="18px" />,
       isDisabled: index === count - 1,
       callback: () => onMove(index + 1),
+    },
+    {
+      label: card.wide
+        ? t('Show in one column', { description: 'Dashboard card action' })
+        : t('Show across both columns', {
+            description: 'Dashboard card action',
+          }),
+      icon: (
+        <Icon
+          iconName={card.wide ? 'view_column' : 'width_full'}
+          $size="18px"
+        />
+      ),
+      callback: () => onChange({ wide: !card.wide }),
     },
     { type: 'separator' },
     {
@@ -189,7 +222,7 @@ const DashboardCard = ({
       </Box>
       {!card.collapsed && (
         <Box $margin={{ top: 'xs' }} $gap="4xs">
-          <Body />
+          <Body wide={!!card.wide && !isMobile} />
         </Box>
       )}
     </Box>
@@ -250,6 +283,16 @@ export const Dashboard = () => {
   };
 
   const firstName = user?.short_name || user?.full_name?.split(' ')[0];
+  const renderCard = ({ card, index }: { card: CardLayout; index: number }) => (
+    <DashboardCard
+      key={card.id}
+      card={card}
+      index={index}
+      count={visible.length}
+      onChange={(changes) => change(card.id, changes)}
+      onMove={(to) => move(card.id, to)}
+    />
+  );
 
   return (
     <Box
@@ -313,30 +356,33 @@ export const Dashboard = () => {
       </BoxButton>
 
       <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-        <Box
-          $direction="row"
-          $gap="sm"
-          $align="flex-start"
-          className="--collaborators--dashboard-columns"
-        >
-          {/* Two columns that stack independently, cards in turn left and
-              right; one column on phones */}
-          {(isMobile ? [0] : [0, 1]).map((column) => (
-            <Box key={column} $flex={1} $gap="sm" $css="min-width: 0;">
-              {visible.map((card, index) =>
-                isMobile || index % 2 === column ? (
-                  <DashboardCard
-                    key={card.id}
-                    card={card}
-                    index={index}
-                    count={visible.length}
-                    onChange={(changes) => change(card.id, changes)}
-                    onMove={(to) => move(card.id, to)}
-                  />
-                ) : null,
-              )}
-            </Box>
-          ))}
+        <Box $gap="sm" className="--collaborators--dashboard-columns">
+          {/* Runs of cards in two columns that stack independently (cards
+              in turn left and right), a wide card across both; one column
+              on phones */}
+          {sections(visible, isMobile).map((section) =>
+            section.wide ? (
+              renderCard(section.items[0])
+            ) : (
+              <Box
+                key={section.items[0].card.id}
+                $direction="row"
+                $gap="sm"
+                $align="flex-start"
+              >
+                {(isMobile ? [0] : [0, 1]).map((column) => (
+                  <Box key={column} $flex={1} $gap="sm" $css="min-width: 0;">
+                    {section.items
+                      .filter(
+                        (_item, position) =>
+                          isMobile || position % 2 === column,
+                      )
+                      .map(renderCard)}
+                  </Box>
+                ))}
+              </Box>
+            ),
+          )}
         </Box>
       </DndContext>
 

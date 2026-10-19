@@ -32,6 +32,8 @@ class LayoutCardSerializer(serializers.Serializer):
     id = serializers.RegexField(r"^[a-z0-9-]{1,40}$")
     hidden = serializers.BooleanField(default=False)
     collapsed = serializers.BooleanField(default=False)
+    # Shown across both columns rather than in one
+    wide = serializers.BooleanField(default=False)
 
 
 class DashboardLayoutView(APIView):
@@ -102,6 +104,7 @@ class DashboardRecentView(APIView):
                     "id": str(doc.id),
                     "title": doc.title,
                     "kind": doc.kind,
+                    "excerpt": doc.excerpt or "",
                     "updated_at": doc.updated_at,
                     "space": (
                         {

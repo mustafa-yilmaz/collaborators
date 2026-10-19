@@ -33,8 +33,8 @@ def test_api_dashboard_layout_is_personal_and_saved():
     """Each collaborator keeps their own layout."""
     user, other = factories.UserFactory.create_batch(2)
     layout = [
-        {"id": "assigned", "hidden": False, "collapsed": True},
-        {"id": "recent", "hidden": True, "collapsed": False},
+        {"id": "assigned", "hidden": False, "collapsed": True, "wide": False},
+        {"id": "recent", "hidden": True, "collapsed": False, "wide": True},
     ]
 
     response = client_for(user).put(

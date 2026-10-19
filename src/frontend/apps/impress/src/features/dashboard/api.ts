@@ -7,12 +7,16 @@ export interface CardLayout {
   id: string;
   hidden: boolean;
   collapsed: boolean;
+  /** Shown across both columns rather than in one */
+  wide?: boolean;
 }
 
 export interface RecentDoc {
   id: string;
   title: string | null;
   kind: 'page' | 'space';
+  /** The page's first words, when known */
+  excerpt?: string;
   updated_at: string;
   space: { id: string; title: string | null } | null;
 }

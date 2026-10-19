@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import { Box, Icon, StyledLink, Text } from '@/components';
-import { useTrans } from '@/features/docs/doc-management';
+import { getEmojiAndTitle, useTrans } from '@/features/docs/doc-management';
 import { useNotificationText } from '@/features/notifications/NotificationBell';
 import {
   useNotificationMutations,
@@ -18,7 +18,13 @@ import {
 } from '@/features/workspaces';
 import { useDate } from '@/hooks/useDate';
 
-import { useAssignedRows, useDocsList, useRecentDocs } from './api';
+import {
+  CardLayout,
+  RecentDoc,
+  useAssignedRows,
+  useDocsList,
+  useRecentDocs,
+} from './api';
 
 export interface CardDefinition {
   id: string;
@@ -26,7 +32,14 @@ export interface CardDefinition {
   title: (t: TFunction<'translation', undefined>) => string;
   /** Shown on a fresh dashboard; the others can be added. */
   defaultVisible: boolean;
-  Body: () => ReactNode;
+  /** Across both columns on a fresh dashboard */
+  defaultWide?: boolean;
+  Body: (props: BodyProps) => ReactNode;
+}
+
+/** What a card's body knows of its card: whether it goes across. */
+export interface BodyProps {
+  wide?: boolean;
 }
 
 const rowCss = css`
@@ -79,7 +92,96 @@ const Empty = ({ children }: { children: ReactNode }) => (
   </Text>
 );
 
-const RecentBody = () => {
+/** A page as a tile: its emoji or icon, title, first words and space. */
+const RecentTile = ({ doc }: { doc: RecentDoc }) => {
+  const { untitledDocument } = useTrans();
+  const { relativeDate } = useDate();
+  const { emoji, titleWithoutEmoji } = getEmojiAndTitle(
+    doc.title || untitledDocument,
+  );
+  const isSpace = doc.kind === 'space';
+  return (
+    <StyledLink
+      href={`/docs/${doc.id}`}
+      $css={css`
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        border: 1px solid var(--c--contextuals--border--surface--primary);
+        border-radius: var(--c--globals--spacings--xs);
+        overflow: hidden;
+        color: inherit;
+        text-decoration: none;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
+        &:hover {
+          border-color: var(--c--globals--colors--brand-400);
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+        }
+      `}
+    >
+      <Box
+        $height="64px"
+        $align="center"
+        $justify="center"
+        $css={css`
+          background: ${
+            isSpace
+              ? 'var(--c--contextuals--background--semantic--brand--tertiary)'
+              : 'var(--c--contextuals--background--semantic--contextual--primary)'
+          };
+          font-size: 28px;
+        `}
+      >
+        {emoji ? (
+          <span aria-hidden="true">{emoji}</span>
+        ) : (
+          <Icon
+            iconName={isSpace ? 'folder' : 'description'}
+            $size="28px"
+            $variation="secondary"
+          />
+        )}
+      </Box>
+      <Box $padding="xs" $gap="4xs" $css="min-width: 0;">
+        <Text
+          $size="sm"
+          $weight="600"
+          $css={css`
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          `}
+        >
+          {titleWithoutEmoji || untitledDocument}
+        </Text>
+        {doc.excerpt && (
+          <Text
+            $size="xs"
+            $variation="secondary"
+            $css={css`
+              display: -webkit-box;
+              -webkit-line-clamp: 2;
+              -webkit-box-orient: vertical;
+              overflow: hidden;
+            `}
+          >
+            {doc.excerpt}
+          </Text>
+        )}
+        <Text $size="xs" $variation="secondary" $ellipsis>
+          {[doc.space?.title, relativeDate(doc.updated_at)]
+            .filter(Boolean)
+            .join(' · ')}
+        </Text>
+      </Box>
+    </StyledLink>
+  );
+};
+
+const RecentBody = ({ wide }: BodyProps) => {
   const { t } = useTranslation();
   const { untitledDocument } = useTrans();
   const { relativeDate } = useDate();
@@ -91,6 +193,22 @@ const RecentBody = () => {
           description: 'Empty Recent pages card',
         })}
       </Empty>
+    );
+  }
+  // With the room of both columns, pages show as tiles
+  if (wide) {
+    return (
+      <Box
+        $css={css`
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+          gap: var(--c--globals--spacings--xs);
+        `}
+      >
+        {data.map((doc) => (
+          <RecentTile key={doc.id} doc={doc} />
+        ))}
+      </Box>
     );
   }
   return (
@@ -281,10 +399,10 @@ const WorkspacesBody = () => {
 };
 
 /**
- * Every card the dashboard can show, in their default order. Cards fill two
- * columns in turn: first left, second right, third left... so by default
- * Mentions & notifications and Assigned to me are on the left, Recent pages
- * on the right.
+ * Every card the dashboard can show, in their default order. Cards sit in two
+ * columns, in turn left and right, and a wide card goes across both: by
+ * default Mentions & notifications on the left, Assigned to me on the right,
+ * and Recent pages across, under them.
  */
 export const CARDS: CardDefinition[] = [
   {
@@ -296,18 +414,19 @@ export const CARDS: CardDefinition[] = [
     Body: NotificationsBody,
   },
   {
-    id: 'recent',
-    icon: 'schedule',
-    title: (t) => t('Recent pages', { description: 'Dashboard card' }),
-    defaultVisible: true,
-    Body: RecentBody,
-  },
-  {
     id: 'assigned',
     icon: 'assignment_ind',
     title: (t) => t('Assigned to me', { description: 'Dashboard card' }),
     defaultVisible: true,
     Body: AssignedBody,
+  },
+  {
+    id: 'recent',
+    icon: 'schedule',
+    title: (t) => t('Recent pages', { description: 'Dashboard card' }),
+    defaultVisible: true,
+    defaultWide: true,
+    Body: RecentBody,
   },
   {
     id: 'favorites',
@@ -383,12 +502,11 @@ export const DEFAULT_LAYOUT = CARDS.map((card) => ({
   id: card.id,
   hidden: !card.defaultVisible,
   collapsed: false,
+  wide: !!card.defaultWide,
 }));
 
 /** The saved layout, completed with the cards added since it was saved. */
-export const mergeLayout = (
-  saved: { id: string; hidden: boolean; collapsed: boolean }[],
-) => {
+export const mergeLayout = (saved: CardLayout[]) => {
   const known = saved.filter((card) => CARDS.some((def) => def.id === card.id));
   const missing = DEFAULT_LAYOUT.filter(
     (card) => !known.some((item) => item.id === card.id),

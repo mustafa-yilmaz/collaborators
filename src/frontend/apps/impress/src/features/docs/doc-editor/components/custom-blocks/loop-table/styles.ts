@@ -22,6 +22,9 @@ export const LoopTableStyle = createGlobalStyle`
     font-size: 14px;
     user-select: text;
   }
+  .loop-table {
+    position: relative;
+  }
   .loop-table__toolbar {
     display: flex;
     gap: 4px;
@@ -44,6 +47,12 @@ export const LoopTableStyle = createGlobalStyle`
   .loop-table__toolbar-button:hover,
   .loop-table__toolbar-button[aria-expanded='true'] {
     background: var(--lt-hover);
+  }
+  .loop-table__toolbar-separator {
+    width: 1px;
+    height: 18px;
+    margin: 0 4px;
+    background: var(--lt-border);
   }
   .loop-table__toolbar-button.is-active {
     color: var(--lt-accent);
@@ -93,20 +102,34 @@ export const LoopTableStyle = createGlobalStyle`
     font-size: 13px;
     height: 36px;
   }
+  /* Row numbers sit like any cell: left and in the middle unless chosen
+     otherwise */
   .loop-table__rownum {
     width: 44px;
     min-width: 44px;
-    text-align: center !important;
     color: var(--lt-muted);
     font-size: 12px;
   }
-  .loop-table__rownum-inner {
+  .loop-table__rownum-number {
+    padding: 7px 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  /* The handle and menu of a row, in the page margin left of the table */
+  .loop-table__row-controls {
+    position: absolute;
+    right: 100%;
     display: flex;
     align-items: center;
-    justify-content: center;
-    height: 100%;
-    min-height: 36px;
-    gap: 2px;
+    padding-right: 4px;
+  }
+  .loop-table__row-controls .loop-table__handle {
+    visibility: visible;
+    padding: 2px;
+    border-radius: 4px;
+  }
+  .loop-table__row-controls .loop-table__handle:hover,
+  .loop-table__row-controls .loop-table__handle.is-open {
+    background: var(--lt-hover);
   }
   .loop-table__handle {
     visibility: hidden;
@@ -118,13 +141,9 @@ export const LoopTableStyle = createGlobalStyle`
     display: inline-flex;
     touch-action: none;
   }
-  tr:hover .loop-table__handle,
   th:hover .loop-table__handle,
   .loop-table__handle:focus-visible {
     visibility: visible;
-  }
-  tr:hover .loop-table__rownum-number {
-    display: none;
   }
   /* The menu trigger around a header fills it, so the header's alignment
      (left by default) shows */
@@ -184,10 +203,6 @@ export const LoopTableStyle = createGlobalStyle`
   /* An alignment chosen for the cell, row or column wins */
   .loop-table__grid td[data-align] .loop-table__cell {
     text-align: inherit;
-  }
-  .loop-table__rownum.is-numbers-hidden {
-    width: 36px;
-    min-width: 36px;
   }
   .loop-table__handle.is-open {
     visibility: visible;
@@ -260,38 +275,6 @@ export const LoopTableStyle = createGlobalStyle`
     border-color: var(--lt-accent);
     color: var(--lt-accent);
     font-weight: 600;
-  }
-  .loop-table__new-row {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    width: 100%;
-    border: none;
-    background: transparent;
-    color: var(--lt-muted);
-    padding: 8px 12px;
-    cursor: pointer;
-    font: inherit;
-    text-align: left;
-  }
-  .loop-table__new-row:hover {
-    background: var(--lt-hover);
-  }
-  .loop-table__add-column {
-    width: 40px;
-    min-width: 40px;
-  }
-  .loop-table__add-column button {
-    width: 100%;
-    height: 36px;
-    border: none;
-    background: transparent;
-    color: var(--lt-muted);
-    cursor: pointer;
-    font-size: 18px;
-  }
-  .loop-table__add-column button:hover {
-    background: var(--lt-hover);
   }
   .loop-table__summary td {
     background: var(--lt-hover);

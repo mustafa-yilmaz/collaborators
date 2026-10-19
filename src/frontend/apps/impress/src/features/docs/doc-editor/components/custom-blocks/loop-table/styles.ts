@@ -415,6 +415,14 @@ export const LoopTableStyle = createGlobalStyle`
     align-items: center;
     margin-bottom: 6px;
   }
+  .loop-table__popover-heading {
+    padding: 8px 8px 2px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--lt-muted);
+  }
   .loop-table__muted {
     color: var(--lt-muted);
     font-size: 12px;

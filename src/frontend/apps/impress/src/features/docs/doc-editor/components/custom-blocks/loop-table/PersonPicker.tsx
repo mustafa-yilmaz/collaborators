@@ -5,6 +5,7 @@ import { useDebounce } from 'use-debounce';
 import { Icon } from '@/components';
 import { useTrans } from '@/docs/doc-management';
 import { useSearchDocs } from '@/docs/doc-search/api/useSearchDocs';
+import { useRecentDocs } from '@/features/dashboard/api';
 import { usePeopleToMention } from '@/features/docs/doc-share/api/usePeopleToMention';
 import { useGrantableTeams } from '@/features/workspaces/api';
 
@@ -40,11 +41,43 @@ export const PersonPicker = ({
   const users = usePeopleToMention(debounced);
   // Groups already given access to the page count too
   const { data: teams = [] } = useGrantableTeams(docId, debounced, true);
+  const isSearching = debounced.trim().length > 0;
   const { data: pages } = useSearchDocs(
     { q: debounced, page: 1 },
-    { enabled: !!onPickPage && debounced.trim().length > 0 },
+    { enabled: !!onPickPage && isSearching },
   );
+  // Before anything is typed, the pages updated lately
+  const { data: recentPages } = useRecentDocs(!!onPickPage && !isSearching);
+  const pageItems = (
+    isSearching
+      ? (pages?.results ?? []).map((page) => ({
+          id: page.id,
+          title: page.title,
+          where: page.parent?.title,
+        }))
+      : (recentPages ?? []).map((page) => ({
+          id: page.id,
+          title: page.title,
+          where: page.space?.title,
+        }))
+  )
+    .filter((page) => page.id !== docId)
+    .slice(0, 5);
   const selectedIds = value.map((person) => person.id);
+  const shownTeams = teams
+    .filter((team) => !selectedIds.includes(team.team))
+    .slice(0, onPickPage ? 4 : 8);
+  // In a text cell, a few people leave room for the pages below
+  const shownUsers = users
+    .filter((user) => !selectedIds.includes(user.id))
+    .slice(0, onPickPage ? 5 : undefined);
+  // Headings only where pages are mixed in
+  const heading = (label: string) =>
+    onPickPage && (
+      <div className="loop-table__popover-heading" role="presentation">
+        {label}
+      </div>
+    );
 
   const add = (person: PersonValue) => {
     if (!selectedIds.includes(person.id)) {
@@ -111,51 +144,53 @@ export const PersonPicker = ({
         value={query}
         onChange={(event) => setQuery(event.target.value)}
       />
-      <div style={{ marginTop: 6, maxHeight: 240, overflowY: 'auto' }}>
-        {teams
-          .filter((team) => !selectedIds.includes(team.team))
-          .slice(0, 8)
-          .map((team) => (
-            <button
-              key={team.team}
-              type="button"
-              className="loop-table__popover-item"
-              onClick={() =>
-                add({ kind: 'group', id: team.team, label: team.label })
-              }
-            >
-              <Icon iconName="groups" $size="18px" />
-              <span>{team.label}</span>
-              <span className="loop-table__muted">{team.workspace.name}</span>
-            </button>
-          ))}
-        {users
-          .filter((user) => !selectedIds.includes(user.id))
-          .map((user) => (
-            <button
-              key={user.id}
-              type="button"
-              className="loop-table__popover-item"
-              onClick={() =>
-                add({
-                  kind: 'user',
-                  id: user.id,
-                  label: user.full_name || user.email,
-                })
-              }
-            >
-              <Icon iconName="person" $size="18px" />
-              <span>{user.full_name || user.email}</span>
-              {user.full_name && (
-                <span className="loop-table__muted">{user.email}</span>
-              )}
-            </button>
-          ))}
-        {onPickPage &&
-          (pages?.results ?? [])
-            .filter((page) => page.id !== docId)
-            .slice(0, 6)
-            .map((page) => (
+      <div style={{ marginTop: 6, maxHeight: 320, overflowY: 'auto' }}>
+        {shownUsers.length > 0 &&
+          heading(t('People', { description: 'Mention picker section' }))}
+        {shownUsers.map((user) => (
+          <button
+            key={user.id}
+            type="button"
+            className="loop-table__popover-item"
+            onClick={() =>
+              add({
+                kind: 'user',
+                id: user.id,
+                label: user.full_name || user.email,
+              })
+            }
+          >
+            <Icon iconName="person" $size="18px" />
+            <span>{user.full_name || user.email}</span>
+            {user.full_name && (
+              <span className="loop-table__muted">{user.email}</span>
+            )}
+          </button>
+        ))}
+        {shownTeams.length > 0 &&
+          heading(t('Groups', { description: 'Mention picker section' }))}
+        {shownTeams.map((team) => (
+          <button
+            key={team.team}
+            type="button"
+            className="loop-table__popover-item"
+            onClick={() =>
+              add({ kind: 'group', id: team.team, label: team.label })
+            }
+          >
+            <Icon iconName="groups" $size="18px" />
+            <span>{team.label}</span>
+            <span className="loop-table__muted">{team.workspace.name}</span>
+          </button>
+        ))}
+        {onPickPage && (
+          <>
+            {heading(
+              isSearching
+                ? t('Pages', { description: 'Mention picker section' })
+                : t('Recent pages', { description: 'Mention picker section' }),
+            )}
+            {pageItems.map((page) => (
               <button
                 key={page.id}
                 type="button"
@@ -170,17 +205,19 @@ export const PersonPicker = ({
               >
                 <Icon iconName="description" $size="18px" />
                 <span>{page.title || untitledDocument}</span>
-                {page.parent?.title && (
-                  <span className="loop-table__muted">{page.parent.title}</span>
+                {page.where && (
+                  <span className="loop-table__muted">{page.where}</span>
                 )}
               </button>
             ))}
-        {onPickPage && !debounced.trim() && (
-          <div className="loop-table__muted" style={{ padding: 6 }}>
-            {t('Type to find a page too', {
-              description: 'Hint of the mention picker of a text cell',
-            })}
-          </div>
+            {isSearching && pages && pageItems.length === 0 && (
+              <div className="loop-table__muted" style={{ padding: '2px 8px' }}>
+                {t('No page found', {
+                  description: 'Mention picker, when no page matches',
+                })}
+              </div>
+            )}
+          </>
         )}
       </div>
     </Popover>

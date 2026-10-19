@@ -127,7 +127,7 @@ See **section 3**: it is the largest single piece of work.
 - `@` suggests **collaborators and groups** in page text, comments and **Loop table cells**.
 - Assigning a collaborator or group in a table's **Person** column also notifies them.
 - **Notification inbox** (bell icon) with unread count, mark read / all read, and filters; each item links to the exact block, comment or **table cell** and highlights it.
-- **Email** per collaborator preference: immediately, daily digest, or off.
+- **Email** per collaborator preference: right away, or off. (Daily digests were dropped.)
 - Only *newly added* mentions notify; re-editing a page doesn't notify again.
 - If the person can't see the page, the writer is asked whether to share it with them.
 - **Group mentions:** members are resolved when the notification is sent. Mentioning more than 20 people asks "Notify N people?" first.
@@ -350,7 +350,7 @@ Loop's public documentation doesn't cover the following. Before building them, w
 
 Each phase ends with something you can click through. Requirements may change after each one.
 
-**Status (2026-10-19):** phases 0, 1, 2 (Loop table v1), 3 (mentions and notifications), 4 (the dashboard), 5 (public pages and wikis) and 6 (sign-in providers, account linking, joining) are built, on branches `collaborators/phase-0` to `-phase-6`. Email digests (F4) are not built yet: emails are sent right away, or not at all.
+**Status (2026-10-19):** phases 0, 1, 2 (Loop table v1), 3 (mentions and notifications), 4 (the dashboard), 5 (public pages and wikis) and 6 (sign-in providers, account linking, joining) are built, on branches `collaborators/phase-0` to `-phase-6`.
 
 Moved out of the table v1:
 - **Moved to v2 (not built yet):** rich formatting in Text cells (T9), "expand to margins" (T5), drawing only the visible rows of very large tables (T56).
@@ -371,12 +371,11 @@ Moved out of the table v1:
 ### To do next, in order
 
 1. Loop table: numbers column alignment, fully hiding the numbers column, a new way to add columns and rows (in progress).
-2. Email digests: daily summary or none, per collaborator (F4).
-3. Loop table v2: rich formatting in Text cells (T9), "expand to margins" (T5), drawing only the visible rows of very large tables (T56).
-4. Wikis: full-text search (titles only today), an image logo, `<workspace>.collaborators.community` addresses and custom domains, publishing a fixed version (F8).
-5. Joining: join requests approved by admins; joining by Google Workspace domain or Microsoft organisation (F2).
-6. A sign-in-methods page inside Collaborators, instead of Keycloak's (F2).
-7. **Last:** setting up the sign-in providers for real, i.e. the apps at Google, Microsoft, Apple, LinkedIn, X (and any other), the Apple extension, production addresses, and asking X users for a verified email (F2). Until then, sign-in works locally with the test accounts.
+2. Loop table v2: rich formatting in Text cells (T9), "expand to margins" (T5), drawing only the visible rows of very large tables (T56).
+3. Wikis: full-text search (titles only today), an image logo, `<workspace>.collaborators.community` addresses and custom domains, publishing a fixed version (F8).
+4. Setting up the sign-in providers for real: the apps at Google, Microsoft, Apple, LinkedIn, X (and any other), the Apple extension, production addresses, and asking X users for a verified email (F2). Until then, sign-in works locally with the test accounts.
+5. A sign-in-methods page inside Collaborators, instead of Keycloak's (F2).
+6. Joining: join requests approved by admins; joining by Google Workspace domain or Microsoft organisation (F2).
 
 ## 5. Open questions
 

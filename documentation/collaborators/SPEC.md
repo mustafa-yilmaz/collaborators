@@ -368,6 +368,16 @@ Moved out of the table v1:
 
 ---
 
+### To do next, in order
+
+1. Loop table: numbers column alignment, fully hiding the numbers column, a new way to add columns and rows (in progress).
+2. Email digests: daily summary or none, per collaborator (F4).
+3. Loop table v2: rich formatting in Text cells (T9), "expand to margins" (T5), drawing only the visible rows of very large tables (T56).
+4. Wikis: full-text search (titles only today), an image logo, `<workspace>.collaborators.community` addresses and custom domains, publishing a fixed version (F8).
+5. Joining: join requests approved by admins; joining by Google Workspace domain or Microsoft organisation (F2).
+6. A sign-in-methods page inside Collaborators, instead of Keycloak's (F2).
+7. **Last:** setting up the sign-in providers for real, i.e. the apps at Google, Microsoft, Apple, LinkedIn, X (and any other), the Apple extension, production addresses, and asking X users for a verified email (F2). Until then, sign-in works locally with the test accounts.
+
 ## 5. Open questions
 
 1. **Identity broker:** Keycloak (already in the dev stack) or Zitadel / Authentik? Depends on Apple and X support.

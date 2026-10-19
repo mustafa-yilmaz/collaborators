@@ -37,6 +37,25 @@ def test_people_lists_close_people_without_a_minimum_length():
     assert str(stranger.id) not in {person["id"] for person in everyone}
 
 
+def test_people_shows_a_newcomer_to_everyone_on_the_page_at_once():
+    """Sharing a page with someone puts them in the owner's list right away."""
+    owner = factories.UserFactory()
+    newcomer = factories.UserFactory()
+    document = factories.DocumentFactory(users=[(owner, "owner")])
+    client = APIClient()
+    client.force_login(owner)
+    # The owner's list is computed (and kept) before the page is shared
+    assert str(newcomer.id) not in {
+        person["id"] for person in client.get("/api/v1.0/people/").json()
+    }
+
+    factories.UserDocumentAccessFactory(document=document, user=newcomer)
+
+    assert str(newcomer.id) in {
+        person["id"] for person in client.get("/api/v1.0/people/").json()
+    }
+
+
 def test_people_needs_authentication():
     """Only signed-in collaborators have people around them."""
     assert APIClient().get("/api/v1.0/people/").status_code == 401

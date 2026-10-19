@@ -15,6 +15,23 @@ from core.tasks.search import trigger_batch_document_indexer
 from core.utils.users import get_users_sharing_documents_with_cache_key
 
 
+def forget_people_around(document_id, user_id):
+    """
+    The people sharing a document changed: the "people I work with" of each
+    of them (listed by "@" and the user search) are computed again.
+    """
+    user_ids = models.DocumentAccess.objects.filter(
+        document_id=document_id, user__isnull=False
+    ).values_list("user_id", flat=True)
+    cache.delete_many(
+        [
+            get_users_sharing_documents_with_cache_key(other_id)
+            for other_id in {user_id, *user_ids}
+            if other_id
+        ]
+    )
+
+
 @receiver(signals.post_save, sender=models.Document)
 def document_post_save(sender, instance, created, **kwargs):  # pylint: disable=unused-argument
     """
@@ -54,9 +71,8 @@ def document_access_post_save(sender, instance, created, **kwargs):  # pylint: d
             partial(trigger_batch_document_indexer, document.pk, document.updated_at)
         )
 
-    # Invalidate cache for the user
-    cache_key = get_users_sharing_documents_with_cache_key(instance.user_id)
-    cache.delete(cache_key)
+    # Invalidate the cache of the user, and of the others on the document
+    forget_people_around(instance.document_id, instance.user_id)
 
     reset_service_connections_on_commit(instance.document_id, instance.user_id)
 
@@ -68,8 +84,7 @@ def document_access_post_delete(sender, instance, **kwargs):  # pylint: disable=
     have the collaboration server re-check their connections: they may have
     lost their access, or an inherited one.
     """
-    cache_key = get_users_sharing_documents_with_cache_key(instance.user_id)
-    cache.delete(cache_key)
+    forget_people_around(instance.document_id, instance.user_id)
 
     reset_service_connections_on_commit(instance.document_id, instance.user_id)
 

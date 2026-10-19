@@ -7,10 +7,10 @@ vi.mock('@/features/notifications/NotificationBell', () => ({
 }));
 
 describe('dashboard layout', () => {
-  it('is lean by default: recent, mentions and assigned only', () => {
+  it('is lean by default: mentions, recent and assigned only', () => {
     expect(
       DEFAULT_LAYOUT.filter((card) => !card.hidden).map((card) => card.id),
-    ).toEqual(['recent', 'notifications', 'assigned']);
+    ).toEqual(['notifications', 'recent', 'assigned']);
     expect(DEFAULT_LAYOUT).toHaveLength(CARDS.length);
   });
 

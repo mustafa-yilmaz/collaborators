@@ -280,15 +280,13 @@ const WorkspacesBody = () => {
   );
 };
 
-/** Every card the dashboard can show, in their default order. */
+/**
+ * Every card the dashboard can show, in their default order. Cards fill two
+ * columns in turn: first left, second right, third left... so by default
+ * Mentions & notifications and Assigned to me are on the left, Recent pages
+ * on the right.
+ */
 export const CARDS: CardDefinition[] = [
-  {
-    id: 'recent',
-    icon: 'schedule',
-    title: (t) => t('Recent pages', { description: 'Dashboard card' }),
-    defaultVisible: true,
-    Body: RecentBody,
-  },
   {
     id: 'notifications',
     icon: 'notifications',
@@ -296,6 +294,13 @@ export const CARDS: CardDefinition[] = [
       t('Mentions & notifications', { description: 'Dashboard card' }),
     defaultVisible: true,
     Body: NotificationsBody,
+  },
+  {
+    id: 'recent',
+    icon: 'schedule',
+    title: (t) => t('Recent pages', { description: 'Dashboard card' }),
+    defaultVisible: true,
+    Body: RecentBody,
   },
   {
     id: 'assigned',

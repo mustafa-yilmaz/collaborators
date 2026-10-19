@@ -314,22 +314,28 @@ export const Dashboard = () => {
 
       <DndContext sensors={sensors} onDragEnd={onDragEnd}>
         <Box
-          $css={css`
-            display: grid;
-            grid-template-columns: ${isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))'};
-            gap: var(--c--globals--spacings--sm);
-            align-items: start;
-          `}
+          $direction="row"
+          $gap="sm"
+          $align="flex-start"
+          className="--collaborators--dashboard-columns"
         >
-          {visible.map((card, index) => (
-            <DashboardCard
-              key={card.id}
-              card={card}
-              index={index}
-              count={visible.length}
-              onChange={(changes) => change(card.id, changes)}
-              onMove={(to) => move(card.id, to)}
-            />
+          {/* Two columns that stack independently, cards in turn left and
+              right; one column on phones */}
+          {(isMobile ? [0] : [0, 1]).map((column) => (
+            <Box key={column} $flex={1} $gap="sm" $css="min-width: 0;">
+              {visible.map((card, index) =>
+                isMobile || index % 2 === column ? (
+                  <DashboardCard
+                    key={card.id}
+                    card={card}
+                    index={index}
+                    count={visible.length}
+                    onChange={(changes) => change(card.id, changes)}
+                    onMove={(to) => move(card.id, to)}
+                  />
+                ) : null,
+              )}
+            </Box>
           ))}
         </Box>
       </DndContext>

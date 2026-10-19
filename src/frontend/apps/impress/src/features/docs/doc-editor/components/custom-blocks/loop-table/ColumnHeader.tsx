@@ -36,7 +36,8 @@ interface ColumnHeaderProps {
   column: Column;
   index: number;
   isEditable: boolean;
-  isDropTarget: boolean;
+  /** Where a dragged column would land: 'is-drop-before' or 'is-drop-after' */
+  dropSide: string;
   isDragSource: boolean;
 }
 
@@ -46,7 +47,7 @@ export const ColumnHeader = ({
   column,
   index,
   isEditable,
-  isDropTarget,
+  dropSide,
   isDragSource,
 }: ColumnHeaderProps) => {
   const { t } = useTranslation();
@@ -240,7 +241,7 @@ export const ColumnHeader = ({
         maxWidth: width,
         ...formatStyle(look),
       }}
-      className={`${isDropTarget ? 'is-drop-before' : ''} ${isDragSource ? 'is-drag-source' : ''}`}
+      className={`${dropSide} ${isDragSource ? 'is-drag-source' : ''}`}
       aria-sort={
         sortedHere === 'asc'
           ? 'ascending'

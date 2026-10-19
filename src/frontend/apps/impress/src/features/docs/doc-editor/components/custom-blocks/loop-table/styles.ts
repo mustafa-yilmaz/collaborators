@@ -308,9 +308,44 @@ export const LoopTableStyle = createGlobalStyle`
   .loop-table tr.is-drop-before td {
     box-shadow: inset 0 3px 0 0 var(--lt-accent);
   }
+  .loop-table tr.is-drop-after td {
+    box-shadow: inset 0 -3px 0 0 var(--lt-accent);
+  }
   .loop-table th.is-drop-before,
   .loop-table td.is-drop-before {
     box-shadow: inset 3px 0 0 0 var(--lt-accent);
+  }
+  .loop-table th.is-drop-after,
+  .loop-table td.is-drop-after {
+    box-shadow: inset -3px 0 0 0 var(--lt-accent);
+  }
+  /* A dragged row or column, following the pointer. Its own width: the
+     drag layer is only as wide as the handle that was grabbed */
+  .loop-table__drag-ghost {
+    display: block;
+    width: max-content;
+    max-width: 900px;
+    overflow: hidden;
+    border: 1px solid var(--lt-accent);
+    border-radius: 4px;
+    background: var(--c--contextuals--background--surface--primary, white);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+    opacity: 0.92;
+    pointer-events: none;
+    cursor: grabbing;
+  }
+  .loop-table__drag-ghost .loop-table__grid {
+    min-width: 0;
+    width: auto;
+  }
+  .loop-table__drag-ghost tr:last-child td {
+    border-bottom: none;
+  }
+  .loop-table__drag-ghost-more {
+    padding: 4px 8px;
+    font-size: 12px;
+    color: var(--lt-muted);
+    border-top: 1px solid var(--lt-border);
   }
   .loop-table__drag-preview {
     background: var(--c--contextuals--background--surface--primary, white);

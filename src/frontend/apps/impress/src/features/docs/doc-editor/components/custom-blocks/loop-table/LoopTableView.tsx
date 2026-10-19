@@ -1,4 +1,5 @@
 import {
+  CollisionDetection,
   DndContext,
   DragEndEvent,
   DragOverEvent,
@@ -6,6 +7,7 @@ import {
   DragStartEvent,
   KeyboardSensor,
   PointerSensor,
+  closestCenter,
   useDraggable,
   useDroppable,
   useSensor,
@@ -32,9 +34,10 @@ import { useDocStore } from '@/features/docs/doc-management/stores/useDocStore';
 import { Cell, Direction } from './Cell';
 import { ColumnHeader } from './ColumnHeader';
 import { CornerHeader } from './CornerHeader';
+import { ColumnDragPreview, RowDragPreview } from './DragPreview';
 import { SummaryRow } from './SummaryRow';
 import { Toolbar } from './Toolbar';
-import { formatCell, labelOptionsOf } from './format';
+import { labelOptionsOf } from './format';
 import { columnDefaults, formatMenuItems, formatStyle } from './formatMenu';
 import {
   CellFormat,
@@ -162,6 +165,34 @@ const RowControls = ({
   );
 };
 
+/**
+ * The row or column a dragged one is over: the one at the pointer's height
+ * (rows) or across (columns), so a row handle out in the page margin finds
+ * its row; the nearest of the same kind otherwise (keyboard).
+ */
+const dropTargetUnderPointer: CollisionDetection = (args) => {
+  const kind = String(args.active.id).split(':')[0];
+  const sameKind = args.droppableContainers.filter((container) =>
+    String(container.id).startsWith(`${kind}:`),
+  );
+  const pointer = args.pointerCoordinates;
+  if (pointer) {
+    const hit = sameKind.find((container) => {
+      const rect = args.droppableRects.get(container.id);
+      if (!rect) {
+        return false;
+      }
+      return kind === 'row'
+        ? pointer.y >= rect.top && pointer.y <= rect.top + rect.height
+        : pointer.x >= rect.left && pointer.x <= rect.left + rect.width;
+    });
+    if (hit) {
+      return [{ id: hit.id }];
+    }
+  }
+  return closestCenter({ ...args, droppableContainers: sameKind });
+};
+
 const DroppableRow = ({
   row,
   className,
@@ -220,6 +251,7 @@ export const LoopTableView = ({
   // The cell whose format menu is open, as "rowId:columnId"
   const [cellMenuFor, setCellMenuFor] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
+  const [shownWidths, setShownWidths] = useState<Record<string, number>>({});
   const [overId, setOverId] = useState<string | null>(null);
   // The row under the pointer, whose handle and menu show in the margin
   const [hoverRowId, setHoverRowId] = useState<string | null>(null);
@@ -560,8 +592,37 @@ export const LoopTableView = ({
     });
   };
 
-  const onDragStart = (event: DragStartEvent) =>
+  /**
+   * Where a dragged row or column would land, shown by a line: after the
+   * one under it when moving down or right, before it when moving up or
+   * left.
+   */
+  const dropSide = (kind: 'row' | 'col', id: string) => {
+    if (!dragId?.startsWith(`${kind}:`) || overId !== `${kind}:${id}`) {
+      return '';
+    }
+    const items = kind === 'row' ? snapshot.rows : snapshot.columns;
+    const source = items.findIndex((item) => `${kind}:${item.id}` === dragId);
+    const target = items.findIndex((item) => item.id === id);
+    if (source === target) {
+      return '';
+    }
+    return source < target ? 'is-drop-after' : 'is-drop-before';
+  };
+
+  const onDragStart = (event: DragStartEvent) => {
+    // The columns' widths as shown (the table stretches them to fill the
+    // page), for the preview of what is dragged
+    const widths: Record<string, number> = {};
+    wrapperRef.current
+      ?.querySelectorAll<HTMLElement>('tbody tr:first-child td[data-column-id]')
+      .forEach((cell) => {
+        widths[cell.dataset.columnId ?? ''] =
+          cell.getBoundingClientRect().width;
+      });
+    setShownWidths(widths);
     setDragId(String(event.active.id));
+  };
   const onDragOver = (event: DragOverEvent) =>
     setOverId(event.over ? String(event.over.id) : null);
   const onDragEnd = (event: DragEndEvent) => {
@@ -577,15 +638,20 @@ export const LoopTableView = ({
     if (kind !== toKind) {
       return;
     }
+    // It takes the place of the one it was dropped on: after it when moved
+    // down or right, before it when moved up or left
     if (kind === 'col') {
-      const target = snapshot.columns.findIndex((col) => col.id === toId);
-      const source = snapshot.columns.findIndex((col) => col.id === id);
-      // Dropped on a column: it lands before it
-      moveColumn(table, id, source < target ? target - 1 : target);
+      moveColumn(
+        table,
+        id,
+        snapshot.columns.findIndex((col) => col.id === toId),
+      );
     } else {
-      const target = snapshot.rows.findIndex((row) => row.id === toId);
-      const source = snapshot.rows.findIndex((row) => row.id === id);
-      moveRow(table, id, source < target ? target - 1 : target);
+      moveRow(
+        table,
+        id,
+        snapshot.rows.findIndex((row) => row.id === toId),
+      );
     }
   };
 
@@ -627,6 +693,7 @@ export const LoopTableView = ({
       />
       <DndContext
         sensors={sensors}
+        collisionDetection={dropTargetUnderPointer}
         onDragStart={onDragStart}
         onDragOver={onDragOver}
         onDragEnd={onDragEnd}
@@ -668,11 +735,7 @@ export const LoopTableView = ({
                       (c) => c.id === column.id,
                     )}
                     isEditable={isEditable}
-                    isDropTarget={
-                      overId === `col:${column.id}` &&
-                      dragId !== overId &&
-                      !!dragId?.startsWith('col:')
-                    }
+                    dropSide={dropSide('col', column.id)}
                     isDragSource={dragId === `col:${column.id}`}
                   />
                 ))}
@@ -685,11 +748,7 @@ export const LoopTableView = ({
                   row={row}
                   className={[
                     dragId === `row:${row.id}` ? 'is-drag-source' : '',
-                    overId === `row:${row.id}` &&
-                    dragId !== overId &&
-                    dragId?.startsWith('row:')
-                      ? 'is-drop-before'
-                      : '',
+                    dropSide('row', row.id),
                   ].join(' ')}
                 >
                   {showNumbersColumn && (
@@ -730,11 +789,7 @@ export const LoopTableView = ({
                         className={[
                           isActive ? 'is-active' : '',
                           dragId === `col:${column.id}` ? 'is-drag-source' : '',
-                          overId === `col:${column.id}` &&
-                          dragId !== overId &&
-                          dragId?.startsWith('col:')
-                            ? 'is-drop-before'
-                            : '',
+                          dropSide('col', column.id),
                         ].join(' ')}
                         onClick={() => {
                           if (isActive && isEditable && !isEditing) {
@@ -853,20 +908,21 @@ export const LoopTableView = ({
           />
         )}
         <DragOverlay dropAnimation={null}>
+          {/* What is being moved, as it looks in the table */}
           {draggedRow ? (
-            <div className="loop-table__drag-preview">
-              {columns
-                .map((column) =>
-                  formatCell(column, draggedRow.cells[column.id], snapshot),
-                )
-                .filter(Boolean)
-                .join(' · ') ||
-                t('Empty row', { description: 'Loop table drag preview' })}
-            </div>
+            <RowDragPreview
+              row={draggedRow}
+              columns={columns}
+              snapshot={snapshot}
+              widths={shownWidths}
+            />
           ) : draggedColumn ? (
-            <div className="loop-table__drag-preview">
-              <Icon iconName="view_column" $size="14px" /> {draggedColumn.name}
-            </div>
+            <ColumnDragPreview
+              column={draggedColumn}
+              rows={rows}
+              snapshot={snapshot}
+              widths={shownWidths}
+            />
           ) : null}
         </DragOverlay>
       </DndContext>

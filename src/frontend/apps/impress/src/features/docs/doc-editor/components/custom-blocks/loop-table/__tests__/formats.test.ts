@@ -114,8 +114,15 @@ describe('Loop table formats', () => {
     expect(cleared.columns[0].format).toBeUndefined();
   });
 
+  it('starts new tables without the row numbers', () => {
+    const { table } = setup();
+    expect(readTable(table).layout.showRowNumbers).toBe(false);
+  });
+
   it('shows the row numbers of tables made before formats', () => {
     const { table } = setup();
+    // A table made before formats has no layout at all
+    table.delete('layout');
     expect(readTable(table).layout).toEqual({
       showRowNumbers: true,
       expanded: false,
@@ -202,10 +209,11 @@ describe('Loop table formats', () => {
     const { table } = setup();
     const menu = () => layoutMenuItems(t, table, readTable(table).layout);
 
-    entry(menu(), 'Hide the numbers column').callback?.();
-    expect(readTable(table).layout.showRowNumbers).toBe(false);
+    // New tables start without it
     entry(menu(), 'Show the numbers column').callback?.();
     expect(readTable(table).layout.showRowNumbers).toBe(true);
+    entry(menu(), 'Hide the numbers column').callback?.();
+    expect(readTable(table).layout.showRowNumbers).toBe(false);
   });
 
   it('spreads a table into the margins, and back', () => {

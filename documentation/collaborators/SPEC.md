@@ -415,7 +415,7 @@ Done: the Loop table tweaks, Loop table v2 (T9, T5, T56), the wiki extras (F8), 
      - A page in a space can't be hidden from the space's people (accesses flow down): it is made independent first. A space published live as a wiki stays public until the wiki is unpublished. Search engines: the "Publish to the web" switch, for public pages and wikis.
    - **Workspaces:** "Who can find this workspace" in its settings: public, everyone on Collaborators, or only its members. Findable ones are listed in **Discover workspaces** (`/workspaces/discover/`, also signed out for public ones) with their public spaces; "Ask to join" always sends the admins a request.
    - **To decide:** inviting people from outside the platform needs email invitations, turned off so far.
-3b. **Table tweaks** (asked 2026-10-20): the row-number column hidden by default in new tables; and no lasting highlight of the whole table while editing it (a lighter way to show which table is active, or none).
+3b. ✅ **Table tweaks** (built 2026-10-20): new tables start without the row-number column (the table menu shows it; existing tables keep theirs), and a table is never highlighted as a whole block: only its active cell is.
 4. **Labels:** labels on workspaces, spaces and pages (a free, shared vocabulary, Web 2.0 style), with a **label cloud** card on the dashboard. Built before launch so content gets labels from the start; items 6–9 below build on them.
 5. **Profile pages** with visibility per piece of information (public / whole platform / chosen workspaces or spaces). A profile can't be fully hidden: at least the name stays visible to people who share a workspace or page with the person.
 

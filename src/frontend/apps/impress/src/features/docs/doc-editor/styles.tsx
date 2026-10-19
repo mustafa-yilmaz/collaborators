@@ -21,6 +21,19 @@ export const DocsEditorStyle = createGlobalStyle`
     }
   }
 
+  /* A Loop table is never shown as a selected block: editing it would keep
+     the whole table blue. Its active cell is highlighted instead. */
+  .bn-block-content[data-content-type='loopTable'].ProseMirror-selectednode,
+  .ProseMirror-selectednode > .bn-block-content[data-content-type='loopTable'],
+  .bn-block-content[data-content-type='loopTable'].ProseMirror-selectednode > *,
+  .ProseMirror-selectednode > .bn-block-content[data-content-type='loopTable'] > * {
+    outline: none !important;
+  }
+  .bn-block-content[data-content-type='loopTable'].ProseMirror-selectednode > *::after,
+  .ProseMirror-selectednode > .bn-block-content[data-content-type='loopTable'] > *::after {
+    content: none !important;
+  }
+
   .bn-container {
     height: 100%;
   }

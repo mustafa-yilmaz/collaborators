@@ -304,6 +304,10 @@ export const createTable = (
     view.set('filters', []);
     view.set('summaries', {});
     table.set('view', view);
+    // New tables start without the row-number column (the table menu shows it)
+    const layout = new Y.Map<unknown>();
+    layout.set('showRowNumbers', false);
+    table.set('layout', layout);
     getTablesMap(ydoc).set(tableId, table);
   });
   return tableId;

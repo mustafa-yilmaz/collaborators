@@ -16,6 +16,8 @@ const setup = (isEditable = true) => {
   const ydoc = new Y.Doc();
   const tableId = createTable(ydoc);
   const table = getTable(ydoc, tableId)!;
+  // These tests go through the numbers column, hidden in new tables
+  setLayout(table, { showRowNumbers: true });
   const { container } = render(
     <LoopTableView ydoc={ydoc} tableId={tableId} isEditable={isEditable} />,
     { wrapper: AppWrapper },

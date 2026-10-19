@@ -60,6 +60,7 @@ import {
 import { LoopTableStyle } from './styles';
 import { useExpandToMargins } from './useExpandToMargins';
 import { useLoopTable } from './useLoopTable';
+import { useVisibleRows } from './useVisibleRows';
 import { visibleRows } from './view';
 
 interface LoopTableViewProps {
@@ -266,6 +267,7 @@ export const LoopTableView = ({
     wrapperRef,
     !!snapshot?.layout.expanded,
   );
+  const bodyRef = useRef<HTMLTableSectionElement>(null);
 
   // Undo and redo inside the table, separate from the page's text history
   const undoManager = useMemo(
@@ -290,6 +292,15 @@ export const LoopTableView = ({
         : [],
     [snapshot, user?.id, myTeams],
   );
+  // Very large tables: only the rows on screen are drawn (T56)
+  const rowWindow = useVisibleRows(bodyRef, rows.length);
+  const revealRow = useRef((_rowId: string) => {});
+  revealRow.current = (rowId: string) => {
+    const index = rows.findIndex((row) => row.id === rowId);
+    if (rowWindow.isVirtual && index >= 0) {
+      rowWindow.reveal(index);
+    }
+  };
 
   const move = useCallback(
     (direction: Direction) => {
@@ -428,18 +439,42 @@ export const LoopTableView = ({
       }
       setActive({ rowId, columnId });
       setIsEditing(false);
+      const cellOf = () =>
+        containerRef.current?.querySelector(
+          `td[data-row-id="${rowId}"][data-column-id="${columnId}"]`,
+        );
       setTimeout(() => {
-        containerRef.current
-          ?.querySelector(
-            `td[data-row-id="${rowId}"][data-column-id="${columnId}"]`,
-          )
-          ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        // In a very large table, the row may not be drawn yet
+        if (!cellOf()) {
+          revealRow.current(rowId);
+        }
+        setTimeout(
+          () =>
+            cellOf()?.scrollIntoView({ block: 'center', behavior: 'smooth' }),
+          50,
+        );
       }, 100);
     };
     focusCellFromHash();
     window.addEventListener('hashchange', focusCellFromHash);
     return () => window.removeEventListener('hashchange', focusCellFromHash);
   }, [tableId, hasSnapshot]);
+
+  // In a very large table, moving to a row that is not drawn brings it in
+  useEffect(() => {
+    if (!active || !rowWindow.isVirtual) {
+      return;
+    }
+    const cell = containerRef.current?.querySelector(
+      `td[data-row-id="${active.rowId}"][data-column-id="${active.columnId}"]`,
+    );
+    if (cell) {
+      cell.scrollIntoView({ block: 'nearest' });
+    } else {
+      revealRow.current(active.rowId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active?.rowId, active?.columnId]);
 
   // Keep the focus in the grid so keyboard navigation keeps working
   useEffect(() => {
@@ -774,146 +809,177 @@ export const LoopTableView = ({
                 ))}
               </tr>
             </thead>
-            <tbody>
-              {rows.map((row, rowIndex) => (
-                <DroppableRow
-                  key={row.id}
-                  row={row}
-                  className={[
-                    dragId === `row:${row.id}` ? 'is-drag-source' : '',
-                    dropSide('row', row.id),
-                  ].join(' ')}
+            <tbody ref={bodyRef}>
+              {rowWindow.above > 0 && (
+                <tr
+                  aria-hidden="true"
+                  className="loop-table__spacer"
+                  style={{ height: rowWindow.above }}
                 >
-                  {showNumbersColumn && (
-                    <RowNumberCell
-                      index={rowIndex}
-                      // The numbers column's own format comes first
-                      look={mergeFormats(snapshot.layout.numbers, row.format)}
-                    />
-                  )}
-                  {columns.map((column) => {
-                    const isActive =
-                      active?.rowId === row.id &&
-                      active?.columnId === column.id;
-                    // A cell's own format, then its row's, then its column's
-                    const look = mergeFormats(
-                      row.cellFormats?.[column.id],
-                      row.format,
-                      column.format,
-                    );
-                    return (
-                      <td
-                        key={column.id}
-                        data-row-id={row.id}
-                        data-column-id={column.id}
-                        data-align={look.align}
-                        style={formatStyle(look)}
-                        role="gridcell"
-                        aria-selected={isActive}
-                        onContextMenu={(event) => {
-                          if (!isEditable) {
-                            return;
-                          }
-                          event.preventDefault();
-                          setActive({ rowId: row.id, columnId: column.id });
-                          setIsEditing(false);
-                          setCellMenuFor(`${row.id}:${column.id}`);
-                        }}
-                        className={[
-                          isActive ? 'is-active' : '',
-                          dragId === `col:${column.id}` ? 'is-drag-source' : '',
-                          dropSide('col', column.id),
-                        ].join(' ')}
-                        onClick={() => {
-                          if (isActive && isEditable && !isEditing) {
-                            setIsEditing(true);
-                          } else if (!isActive) {
+                  <td colSpan={columns.length + (showNumbersColumn ? 1 : 0)} />
+                </tr>
+              )}
+              {rows.slice(rowWindow.start, rowWindow.end).map((row, offset) => {
+                const rowIndex = rowWindow.start + offset;
+                return (
+                  <DroppableRow
+                    key={row.id}
+                    row={row}
+                    className={[
+                      dragId === `row:${row.id}` ? 'is-drag-source' : '',
+                      dropSide('row', row.id),
+                    ].join(' ')}
+                  >
+                    {showNumbersColumn && (
+                      <RowNumberCell
+                        index={rowIndex}
+                        // The numbers column's own format comes first
+                        look={mergeFormats(snapshot.layout.numbers, row.format)}
+                      />
+                    )}
+                    {columns.map((column) => {
+                      const isActive =
+                        active?.rowId === row.id &&
+                        active?.columnId === column.id;
+                      // A cell's own format, then its row's, then its column's
+                      const look = mergeFormats(
+                        row.cellFormats?.[column.id],
+                        row.format,
+                        column.format,
+                      );
+                      return (
+                        <td
+                          key={column.id}
+                          data-row-id={row.id}
+                          data-column-id={column.id}
+                          data-align={look.align}
+                          style={formatStyle(look)}
+                          role="gridcell"
+                          aria-selected={isActive}
+                          onContextMenu={(event) => {
+                            if (!isEditable) {
+                              return;
+                            }
+                            event.preventDefault();
                             setActive({ rowId: row.id, columnId: column.id });
                             setIsEditing(false);
-                          }
-                        }}
-                      >
-                        <Cell
-                          table={table}
-                          tableId={tableId}
-                          snapshot={snapshot}
-                          column={column}
-                          rowId={row.id}
-                          value={row.cells[column.id]}
-                          docId={currentDoc?.id ?? ''}
-                          userId={user?.id}
-                          isEditable={isEditable}
-                          isEditing={isActive && isEditing}
-                          rich={row.rich?.[column.id]}
-                          onStartEdit={() => {
-                            setActive({ rowId: row.id, columnId: column.id });
-                            setIsEditing(true);
+                            setCellMenuFor(`${row.id}:${column.id}`);
                           }}
-                          onStopEdit={(direction) => {
-                            setIsEditing(false);
-                            if (direction) {
-                              move(direction);
+                          className={[
+                            isActive ? 'is-active' : '',
+                            dragId === `col:${column.id}`
+                              ? 'is-drag-source'
+                              : '',
+                            dropSide('col', column.id),
+                          ].join(' ')}
+                          onClick={() => {
+                            if (isActive && isEditable && !isEditing) {
+                              setIsEditing(true);
+                            } else if (!isActive) {
+                              setActive({ rowId: row.id, columnId: column.id });
+                              setIsEditing(false);
                             }
                           }}
-                        />
-                        {isActive && isEditable && !isEditing && (
-                          <DropdownMenu
-                            options={formatMenuItems(
-                              t,
-                              row.cellFormats?.[column.id],
-                              (patch) =>
-                                setCellFormat(table, row.id, column.id, patch),
-                              {
-                                // What the cell inherits from its row and
-                                // column, then the defaults
-                                shown: mergeFormats(
-                                  row.format,
-                                  column.format,
-                                  columnDefaults(column),
-                                ),
-                                labels: {
-                                  clear: t('Clear cell formatting', {
-                                    description: 'Loop table cell menu',
-                                  }),
+                        >
+                          <Cell
+                            table={table}
+                            tableId={tableId}
+                            snapshot={snapshot}
+                            column={column}
+                            rowId={row.id}
+                            value={row.cells[column.id]}
+                            docId={currentDoc?.id ?? ''}
+                            userId={user?.id}
+                            isEditable={isEditable}
+                            isEditing={isActive && isEditing}
+                            rich={row.rich?.[column.id]}
+                            onStartEdit={() => {
+                              setActive({ rowId: row.id, columnId: column.id });
+                              setIsEditing(true);
+                            }}
+                            onStopEdit={(direction) => {
+                              setIsEditing(false);
+                              if (direction) {
+                                move(direction);
+                              }
+                            }}
+                          />
+                          {isActive && isEditable && !isEditing && (
+                            <DropdownMenu
+                              options={formatMenuItems(
+                                t,
+                                row.cellFormats?.[column.id],
+                                (patch) =>
+                                  setCellFormat(
+                                    table,
+                                    row.id,
+                                    column.id,
+                                    patch,
+                                  ),
+                                {
+                                  // What the cell inherits from its row and
+                                  // column, then the defaults
+                                  shown: mergeFormats(
+                                    row.format,
+                                    column.format,
+                                    columnDefaults(column),
+                                  ),
+                                  labels: {
+                                    clear: t('Clear cell formatting', {
+                                      description: 'Loop table cell menu',
+                                    }),
+                                  },
                                 },
-                              },
-                            )}
-                            isOpen={cellMenuFor === `${row.id}:${column.id}`}
-                            onOpenChange={(isOpen) =>
-                              setCellMenuFor(
-                                isOpen ? `${row.id}:${column.id}` : null,
-                              )
-                            }
-                          >
-                            <button
-                              type="button"
-                              className="loop-table__cell-menu"
-                              aria-label={t('Format this cell', {
-                                description:
-                                  'Accessible name of the Loop table cell menu',
-                              })}
-                              title={t('Format this cell', {
-                                description:
-                                  'Accessible name of the Loop table cell menu',
-                              })}
-                              onClick={(event) => {
-                                event.stopPropagation();
+                              )}
+                              isOpen={cellMenuFor === `${row.id}:${column.id}`}
+                              onOpenChange={(isOpen) =>
                                 setCellMenuFor(
-                                  cellMenuFor === `${row.id}:${column.id}`
-                                    ? null
-                                    : `${row.id}:${column.id}`,
-                                );
-                              }}
+                                  isOpen ? `${row.id}:${column.id}` : null,
+                                )
+                              }
                             >
-                              <Icon iconName="format_color_fill" $size="14px" />
-                            </button>
-                          </DropdownMenu>
-                        )}
-                      </td>
-                    );
-                  })}
-                </DroppableRow>
-              ))}
+                              <button
+                                type="button"
+                                className="loop-table__cell-menu"
+                                aria-label={t('Format this cell', {
+                                  description:
+                                    'Accessible name of the Loop table cell menu',
+                                })}
+                                title={t('Format this cell', {
+                                  description:
+                                    'Accessible name of the Loop table cell menu',
+                                })}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setCellMenuFor(
+                                    cellMenuFor === `${row.id}:${column.id}`
+                                      ? null
+                                      : `${row.id}:${column.id}`,
+                                  );
+                                }}
+                              >
+                                <Icon
+                                  iconName="format_color_fill"
+                                  $size="14px"
+                                />
+                              </button>
+                            </DropdownMenu>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </DroppableRow>
+                );
+              })}
+              {rowWindow.below > 0 && (
+                <tr
+                  aria-hidden="true"
+                  className="loop-table__spacer"
+                  style={{ height: rowWindow.below }}
+                >
+                  <td colSpan={columns.length + (showNumbersColumn ? 1 : 0)} />
+                </tr>
+              )}
             </tbody>
             <tfoot>
               <SummaryRow

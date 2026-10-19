@@ -26,6 +26,12 @@ export const LoopTableStyle = createGlobalStyle`
     position: relative;
   }
   /* Spread into the margins: its width and offset are set on the element */
+  /* The room of the rows of a very large table that are not drawn */
+  .loop-table__grid tr.loop-table__spacer td {
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
   .loop-table.is-expanded {
     max-width: none;
     flex: none;

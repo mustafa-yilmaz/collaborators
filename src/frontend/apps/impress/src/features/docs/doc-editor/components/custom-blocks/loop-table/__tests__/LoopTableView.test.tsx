@@ -5,7 +5,7 @@ import * as Y from 'yjs';
 import { AppWrapper } from '@/tests/utils';
 
 import { LoopTableView } from '../LoopTableView';
-import { createTable, getTable, readTable, setLayout } from '../model';
+import { addRow, createTable, getTable, readTable, setLayout } from '../model';
 import { tableMenuItems } from '../tableMenu';
 
 vi.mock('@/features/auth', () => ({
@@ -103,5 +103,32 @@ describe('LoopTableView', () => {
     );
     expect(screen.queryByRole('button', { name: 'Table options' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Row 1 actions' })).toBeNull();
+  });
+
+  it('draws only the rows on screen of a very large table', () => {
+    const { table, container } = setup();
+    act(() => {
+      table.doc!.transact(() => {
+        for (let i = 0; i < 1000; i++) {
+          addRow(table);
+        }
+      });
+    });
+
+    const drawn = container.querySelectorAll('tbody tr[data-row-id]');
+    expect(readTable(table).rows.length).toBeGreaterThan(1000);
+    expect(drawn.length).toBeGreaterThan(0);
+    expect(drawn.length).toBeLessThan(200);
+    // The rows not drawn keep their room, so the page scrolls as usual
+    const spacer = container.querySelector<HTMLElement>(
+      'tbody tr.loop-table__spacer',
+    );
+    expect(spacer).not.toBeNull();
+    expect(parseFloat(spacer!.style.height)).toBeGreaterThan(10000);
+    // Row numbers count from the top of the table
+    expect(
+      container.querySelector('tbody tr[data-row-id] .loop-table__rownum')
+        ?.textContent,
+    ).toBe('1');
   });
 });

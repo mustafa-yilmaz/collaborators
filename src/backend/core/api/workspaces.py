@@ -748,6 +748,8 @@ class SpaceViewSet(
     GET /api/v1.0/spaces/?mine=true — every space I was given a role on
     POST /api/v1.0/spaces/ — create a space (see SpaceCreateSerializer)
     POST /api/v1.0/spaces/<id>/move-to-workspace/ — give an independent space a home
+    POST /api/v1.0/spaces/<id>/make-independent/ — take a space out of its workspaces
+    GET /api/v1.0/spaces/<id>/linked-pages/ — pages of elsewhere linked into it
     POST, DELETE /api/v1.0/spaces/<id>/links/ — share a space with another workspace
     GET, POST, DELETE /api/v1.0/spaces/<id>/workspace-grants/ — roles a linked
         workspace grants to its own groups on the space
@@ -873,6 +875,58 @@ class SpaceViewSet(
             )
         with transaction.atomic():
             place_space_in_workspace(space, workspace)
+        return drf.response.Response(self.get_serializer(space).data)
+
+    @drf.decorators.action(detail=True, methods=["get"], url_path="linked-pages")
+    def linked_pages(self, request, *args, **kwargs):
+        """The pages of other spaces (or independent ones) linked into this one."""
+        space = self.get_object()
+        links = (
+            space.linked_pages.filter(page__ancestors_deleted_at__isnull=True)
+            .select_related("page")
+            .order_by("page__title")
+        )
+        result = []
+        for link in links:
+            page = link.page
+            root = page if page.is_root() else page.get_root()
+            result.append(
+                {
+                    "link_id": str(link.id),
+                    "page": {"id": str(page.id), "title": page.title},
+                    "home": {"id": str(root.id), "title": root.title}
+                    if root.is_space
+                    else None,
+                }
+            )
+        return drf.response.Response(result)
+
+    @drf.decorators.action(detail=True, methods=["post"], url_path="make-independent")
+    def make_independent(self, request, *args, **kwargs):
+        """
+        Take a space out of its workspaces: by an administrator of its home
+        workspace, who becomes its owner. The roles the workspaces gave on it
+        (their members, admins and groups) go with them.
+        """
+        space = self.get_object()
+        home = self._get_home_workspace(space)
+        if home is None:
+            raise drf.exceptions.ValidationError(
+                {"space": _("This space is already independent.")}
+            )
+        if not is_workspace_admin(home, request.user):
+            raise drf.exceptions.PermissionDenied()
+        with transaction.atomic():
+            for link in space.workspace_links.select_related("workspace"):
+                models.DocumentAccess.objects.filter(
+                    document=space, team__in=get_workspace_teams(link.workspace)
+                ).delete()
+            space.workspace_links.all().delete()
+            models.DocumentAccess.objects.update_or_create(
+                document=space,
+                user=request.user,
+                defaults={"role": choices.RoleChoices.OWNER},
+            )
         return drf.response.Response(self.get_serializer(space).data)
 
     def _get_home_workspace(self, space):

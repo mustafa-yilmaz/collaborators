@@ -148,25 +148,29 @@ class UserManager(auth_models.UserManager):
         """Fetch existing user by sub or email."""
         try:
             return self.get(sub=sub)
-        except self.model.DoesNotExist as err:
-            if not email:
-                return None
+        except self.model.DoesNotExist:
+            return self.get_user_by_email(email)
 
-            if settings.OIDC_FALLBACK_TO_EMAIL_FOR_IDENTIFICATION:
-                try:
-                    return self.get(email__iexact=email)
-                except self.model.DoesNotExist:
-                    pass
-            elif (
-                self.filter(email__iexact=email).exists()
-                and not settings.OIDC_ALLOW_DUPLICATE_EMAILS
-            ):
-                raise DuplicateEmailError(
-                    _(
-                        "We couldn't find a user with this sub but the email is already "
-                        "associated with a registered user."
-                    )
-                ) from err
+    def get_user_by_email(self, email):
+        """When no user has the sub: the user with this email, if allowed."""
+        if not email:
+            return None
+
+        if settings.OIDC_FALLBACK_TO_EMAIL_FOR_IDENTIFICATION:
+            try:
+                return self.get(email__iexact=email)
+            except self.model.DoesNotExist:
+                pass
+        elif (
+            self.filter(email__iexact=email).exists()
+            and not settings.OIDC_ALLOW_DUPLICATE_EMAILS
+        ):
+            raise DuplicateEmailError(
+                _(
+                    "We couldn't find a user with this sub but the email is already "
+                    "associated with a registered user."
+                )
+            )
         return None
 
 
@@ -1000,6 +1004,8 @@ class DocumentQuerySet(MP_NodeQuerySet):
                 models.Q(accesses__user=user)
                 | models.Q(accesses__team__in=user.teams)
                 | ~models.Q(link_reach=LinkReachChoices.RESTRICTED)
+                # pages linked into a space the user has a role on
+                | models.Exists(linked_reader_access(user))
             )
 
         return self.filter(link_reach=LinkReachChoices.PUBLIC)
@@ -1048,10 +1054,26 @@ class DocumentQuerySet(MP_NodeQuerySet):
                 models.Q(user=user) | models.Q(team__in=user.teams),
                 document__path=Left(models.OuterRef("path"), Length("document__path")),
             ).values_list("role", flat=True)
+            roles = models.Func(
+                user_roles_subquery, function="ARRAY", output_field=output_field
+            )
 
+            # Pages linked into a space the user has a role on: reader too
             return self.annotate(
-                user_roles=models.Func(
-                    user_roles_subquery, function="ARRAY", output_field=output_field
+                user_roles=models.Case(
+                    models.When(
+                        models.Exists(linked_reader_access(user)),
+                        then=models.Func(
+                            roles,
+                            models.Value(
+                                [RoleChoices.READER], output_field=output_field
+                            ),
+                            function="array_cat",
+                            output_field=output_field,
+                        ),
+                    ),
+                    default=roles,
+                    output_field=output_field,
                 )
             )
 
@@ -1361,10 +1383,30 @@ class Document(MP_Node, BaseModel):
         try:
             roles = self.user_roles or []
         except AttributeError:
-            roles = DocumentAccess.objects.filter(
-                models.Q(user=user) | models.Q(team__in=user.teams),
-                document__path__in=self.get_self_and_ancestors_paths(),
-            ).values_list("role", flat=True)
+            paths = self.get_self_and_ancestors_paths()
+            # Linked into a space the user has a role on: reader too (in the
+            # same query)
+            linked = (
+                PageSpaceLink.objects.filter(
+                    models.Q(space__accesses__user=user)
+                    | models.Q(space__accesses__team__in=user.teams),
+                    page__path__in=paths,
+                )
+                .annotate(
+                    linked_role=models.Value(
+                        RoleChoices.READER, output_field=models.CharField()
+                    )
+                )
+                .values_list("linked_role", flat=True)
+            )
+            roles = (
+                DocumentAccess.objects.filter(
+                    models.Q(user=user) | models.Q(team__in=user.teams),
+                    document__path__in=paths,
+                )
+                .values_list("role", flat=True)
+                .union(linked, all=True)
+            )
 
         return RoleChoices.max(*roles)
 
@@ -2765,6 +2807,54 @@ class SpaceWorkspaceLink(BaseModel):
         super().clean()
         if self.space_id and not self.space.is_space:
             raise ValidationError({"space": _("Only a space can join a workspace.")})
+
+
+class PageSpaceLink(BaseModel):
+    """
+    Shows a page (with its subpages) in a space other than its home: the same
+    page, not a copy. Its home space (or its owner, for an independent page)
+    keeps controlling it; whoever has a role on the linking space may read it.
+    """
+
+    page = models.ForeignKey(
+        Document, on_delete=models.CASCADE, related_name="space_links"
+    )
+    space = models.ForeignKey(
+        Document, on_delete=models.CASCADE, related_name="linked_pages"
+    )
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, related_name="+", null=True, blank=True
+    )
+
+    class Meta:
+        db_table = "collaborators_page_space_link"
+        ordering = ("created_at",)
+        verbose_name = _("Page/space link")
+        verbose_name_plural = _("Page/space links")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["page", "space"],
+                name="unique_page_space",
+                violation_error_message=_("This page is already in this space."),
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.page!s} linked into {self.space!s}"
+
+
+def linked_reader_access(user, outer_path="path"):
+    """
+    The links that let the user read a page (or one of its subpages: the
+    page's path starts the document's), through a role on the linking space.
+    For a subquery on documents, by their `path`.
+    """
+    return PageSpaceLink.objects.filter(
+        models.Q(space__accesses__user=user)
+        | models.Q(space__accesses__team__in=user.teams),
+        page__path=Left(models.OuterRef(outer_path), Length("page__path")),
+        page__ancestors_deleted_at__isnull=True,
+    )
 
 
 def get_team_label(team):

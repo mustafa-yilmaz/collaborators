@@ -14,6 +14,7 @@ import {
   useIsDocEditable,
 } from '@/docs/doc-management';
 import { useIsOffline } from '@/features/service-worker/hooks/useOffline';
+import { PageAlsoIn } from '@/features/workspaces/components/PageSpaces';
 
 import { AlertOffline } from './AlertOffline';
 import { AlertRestore } from './AlertRestore';
@@ -129,6 +130,7 @@ export const DocHeader = ({ doc }: DocHeaderProps) => {
             }}
           />
           <DocHeaderInfo doc={doc} />
+          <PageAlsoIn doc={doc} />
         </Box>
         <HorizontalSeparator $margin={{ top: '24px' }} />
       </Box>

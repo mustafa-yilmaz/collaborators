@@ -27,6 +27,7 @@ Legend for "Docs today": ✅ already there · 🟡 partly there · ❌ to build.
 Collaborators  (collaborators.community)
 ├── Workspace "Acme"                     acme.collaborators.community
 │   ├── Space "Engineering"  → pages
+│   │   └── "Roadmap" linked from "Q4 Launch" (same page, not a copy)
 │   └── Space "Q4 Launch"    → pages     (shared with workspace "Partner Co")
 ├── Independent space "Mustafa's Research"   (owned by a collaborator)
 │   └── pages
@@ -36,8 +37,13 @@ Collaborators  (collaborators.community)
 ### Ownership rules
 
 - Every space and every page has exactly **one owner**: a workspace or a collaborator.
-- A page belongs to at most one space; sub-pages follow their parent.
-- **Moving:** an independent page can move into a space, and an independent space can move into a workspace or be linked into one as a Shared space. Moving content *out* of a workspace needs a workspace admin.
+- A page belongs to at most one space (its **home**); sub-pages follow their parent. It can be **linked into other spaces** as well: the same page, shown there as "Linked from <home>", with an "Also in" line under its title.
+  - Whoever has a role on a linking space can read the page and its sub-pages there; it is still edited and shared from its home.
+  - Linking needs owner/administrator rights on the page and edit rights in the space. The page's managers or the space's administrators can unlink it.
+- **Moving, both ways:**
+  - an independent page can move into a space ("Move into a space"), and a page can leave its space to be independent again ("Make independent": whoever does it owns it, and the space's roles no longer apply);
+  - an independent space can move into a workspace or be linked into more as a Shared space, and a home-workspace admin can make a space independent again (the workspaces' roles on it go).
+  - Moving content *out* of a workspace needs a workspace admin (or the page's owner/administrator).
 - **Shared spaces:** the home workspace controls the space's settings, deletion and which workspaces it is linked to. Linked workspaces show it with a "Shared from Acme" badge, and their own admins decide which of their groups can open it. Unlinking removes it from that workspace without deleting content.
 
 ### Roles
@@ -187,7 +193,9 @@ See **section 3**: it is the largest single piece of work.
 
 **Docs today:** ✅ for pages: every Docs document is already owned by people, not a workspace.
 
-**Work:** independent spaces (a `Space` whose owner is a collaborator) and the move/link flows.
+**Built:** independent spaces and pages ("My spaces & pages" lists both, with a + for each), moving pages into and out of spaces, making spaces independent again, and linking a page into several spaces (`PageSpaceLink`).
+
+**Still to do:** a linked page opened from a public space isn't public through it (only roles on the linking space count).
 
 ### F8 — Public sharing and public wikis
 

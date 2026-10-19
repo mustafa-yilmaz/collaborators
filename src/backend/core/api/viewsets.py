@@ -1092,6 +1092,13 @@ class DocumentViewSet(
         # Invalidate the nb_accesses cache, the value has probably changed after the move.
         document.invalidate_nb_accesses_cache()
 
+        # Moved into a space it was linked into: it's at home there now
+        document.refresh_from_db()
+        models.PageSpaceLink.objects.filter(
+            page=document,
+            space=document if document.is_root() else document.get_root(),
+        ).delete()
+
         # The document and its descendants now inherit the accesses and the link
         # definition of other ancestors, whether or not a direct access was
         # touched: every connection of the subtree is re-checked.

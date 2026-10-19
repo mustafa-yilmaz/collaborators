@@ -9,6 +9,7 @@ import { DocTree } from '@/features/docs/doc-tree/components/DocTree';
 import { TreeSkeleton } from '@/features/skeletons/components/TreeSkeleton';
 import {
   PageList,
+  SpaceLinkedPages,
   SpaceList,
   WorkspaceSwitcher,
   useWorkspaceStore,
@@ -71,7 +72,10 @@ const LeftPanelDocContent = () => {
       className="--docs--left-panel-doc-content"
     >
       {tree && currentDoc ? (
-        <DocTree currentDoc={currentDoc} />
+        <>
+          <DocTree currentDoc={currentDoc} />
+          {tree.root && <SpaceLinkedPages space={tree.root} />}
+        </>
       ) : (
         <TreeSkeleton />
       )}

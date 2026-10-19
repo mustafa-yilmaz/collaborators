@@ -10,6 +10,7 @@ from rest_framework.routers import DefaultRouter
 from core.api import (
     dashboard,
     notifications,
+    page_links,
     people,
     publishing,
     signin_methods,
@@ -110,6 +111,18 @@ urlpatterns = [
                     signin_methods.SignInAccountView.as_view(),
                 ),
                 path("users/me/hints/", signin_methods.HintsView.as_view()),
+                path(
+                    "documents/<uuid:pk>/space-links/",
+                    page_links.PageSpaceLinksView.as_view(),
+                ),
+                path(
+                    "documents/<uuid:pk>/space-links/<uuid:link_id>/",
+                    page_links.PageSpaceLinkView.as_view(),
+                ),
+                path(
+                    "documents/<uuid:pk>/make-independent/",
+                    page_links.MakePageIndependentView.as_view(),
+                ),
                 *router.urls,
                 *oidc_urls,
                 path("groups/", workspaces.GrantableTeamsView.as_view()),

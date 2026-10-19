@@ -5,6 +5,7 @@ import os
 
 from django.conf import settings
 from django.core.exceptions import SuspiciousOperation
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from lasuite.marketing.tasks import create_or_update_contact
@@ -86,26 +87,36 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
                 if outcome != identities.SEPARATE:
                     self.collaborators_after_sign_in(user, identity)
                 return user
-        identity = (
-            models.SignInIdentity.objects.filter(sub=sub).select_related("user").first()
-            if sub
-            else None
-        )
-        if identity is not None:
-            if not identity.user.is_active:
-                raise SuspiciousOperation(_("User account is disabled"))
-            posthog_capture(PosthogEventName.USER_LOGIN, identity.user)
-            self.collaborators_after_sign_in(identity.user, identity)
-            return identity.user
+        self.collaborators_identity = None
         return super().get_or_create_user(access_token, id_token, payload)
 
     def get_existing_user(self, sub, email):
-        """Fetch existing user by sub or email."""
-
+        """
+        Fetch the existing user by sub, or the collaborator whose other
+        account this is (same query); else by email.
+        """
+        if sub:
+            users = list(
+                self.UserModel.objects.filter(
+                    Q(sub=sub) | Q(sign_in_identities__sub=sub)
+                ).distinct()[:2]
+            )
+            own = [user for user in users if user.sub == sub]
+            if own:
+                return own[0]
+            if users:
+                self.collaborators_identity = models.SignInIdentity.objects.get(sub=sub)
+                return users[0]
         try:
-            return self.UserModel.objects.get_user_by_sub_or_email(sub, email)
+            return self.UserModel.objects.get_user_by_email(email)
         except DuplicateEmailError as err:
             raise SuspiciousOperation(err.message) from err
+
+    def update_user_if_needed(self, user, claims):
+        """Another account's details (its email, name) aren't the user's."""
+        if getattr(self, "collaborators_identity", None) is not None:
+            return
+        super().update_user_if_needed(user, claims)
 
     def post_get_or_create_user(self, user, claims, is_new_user):
         """
@@ -128,7 +139,9 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
 
         if user:
             posthog_capture(PosthogEventName.USER_LOGIN, user)
-            self.collaborators_after_sign_in(user)
+            self.collaborators_after_sign_in(
+                user, getattr(self, "collaborators_identity", None)
+            )
 
     def collaborators_after_sign_in(self, user, identity=None):
         """

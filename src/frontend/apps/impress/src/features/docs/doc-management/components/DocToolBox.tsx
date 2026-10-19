@@ -21,7 +21,6 @@ import { getWordCount } from '@/docs/doc-editor/utils';
 import { printDocumentWithStyles } from '@/docs/doc-export/utils_print';
 import { useDuplicatedDoc } from '@/docs/doc-management/components/ConfirmationDuplicateModal';
 import { usePresenterStore } from '@/docs/doc-presenter/stores';
-import { useDetachDoc } from '@/docs/doc-tree/api/useDetach';
 import {
   deleteDocFromTreeAfterNavigate,
   useTreeContextOrNull,
@@ -108,6 +107,22 @@ const ConfirmationLeaveModal = dynamic(
   { ssr: false },
 );
 
+const PageToSpaceModal = dynamic(
+  () =>
+    import('@/features/workspaces/components/PageToSpaceModal').then((mod) => ({
+      default: mod.PageToSpaceModal,
+    })),
+  { ssr: false },
+);
+
+const MakeIndependentModal = dynamic(
+  () =>
+    import('@/features/workspaces/components/MakeIndependentModal').then(
+      (mod) => ({ default: mod.MakeIndependentModal }),
+    ),
+  { ssr: false },
+);
+
 const MoveSpaceModal = dynamic(
   () =>
     import('@/features/workspaces/components/MoveSpaceModal').then((mod) => ({
@@ -166,6 +181,12 @@ const DocToolBoxComponent = ({
   const [isModalLeaveOpen, setIsModalLeaveOpen] = useState(false);
   const [isModalMoveOpen, setIsModalMoveOpen] = useState(false);
   const [isModalMoveSpaceOpen, setIsModalMoveSpaceOpen] = useState(false);
+  const [pageToSpaceMode, setPageToSpaceMode] = useState<
+    'move' | 'link' | null
+  >(null);
+  const [isModalIndependentOpen, setIsModalIndependentOpen] = useState(false);
+  const managesDoc =
+    doc.user_role === Role.OWNER || doc.user_role === Role.ADMIN;
   const isSpace = doc.kind === 'space';
   const { onClick: onButtonClick, ...buttonPropsLeft } = buttonProps || {};
   const { isFeatureFlagActivated } = useAnalytics();
@@ -192,8 +213,6 @@ const DocToolBoxComponent = ({
       announce(wordCountLabel, 'polite');
     }
   }, [wordCountLabel]);
-
-  const { mutate: detachDoc } = useDetachDoc();
 
   const restoreFocus = useFocusStore((state) => state.restoreFocus);
   const addLastFocus = useFocusStore((state) => state.addLastFocus);
@@ -340,34 +359,6 @@ const DocToolBoxComponent = ({
       isHidden: !doc.abilities.duplicate,
     },
     {
-      label: t('Move to my docs', {
-        description: "Menu action to move a document into the user's own docs",
-      }),
-      isHidden: isTopParent || doc.user_role !== Role.OWNER,
-      icon: <DocMoveOutIcon width={18} height={18} aria-hidden="true" />,
-      callback: () => {
-        if (!treeContext?.root) {
-          return;
-        }
-
-        detachDoc(
-          { documentId: doc.id, rootId: treeContext.root.id },
-          {
-            onSuccess: () => {
-              if (treeContext.root) {
-                treeContext.treeData.setSelectedNode(treeContext.root);
-                deleteDocFromTreeAfterNavigate(
-                  treeContext,
-                  doc.id,
-                  router.push(`/docs/${treeContext.root.id}`),
-                );
-              }
-            },
-          },
-        );
-      },
-    },
-    {
       label: t('Move into a doc', {
         description: 'Menu action to move a document under another doc',
       }),
@@ -377,6 +368,32 @@ const DocToolBoxComponent = ({
       },
       // A space is always a root: only the pages inside it move
       isHidden: !doc.abilities.move || isSpace,
+    },
+    {
+      label: t('Move into a space', {
+        description: 'Menu action moving a page into a space',
+      }),
+      icon: <DocMoveInIcon width={18} height={18} aria-hidden="true" />,
+      callback: () => setPageToSpaceMode('move'),
+      isHidden: isSpace || !doc.abilities.move,
+    },
+    {
+      label: t('Show in another space', {
+        description: 'Menu action linking a page into another space',
+      }),
+      icon: <LinkIcon width={18} height={18} aria-hidden="true" />,
+      callback: () => setPageToSpaceMode('link'),
+      isHidden: isSpace || !managesDoc,
+    },
+    {
+      label: t('Make independent', {
+        description: 'Action taking a page or space out of where it belongs',
+      }),
+      icon: <DocMoveOutIcon width={18} height={18} aria-hidden="true" />,
+      callback: () => setIsModalIndependentOpen(true),
+      isHidden: isSpace
+        ? !doc.home_workspace || doc.user_role !== Role.OWNER
+        : isTopParent || !managesDoc,
     },
     {
       label: t('Move to a workspace', {
@@ -477,6 +494,25 @@ const DocToolBoxComponent = ({
         <MoveSpaceModal
           space={doc}
           onClose={() => setIsModalMoveSpaceOpen(false)}
+        />
+      )}
+      {pageToSpaceMode && (
+        <PageToSpaceModal
+          page={doc}
+          mode={pageToSpaceMode}
+          onClose={() => {
+            setPageToSpaceMode(null);
+            treeContext?.setRoot(null);
+          }}
+        />
+      )}
+      {isModalIndependentOpen && (
+        <MakeIndependentModal
+          doc={doc}
+          onClose={() => {
+            setIsModalIndependentOpen(false);
+            treeContext?.setRoot(null);
+          }}
         />
       )}
       {isModalExportOpen && (

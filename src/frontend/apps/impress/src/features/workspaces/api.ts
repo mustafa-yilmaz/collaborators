@@ -586,3 +586,127 @@ export function useAnswerJoinRequest(workspaceId: string) {
     },
   });
 }
+
+// -- Pages moving freely between spaces
+
+export interface PageSpaceLinks {
+  /** The space the page belongs to; none for an independent page */
+  home: { id: string; title: string } | null;
+  /** The other spaces it is shown in */
+  links: {
+    id: string;
+    space: { id: string; title: string };
+    can_unlink: boolean;
+  }[];
+  can_link: boolean;
+  can_make_independent: boolean;
+}
+
+export interface LinkedPage {
+  link_id: string;
+  page: { id: string; title: string };
+  /** Where it lives; none for an independent page */
+  home: { id: string; title: string } | null;
+}
+
+export const KEY_PAGE_SPACE_LINKS = 'page-space-links';
+export const KEY_LINKED_PAGES = 'space-linked-pages';
+
+export function usePageSpaceLinks(pageId: string, enabled = true) {
+  return useQuery<PageSpaceLinks, APIError>({
+    queryKey: [KEY_PAGE_SPACE_LINKS, pageId],
+    queryFn: () =>
+      request<PageSpaceLinks>(
+        `documents/${pageId}/space-links/`,
+        'Failed to get where the page is shown',
+      ),
+    enabled,
+  });
+}
+
+/** The pages of elsewhere shown in a space. */
+export function useLinkedPages(spaceId: string, enabled = true) {
+  return useQuery<LinkedPage[], APIError>({
+    queryKey: [KEY_LINKED_PAGES, spaceId],
+    queryFn: () =>
+      request<LinkedPage[]>(
+        `spaces/${spaceId}/linked-pages/`,
+        'Failed to get the linked pages',
+      ),
+    enabled,
+  });
+}
+
+/** Link a page into a space, unlink it, move it into a space or out of one. */
+export function usePageMoves(pageId: string) {
+  const queryClient = useQueryClient();
+  const onSuccess = () => {
+    for (const key of [
+      KEY_PAGE_SPACE_LINKS,
+      KEY_LINKED_PAGES,
+      KEY_DOC,
+      KEY_LIST_DOC,
+      KEY_LIST_SPACE,
+    ]) {
+      void queryClient.invalidateQueries({ queryKey: [key] });
+    }
+  };
+  return {
+    link: useMutation<unknown, APIError, { spaceId: string }>({
+      mutationFn: ({ spaceId }) =>
+        request(
+          `documents/${pageId}/space-links/`,
+          'Failed to show the page in the space',
+          jsonInit('POST', { space_id: spaceId }),
+        ),
+      onSuccess,
+    }),
+    unlink: useMutation<void, APIError, { linkId: string }>({
+      mutationFn: ({ linkId }) =>
+        request(
+          `documents/${pageId}/space-links/${linkId}/`,
+          'Failed to remove the page from the space',
+          jsonInit('DELETE'),
+        ),
+      onSuccess,
+    }),
+    moveIntoSpace: useMutation<unknown, APIError, { spaceId: string }>({
+      mutationFn: ({ spaceId }) =>
+        request(
+          `documents/${pageId}/move/`,
+          'Failed to move the page',
+          jsonInit('POST', {
+            target_document_id: spaceId,
+            position: 'last-child',
+          }),
+        ),
+      onSuccess,
+    }),
+    makeIndependent: useMutation<unknown, APIError, void>({
+      mutationFn: () =>
+        request(
+          `documents/${pageId}/make-independent/`,
+          'Failed to make the page independent',
+          jsonInit('POST'),
+        ),
+      onSuccess,
+    }),
+  };
+}
+
+/** Take a space out of its workspaces. */
+export function useMakeSpaceIndependent(spaceId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<Space, APIError, void>({
+    mutationFn: () =>
+      request<Space>(
+        `spaces/${spaceId}/make-independent/`,
+        'Failed to make the space independent',
+        jsonInit('POST'),
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [KEY_LIST_SPACE] });
+      void queryClient.invalidateQueries({ queryKey: [KEY_DOC] });
+    },
+  });
+}

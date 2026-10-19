@@ -16,10 +16,9 @@ import {
   useDocStore,
   useTrans,
 } from '@/docs/doc-management';
+import LeftPanelIcon from '@/features/left-panel/assets/left-panel.svg';
 import { useDate } from '@/hooks/useDate';
 import { useResponsiveStore } from '@/stores';
-
-import LeftPanelIcon from '@/features/left-panel/assets/left-panel.svg';
 
 import { WikiContext } from '../WikiContext';
 import { Wiki, WikiNode, useWiki } from '../api';

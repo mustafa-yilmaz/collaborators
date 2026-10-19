@@ -127,6 +127,7 @@ urlpatterns = [
                 *oidc_urls,
                 path("groups/", workspaces.GrantableTeamsView.as_view()),
                 path("people/", people.KnownPeopleView.as_view()),
+                path("people/<uuid:user_id>/", people.PersonCardView.as_view()),
                 path("join/<str:token>/", workspaces.JoinWorkspaceView.as_view()),
                 path("dashboard/layout/", dashboard.DashboardLayoutView.as_view()),
                 path("dashboard/recent/", dashboard.DashboardRecentView.as_view()),

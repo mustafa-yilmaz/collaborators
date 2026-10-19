@@ -3,6 +3,7 @@ import { createReactInlineContentSpec } from '@blocknote/react';
 import { Plugin } from '@tiptap/pm/state';
 
 import { Icon } from '@/components';
+import { PersonHoverCard } from '@/features/people/PersonHoverCard';
 
 import { searchOrigin } from '../Interlinking/searchSession';
 
@@ -35,44 +36,57 @@ const mentionConfig = {
 
 const MentionChip = ({
   kind,
+  targetId,
   label,
 }: {
   kind: 'user' | 'group';
+  targetId: string;
   label: string;
-}) => (
-  <span
-    className="--collaborators--mention"
-    data-mention-kind={kind}
-    style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 2,
-      padding: '0 6px',
-      borderRadius: 999,
-      background:
-        'var(--c--contextuals--background--semantic--brand--tertiary, #ECE6FB)',
-      color: 'var(--c--globals--colors--brand-700, #4F3497)',
-      fontWeight: 600,
-      whiteSpace: 'nowrap',
-    }}
-  >
-    {kind === 'group' && (
-      <Icon iconName="groups" $size="14px" $color="inherit" />
-    )}
-    @{label}
-  </span>
-);
+}) => {
+  const chip = (
+    <span
+      className="--collaborators--mention"
+      data-mention-kind={kind}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 2,
+        padding: '0 6px',
+        borderRadius: 999,
+        background:
+          'var(--c--contextuals--background--semantic--brand--tertiary, #ECE6FB)',
+        color: 'var(--c--globals--colors--brand-700, #4F3497)',
+        fontWeight: 600,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {kind === 'group' && (
+        <Icon iconName="groups" $size="14px" $color="inherit" />
+      )}
+      @{label}
+    </span>
+  );
+  // Hovering a person shows their card
+  return kind === 'user' ? (
+    <PersonHoverCard userId={targetId} name={label}>
+      {chip}
+    </PersonHoverCard>
+  ) : (
+    chip
+  );
+};
 
 const render = {
   render: ({
     inlineContent,
   }: {
     inlineContent: {
-      props: { kind: 'user' | 'group'; label: string };
+      props: { kind: 'user' | 'group'; targetId: string; label: string };
     };
   }) => (
     <MentionChip
       kind={inlineContent.props.kind}
+      targetId={inlineContent.props.targetId}
       label={inlineContent.props.label}
     />
   ),

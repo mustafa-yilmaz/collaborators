@@ -406,7 +406,7 @@ Done: the Loop table tweaks, Loop table v2 (T9, T5, T56), the wiki extras (F8), 
 **Before the first public version** (asked for 2026-10-20; in this order, small ones first, then the ones that shape data and privacy from day one):
 
 1. ✅ **Group management by group creators** (built 2026-10-20): any workspace member can create a team (organizations stay with administrators) and manages it like an administrator: renames or deletes it, adds and removes people, appoints managers. People are moved or copied between the groups one manages (tick them, then *Move or copy*). A person can be in several groups.
-2. **Profile badge on mentions:** hovering a mentioned person (in text and in table cells) shows a small card: name, picture, and what their profile lets the viewer see.
+2. ✅ **Profile badge on mentions** (built 2026-10-20): hovering a mentioned person (in pages, comments, and table cells, text or Person columns) shows a card: initials, name, and, for someone the viewer works with, their email, shared workspaces and their groups there (`GET people/<id>/`). Once profile pages exist, the card shows what the profile lets the viewer see, with a link to it.
 3. **One visibility setting for workspaces, spaces and pages:** who can find and open each one:
    1. public to the internet (and search engines, which can be refused separately);
    2. inside the platform: (a) all collaborators, (b) the workspace's members, (c) the space's members;

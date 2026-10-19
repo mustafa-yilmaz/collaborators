@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import * as Y from 'yjs';
 
 import { Icon } from '@/components';
+import { PersonHoverCard } from '@/features/people/PersonHoverCard';
 
 import { PersonPicker } from './PersonPicker';
 import { Popover } from './Popover';
@@ -419,20 +420,34 @@ const PersonChips = ({ value }: { value: CellValue }) => {
   const people = Array.isArray(value) ? (value as PersonValue[]) : [];
   return (
     <>
-      {people.map((person) => (
-        <span
-          key={person.id}
-          className="loop-table__chip"
-          style={{ background: '#ECE6FB', color: '#4F3497' }}
-          title={person.label}
-        >
-          <Icon
-            iconName={person.kind === 'group' ? 'groups' : 'person'}
-            $size="14px"
-          />
-          {person.label}
-        </span>
-      ))}
+      {people.map((person) => {
+        const chip = (
+          <span
+            key={person.id}
+            className="loop-table__chip"
+            style={{ background: '#ECE6FB', color: '#4F3497' }}
+            title={person.kind === 'group' ? person.label : undefined}
+          >
+            <Icon
+              iconName={person.kind === 'group' ? 'groups' : 'person'}
+              $size="14px"
+            />
+            {person.label}
+          </span>
+        );
+        // Hovering a person shows their card
+        return person.kind === 'group' ? (
+          chip
+        ) : (
+          <PersonHoverCard
+            key={person.id}
+            userId={person.id}
+            name={person.label}
+          >
+            {chip}
+          </PersonHoverCard>
+        );
+      })}
     </>
   );
 };

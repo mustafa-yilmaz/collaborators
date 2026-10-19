@@ -60,3 +60,42 @@ def test_people_shows_a_newcomer_to_everyone_on_the_page_at_once():
 def test_people_needs_authentication():
     """Only signed-in collaborators have people around them."""
     assert APIClient().get("/api/v1.0/people/").status_code == 401
+
+
+def test_person_card_for_someone_one_works_with():
+    """Name, email, shared workspaces and their groups there."""
+    me, ada = factories.UserFactory(), factories.UserFactory(full_name="Ada L")
+    acme = models.Workspace.objects.create(name="Acme")
+    other = models.Workspace.objects.create(name="Other")
+    for user in (me, ada):
+        models.WorkspaceAccess.objects.create(workspace=acme, user=user)
+    models.WorkspaceAccess.objects.create(workspace=other, user=ada)
+    q4 = models.Group.objects.create(workspace=acme, name="Q4")
+    hidden = models.Group.objects.create(workspace=other, name="Hidden")
+    for group in (q4, hidden):
+        models.GroupMembership.objects.create(group=group, user=ada)
+    client = APIClient()
+    client.force_login(me)
+
+    card = client.get(f"/api/v1.0/people/{ada.id}/").json()
+
+    assert card["known"] is True
+    assert card["full_name"] == "Ada L"
+    assert card["email"] == ada.email
+    assert card["workspaces"] == [{"id": str(acme.id), "name": "Acme"}]
+    assert card["groups"] == [{"id": str(q4.id), "name": "Q4"}]
+
+
+def test_person_card_of_a_stranger_shows_only_the_name():
+    """No email nor workspaces for someone one doesn't work with."""
+    me, stranger = factories.UserFactory(), factories.UserFactory(full_name="Zed")
+    client = APIClient()
+    client.force_login(me)
+
+    card = client.get(f"/api/v1.0/people/{stranger.id}/").json()
+
+    assert card["known"] is False
+    assert card["full_name"] == "Zed"
+    assert card["email"] == ""
+    assert card["workspaces"] == []
+    assert APIClient().get(f"/api/v1.0/people/{stranger.id}/").status_code == 401

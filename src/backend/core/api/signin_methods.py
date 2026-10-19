@@ -2,6 +2,10 @@
 The in-app "Sign-in methods" page: the providers a collaborator signs in
 with, and removing one. Connecting another provider goes through sign-in
 (Keycloak's "idp_link" action, started by the frontend).
+
+Also the dashboard hints about them, closed for good one by one: the
+welcome note of a new account, and the suggestion to connect another
+sign-in method.
 """
 
 from django.conf import settings
@@ -92,3 +96,35 @@ class SignInMethodView(APIView):
                 _("This sign-in method can't be disconnected right now.")
             ) from err
         return drf.response.Response(status=status.HTTP_204_NO_CONTENT)
+
+
+HINTS = ("welcome", "connect-accounts")
+
+
+class HintsView(APIView):
+    """
+    GET  /users/me/hints/ — the dashboard hints closed for good
+    POST /users/me/hints/ {"hint": "welcome" | "connect-accounts"} — close one
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """Which hints are closed."""
+        return drf.response.Response(
+            {"dismissed": request.user.collaborator_dismissed_hints}
+        )
+
+    def post(self, request):
+        """Close a hint for good."""
+        hint = request.data.get("hint")
+        if hint not in HINTS:
+            raise drf.exceptions.ValidationError({"hint": _("Unknown hint.")})
+        user = request.user
+        if hint not in user.collaborator_dismissed_hints:
+            user.collaborator_dismissed_hints = [
+                *user.collaborator_dismissed_hints,
+                hint,
+            ]
+            user.save(update_fields=["collaborator_dismissed_hints", "updated_at"])
+        return drf.response.Response({"dismissed": user.collaborator_dismissed_hints})

@@ -108,6 +108,9 @@ See **section 3**: it is the largest single piece of work.
   - **Disconnect** removes the link, never the last way in.
   - The backend reads and removes links through Keycloak's admin API, with its own service client `collaborators-backend` (`COLLABORATORS_KEYCLOAK_*`).
 - The sign-in buttons and the methods page show each provider's official logo.
+- **Dashboard hints**, one at a time, each closed for good:
+  - a new account is welcomed, warning that an account under another email is a separate one;
+  - someone connected with a single provider is offered to connect the others, so they open this same account even with a different email.
 
 **Still to do:** emailing admins about requests to join (they reach the in-app inbox only).
 

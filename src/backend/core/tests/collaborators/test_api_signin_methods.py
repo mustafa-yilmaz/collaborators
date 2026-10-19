@@ -152,3 +152,23 @@ def test_keycloak_client_reads_links_and_password(settings):
     assert req.call_args_list[0].args[1] == (
         "http://keycloak.test/admin/realms/collaborators/users/kc-1/federated-identity"
     )
+
+
+# -- Dashboard hints
+
+
+def test_hints_close_for_good():
+    """A closed hint stays closed; unknown hints are refused."""
+    user = factories.UserFactory()
+    client = client_for(user)
+    url = "/api/v1.0/users/me/hints/"
+
+    assert client.get(url).json() == {"dismissed": []}
+    assert client.post(url, {"hint": "welcome"}, format="json").json() == {
+        "dismissed": ["welcome"]
+    }
+    client.post(url, {"hint": "welcome"}, format="json")
+    client.post(url, {"hint": "connect-accounts"}, format="json")
+    assert client.get(url).json() == {"dismissed": ["welcome", "connect-accounts"]}
+    assert client.post(url, {"hint": "other"}, format="json").status_code == 400
+    assert APIClient().get(url).status_code == 401

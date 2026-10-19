@@ -41,6 +41,10 @@ describe('SignInMethods', () => {
     expect(
       within(microsoft).getByRole('button', { name: 'Disconnect' }),
     ).toBeEnabled();
+    // two connected: no warning
+    expect(
+      screen.queryByTestId('hint-connect-accounts'),
+    ).not.toBeInTheDocument();
   });
 
   test('never offers to disconnect the only way in', async () => {
@@ -58,5 +62,9 @@ describe('SignInMethods', () => {
     expect(
       within(google).getByRole('button', { name: 'Disconnect' }),
     ).toBeDisabled();
+    // only one connected: warned that the others would be separate accounts
+    expect(screen.getByTestId('hint-connect-accounts')).toHaveTextContent(
+      'Your other accounts are not connected yet',
+    );
   });
 });

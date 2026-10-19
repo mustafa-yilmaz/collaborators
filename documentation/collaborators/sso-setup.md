@@ -97,6 +97,7 @@ In development the page also has **Use a test account**. It opens Keycloak's own
   - **Connect** asks to sign in with that provider once, then links it.
   - **Disconnect** removes one, never the last.
   - The backend reads and removes the links through Keycloak's admin API, with its own client `collaborators-backend`. `make sso-providers` creates it (with the dev secret already in `env.d/development/common`, `COLLABORATORS_KEYCLOAK_*`). In production, give that client its own secret.
+  - The dashboard suggests connecting another provider to people who have only one, until they close it for good. A new account gets a welcome note first: signing in with another provider under a different email makes a separate account.
   - Linking is allowed up to an hour after signing in (`max_auth_age` of Keycloak's `idp_link` action); later, Keycloak asks to sign in again first.
 - **Joining workspaces:** in a workspace's settings, admins can create a **join link**. They can also open the workspace to an **email domain** or an **organisation**, optionally adding joiners to an organisation group:
   - Whoever signs in with a verified email at that domain joins as a member.

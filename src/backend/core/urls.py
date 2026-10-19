@@ -101,6 +101,7 @@ urlpatterns = [
                     "users/me/sign-in-methods/<slug:provider>/",
                     signin_methods.SignInMethodView.as_view(),
                 ),
+                path("users/me/hints/", signin_methods.HintsView.as_view()),
                 *router.urls,
                 *oidc_urls,
                 path("groups/", workspaces.GrantableTeamsView.as_view()),

@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import { Box, BoxButton, Icon, Text } from '@/components';
+import { AccountHints } from '@/features/account/AccountHints';
 import { useAuth } from '@/features/auth';
 import { useResponsiveStore } from '@/stores';
 
@@ -588,6 +589,8 @@ export const Dashboard = () => {
           </BoxButton>
         </DropdownMenu>
       </Box>
+
+      <AccountHints />
 
       <BoxButton
         onClick={() =>

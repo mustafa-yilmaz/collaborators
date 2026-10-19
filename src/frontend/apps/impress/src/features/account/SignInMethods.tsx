@@ -8,6 +8,11 @@ import { gotoConnectProvider } from '@/features/auth';
 import { ProviderLogo } from '@/features/signin/ProviderLogo';
 import { PROVIDER_NAMES } from '@/features/signin/SignIn';
 
+import {
+  ConnectAccountsText,
+  HintCard,
+  hasUnconnectedProviders,
+} from './AccountHints';
 import { useDisconnectSignInMethod, useSignInMethods } from './api';
 
 /**
@@ -54,6 +59,11 @@ export const SignInMethods = () => {
 
   return (
     <Box $gap="sm">
+      {hasUnconnectedProviders(data) && (
+        <HintCard icon="warning" tone="warning" testId="hint-connect-accounts">
+          <ConnectAccountsText />
+        </HintCard>
+      )}
       <Box
         as="ul"
         $css={css`

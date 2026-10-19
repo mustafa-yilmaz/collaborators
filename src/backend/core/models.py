@@ -193,6 +193,11 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
     # The organisations the identity providers vouch for, read at sign-in:
     # [{"id": "google:<Workspace domain>" | "microsoft:<tenant id>", "name"}]
     collaborator_organizations = models.JSONField(default=list, blank=True)
+    # The dashboard hints closed for good: "welcome" (to a new account),
+    # "connect-accounts" (connect another sign-in method)
+    collaborator_dismissed_hints = ArrayField(
+        models.CharField(max_length=40), default=list, blank=True
+    )
     # The dashboard as this collaborator arranged it: [{id, hidden, collapsed}]
     collaborator_dashboard = models.JSONField(default=list, blank=True)
     # Derived from workspace and group memberships, see `teams`

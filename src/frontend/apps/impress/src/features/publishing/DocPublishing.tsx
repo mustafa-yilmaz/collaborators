@@ -4,8 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import { Box, BoxButton, Icon, StyledLink, Text } from '@/components';
+import { useConfig } from '@/core';
+import { useUploadImage } from '@/docs/doc-editor/hook/useUploadImage';
 import { Doc } from '@/docs/doc-management';
 import { useClipboard } from '@/hooks';
+import { useDate } from '@/hooks/useDate';
 
 import {
   Publication,
@@ -13,7 +16,7 @@ import {
   useUpdatePublication,
   useWikiMutations,
 } from './api';
-import { WIKI_ACCENTS, slugify, wikiUrl } from './utils';
+import { WIKI_ACCENTS, slugify, wikiAddresses, wikiUrl } from './utils';
 
 const ErrorText = ({ children }: { children?: string }) =>
   children ? (
@@ -37,13 +40,32 @@ const WikiSettings = ({
   const [allowIndexing, setAllowIndexing] = useState(
     wiki ? publication.allow_indexing : false,
   );
-  const { publish, unpublish } = useWikiMutations(doc.id);
+  const [logo, setLogo] = useState(wiki?.logo ?? '');
+  const [domain, setDomain] = useState(wiki?.domain ?? '');
+  const [isUploading, setIsUploading] = useState(false);
+  const uploadImage = useUploadImage(doc.id);
+  const { data: config } = useConfig();
+  const { formatDate } = useDate();
+  const { publish, unpublish, release, goLive } = useWikiMutations(doc.id);
   const address = `${typeof window !== 'undefined' ? window.location.origin : ''}${wikiUrl(slugify(slug) || '…')}`;
+  const addresses = wiki ? wikiAddresses(wiki, config) : [];
   const isChanged =
     !wiki ||
     slugify(slug) !== wiki.slug ||
     accent !== wiki.accent ||
-    allowIndexing !== publication.allow_indexing;
+    allowIndexing !== publication.allow_indexing ||
+    logo !== wiki.logo ||
+    domain.trim() !== (wiki.domain ?? '');
+  const copy = (text: string) =>
+    copyToClipboard(
+      text,
+      t('Link Copied !', {
+        description: 'Toast confirming a link was copied to the clipboard',
+      }),
+      t('Failed to copy link', {
+        description: 'Toast shown when copying a link failed',
+      }),
+    );
 
   return (
     <Box $gap="xs" className="--collaborators--wiki-settings">
@@ -57,8 +79,9 @@ const WikiSettings = ({
               { description: 'Share dialog, explanation of wikis' },
             )}
       </Text>
-      {wiki && (
+      {addresses.map((url) => (
         <Box
+          key={url}
           $direction="row"
           $align="center"
           $gap="xs"
@@ -71,13 +94,9 @@ const WikiSettings = ({
           `}
         >
           <Icon iconName="public" $size="18px" $variation="secondary" />
-          <StyledLink
-            href={wikiUrl(wiki.slug)}
-            target="_blank"
-            $css="flex: 1; min-width: 0;"
-          >
+          <StyledLink href={url} target="_blank" $css="flex: 1; min-width: 0;">
             <Text $size="sm" $weight="500" $ellipsis>
-              {address}
+              {url}
             </Text>
           </StyledLink>
           <BoxButton
@@ -87,24 +106,13 @@ const WikiSettings = ({
             title={t('Copy the wiki address', {
               description: 'Button copying the address of a wiki',
             })}
-            onClick={() =>
-              copyToClipboard(
-                address,
-                t('Link Copied !', {
-                  description:
-                    'Toast confirming a link was copied to the clipboard',
-                }),
-                t('Failed to copy link', {
-                  description: 'Toast shown when copying a link failed',
-                }),
-              )
-            }
+            onClick={() => copy(url)}
             $padding="3xs"
           >
             <Icon iconName="content_copy" $size="18px" $variation="secondary" />
           </BoxButton>
         </Box>
-      )}
+      ))}
       <Input
         fullWidth
         label={t('Wiki address', {
@@ -141,6 +149,82 @@ const WikiSettings = ({
           />
         ))}
       </Box>
+      <Box $direction="row" $align="center" $gap="xs" $wrap="wrap">
+        <Text $size="sm">
+          {t('Logo', { description: 'Label of the logo of a wiki' })}
+        </Text>
+        {logo && (
+          <img
+            src={logo}
+            alt=""
+            style={{ height: 28, maxWidth: 120, objectFit: 'contain' }}
+          />
+        )}
+        {publication.can_publish && (
+          <Box
+            as="label"
+            $direction="row"
+            $align="center"
+            $gap="3xs"
+            $css="cursor: pointer;"
+          >
+            <Icon iconName="upload" $size="18px" $variation="secondary" />
+            <Text $size="sm" $theme="brand">
+              {isUploading
+                ? t('Uploading…', { description: 'Image being uploaded' })
+                : logo
+                  ? t('Change', { description: 'Changes the logo of a wiki' })
+                  : t('Upload an image', {
+                      description: 'Uploads the logo of a wiki',
+                    })}
+            </Text>
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              disabled={isUploading}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (!file) {
+                  return;
+                }
+                setIsUploading(true);
+                uploadImage(file)
+                  .then((url) => setLogo(url))
+                  .catch(() => undefined)
+                  .finally(() => setIsUploading(false));
+              }}
+            />
+          </Box>
+        )}
+        {logo && publication.can_publish && (
+          <BoxButton onClick={() => setLogo('')} $padding="3xs">
+            <Text $size="sm" $variation="secondary">
+              {t('Remove', { description: 'Removes the logo of a wiki' })}
+            </Text>
+          </BoxButton>
+        )}
+      </Box>
+      <Input
+        fullWidth
+        label={t('Its own domain (optional)', {
+          description: 'Label of the own domain field of a wiki',
+        })}
+        text={
+          config?.COLLABORATORS_WIKI_DOMAIN_TARGET
+            ? t(
+                'For example help.example.com. Point a CNAME record of this domain at {{target}}.',
+                {
+                  description: 'Help of the own domain field of a wiki',
+                  target: config.COLLABORATORS_WIKI_DOMAIN_TARGET,
+                },
+              )
+            : undefined
+        }
+        value={domain}
+        disabled={!publication.can_publish}
+        onChange={(event) => setDomain(event.target.value)}
+      />
       <Switch
         labelSide="right"
         label={t('Let search engines find this wiki', {
@@ -171,6 +255,8 @@ const WikiSettings = ({
                 slug: slugify(slug),
                 accent,
                 allow_indexing: allowIndexing,
+                logo,
+                domain: domain.trim(),
               })
             }
           >
@@ -180,6 +266,67 @@ const WikiSettings = ({
                   description: 'Button publishing a space as a wiki',
                 })}
           </Button>
+        </Box>
+      )}
+      {wiki && publication.can_publish && (
+        <Box
+          $gap="2xs"
+          $padding={{ top: 'xs' }}
+          $css={css`
+            border-top: 1px solid
+              var(--c--contextuals--border--surface--primary);
+          `}
+        >
+          <Text $size="sm" $weight="600">
+            {t('What readers see', {
+              description: 'Heading of the live or fixed version of a wiki',
+            })}
+          </Text>
+          <Text $size="sm" $variation="secondary">
+            {wiki.released_at
+              ? t(
+                  'The version published {{date}}. Changes made since stay unpublished until you publish again; the pages themselves are not public meanwhile.',
+                  {
+                    description: 'A wiki showing a fixed version',
+                    date: formatDate(wiki.released_at),
+                  },
+                )
+              : t(
+                  'The pages as they are, changes included as they are made. You can publish a fixed version instead: readers then see the pages as they are now, until you publish again.',
+                  { description: 'A wiki showing its live pages' },
+                )}
+          </Text>
+          <ErrorText>
+            {release.error?.cause?.[0] ?? goLive.error?.cause?.[0]}
+          </ErrorText>
+          <Box $direction="row" $gap="xs" $justify="flex-end" $wrap="wrap">
+            {wiki.released_at && (
+              <Button
+                size="small"
+                variant="secondary"
+                disabled={goLive.isPending}
+                onClick={() => goLive.mutate()}
+              >
+                {t('Show the live pages', {
+                  description: 'Button going back from a fixed version',
+                })}
+              </Button>
+            )}
+            <Button
+              size="small"
+              variant="secondary"
+              disabled={release.isPending}
+              onClick={() => release.mutate()}
+            >
+              {wiki.released_at
+                ? t('Publish the current version', {
+                    description: 'Button publishing a new fixed version',
+                  })
+                : t('Publish a fixed version', {
+                    description: 'Button publishing a fixed version of a wiki',
+                  })}
+            </Button>
+          </Box>
         </Box>
       )}
     </Box>

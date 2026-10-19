@@ -796,6 +796,24 @@ class Base(Configuration):
     COLLABORATORS_EMAIL_INVITATIONS = values.BooleanValue(
         False, environ_name="COLLABORATORS_EMAIL_INVITATIONS", environ_prefix=None
     )
+    # Wikis at <workspace>.<this domain>/<wiki>, e.g. acme.collaborators.community
+    COLLABORATORS_WIKI_BASE_DOMAIN = values.Value(
+        "collaborators.community",
+        environ_name="COLLABORATORS_WIKI_BASE_DOMAIN",
+        environ_prefix=None,
+    )
+    # The addresses of the app itself: any other is a wiki's own domain
+    COLLABORATORS_APP_HOSTS = values.ListValue(
+        ["collaborators.community", "www.collaborators.community"],
+        environ_name="COLLABORATORS_APP_HOSTS",
+        environ_prefix=None,
+    )
+    # What a wiki's own domain is pointed at (a CNAME record)
+    COLLABORATORS_WIKI_DOMAIN_TARGET = values.Value(
+        "wikis.collaborators.community",
+        environ_name="COLLABORATORS_WIKI_DOMAIN_TARGET",
+        environ_prefix=None,
+    )
     OIDC_RP_SCOPES = values.Value(
         "openid email", environ_name="OIDC_RP_SCOPES", environ_prefix=None
     )

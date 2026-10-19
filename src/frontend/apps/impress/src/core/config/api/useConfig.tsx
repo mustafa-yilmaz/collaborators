@@ -70,6 +70,12 @@ export interface ConfigResponse {
   COLLABORATORS_SIGNIN_PASSWORD?: boolean;
   /** Identity providers of the sign-in page, by alias, in order */
   COLLABORATORS_SIGNIN_PROVIDERS?: string[];
+  /** The addresses of the app; any other shows a wiki */
+  COLLABORATORS_APP_HOSTS?: string[];
+  /** Wikis are read at <workspace>.<this domain>/<wiki> */
+  COLLABORATORS_WIKI_BASE_DOMAIN?: string;
+  /** What a wiki's own domain is pointed at (CNAME) */
+  COLLABORATORS_WIKI_DOMAIN_TARGET?: string;
   COLLABORATION_WS_INACTIVITY_TIMEOUT?: number | null;
   CONVERSION_FILE_EXTENSIONS_ALLOWED: string[];
   CONVERSION_FILE_MAX_SIZE: number;

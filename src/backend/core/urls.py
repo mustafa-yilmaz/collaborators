@@ -111,7 +111,17 @@ urlpatterns = [
                     "spaces/<uuid:resource_id>/wiki/",
                     publishing.SpaceWikiView.as_view(),
                 ),
+                path(
+                    "spaces/<uuid:resource_id>/wiki/release/",
+                    publishing.SpaceWikiReleaseView.as_view(),
+                ),
                 path("wiki/<slug:slug>/", publishing.PublicWikiView.as_view()),
+                path("wiki/<slug:slug>/search/", publishing.WikiSearchView.as_view()),
+                path(
+                    "wiki/<slug:slug>/pages/<uuid:page_id>/",
+                    publishing.WikiPageView.as_view(),
+                ),
+                path("wiki-hosts/<str:host>/", publishing.WikiHostView.as_view()),
                 path(
                     "workspaces/<uuid:resource_id>/publication-log/",
                     publishing.PublicationLogView.as_view(),

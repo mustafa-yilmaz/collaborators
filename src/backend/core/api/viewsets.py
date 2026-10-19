@@ -79,6 +79,7 @@ from core.tasks.access import reset_service_connections_on_commit
 from core.tasks.documents import sync_service_restorations_in_cascade
 from core.tasks.mail import send_ask_for_access_mail
 from core.tasks.search import trigger_batch_document_indexer
+from core.tasks.wiki import refresh_text_on_commit
 from core.utils.analytics import PosthogEventName, posthog_capture
 from core.utils.dicts import lowercase_keys
 from core.utils.s3 import get_s3_client
@@ -972,6 +973,8 @@ class DocumentViewSet(
         # Throttled like any other change: the collaboration server calls this
         # once per debounce window, for as long as a document is being edited.
         trigger_batch_document_indexer(document_id, updated_at)
+        # The text of a published wiki's page, for its full-text search
+        refresh_text_on_commit(document_id)
 
         return drf_response.Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -2225,6 +2228,8 @@ class DocumentViewSet(
             self.queryset.readable_per_se(user)
             .filter(path__in=candidate_paths)
             .exists()
+            # Collaborators: the files of a wiki's fixed version, and its logo
+            or publishing.is_wiki_file(key)
         ):
             logger.debug("User '%s' lacks permission for attachment", user)
             raise drf.exceptions.PermissionDenied()
@@ -3169,6 +3174,9 @@ class ConfigView(drf.views.APIView):
             "COLLABORATORS_ACCOUNT_URL",
             "COLLABORATORS_SIGNIN_PASSWORD",
             "COLLABORATORS_SIGNIN_PROVIDERS",
+            "COLLABORATORS_APP_HOSTS",
+            "COLLABORATORS_WIKI_BASE_DOMAIN",
+            "COLLABORATORS_WIKI_DOMAIN_TARGET",
             "AI_FEATURE_BLOCKNOTE_ENABLED",
             "AI_FEATURE_LEGACY_ENABLED",
             "API_USERS_SEARCH_QUERY_MIN_LENGTH",

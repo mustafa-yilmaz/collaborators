@@ -10,7 +10,8 @@ pytestmark = pytest.mark.django_db
 
 def test_people_lists_close_people_without_a_minimum_length():
     """Co-members and people sharing a page show, filtered by any text."""
-    user = factories.UserFactory(full_name="Ada Lovelace")
+    # (a fixed email: a random one could match the letters searched below)
+    user = factories.UserFactory(full_name="Ada Lovelace", email="ada@z.test")
     sharer = factories.UserFactory(full_name="Bo Li", email="bo@x.test")
     co_member = factories.UserFactory(full_name="Cy Ng", email="cy@y.test")
     stranger = factories.UserFactory(full_name="Bo Stranger")

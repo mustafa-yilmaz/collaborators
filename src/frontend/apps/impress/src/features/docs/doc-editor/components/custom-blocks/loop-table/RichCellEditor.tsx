@@ -15,7 +15,7 @@ import * as Y from 'yjs';
 
 import { EmojiPicker, Icon } from '@/components';
 import { getEmojidata } from '@/components/Emoji/initEmojiCallout';
-import { useUploadFile } from '@/docs/doc-editor/hook/useUploadFile';
+import { useUploadImage } from '@/docs/doc-editor/hook/useUploadImage';
 
 import { PersonPicker } from './PersonPicker';
 import { Popover } from './Popover';
@@ -868,7 +868,7 @@ const ImagePanel = ({
   onClose: () => void;
 }) => {
   const { t } = useTranslation();
-  const { uploadFile } = useUploadFile(docId);
+  const uploadImage = useUploadImage(docId);
   const [address, setAddress] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const href = safeLink(address);
@@ -904,7 +904,7 @@ const ImagePanel = ({
                 return;
               }
               setIsUploading(true);
-              uploadFile(file)
+              uploadImage(file)
                 .then((url) => onPick(url, file.name))
                 .catch(() => setIsUploading(false));
             }}

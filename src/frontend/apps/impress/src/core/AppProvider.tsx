@@ -7,6 +7,7 @@ import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 
 import { Auth, KEY_AUTH, setAuthUrl } from '@/features/auth';
+import { WikiHostGate } from '@/features/publishing/wiki/WikiHost';
 import { useRouteChangeCompleteFocus } from '@/hooks/useRouteChangeCompleteFocus';
 import { useResponsiveStore } from '@/stores/';
 
@@ -74,7 +75,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <ConfigProvider>
-          <Auth>{children}</Auth>
+          {/* A wiki's own address shows the wiki, for anyone */}
+          <WikiHostGate>
+            <Auth>{children}</Auth>
+          </WikiHostGate>
         </ConfigProvider>
       </ThemeProvider>
     </QueryClientProvider>

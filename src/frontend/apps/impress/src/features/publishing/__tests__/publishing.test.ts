@@ -1,6 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
-import { slugify, wikiUrl } from '../utils';
+import {
+  appUrl,
+  setWikiHostMode,
+  slugify,
+  wikiHostKind,
+  wikiUrl,
+} from '../utils';
 import { flattenTree, pathTo, searchPages } from '../wiki/tree';
 
 const tree = [
@@ -38,5 +44,51 @@ describe('publishing utils', () => {
     expect(searchPages(pages, 'cafe').map((page) => page.id)).toEqual(['b']);
     expect(searchPages(pages, 'G').map((page) => page.id)).toEqual(['a', 'c']);
     expect(searchPages(pages, '  ')).toEqual([]);
+  });
+});
+
+describe('wiki addresses', () => {
+  const config = {
+    COLLABORATORS_APP_HOSTS: ['collaborators.community'],
+    COLLABORATORS_WIKI_BASE_DOMAIN: 'collaborators.community',
+  };
+
+  afterEach(() => setWikiHostMode(null));
+
+  it('tells the app from a workspace address and a wiki domain', () => {
+    expect(wikiHostKind('collaborators.community', config)).toBeNull();
+    expect(wikiHostKind('acme.collaborators.community', config)).toBe(
+      'workspace',
+    );
+    // deeper names are not workspace addresses
+    expect(wikiHostKind('a.b.collaborators.community', config)).toBe('domain');
+    expect(wikiHostKind('help.example.com', config)).toBe('domain');
+    expect(wikiHostKind('10.0.0.1', config)).toBeNull();
+    expect(wikiHostKind('localhost', config)).toBeNull();
+    // without the setting, every address is the app's
+    expect(wikiHostKind('help.example.com', {})).toBeNull();
+  });
+
+  it('links the pages of a wiki as its address reads them', () => {
+    expect(wikiUrl('handbook', 'p1')).toBe('/wiki/handbook/p1/');
+
+    setWikiHostMode({ kind: 'workspace' });
+    expect(wikiUrl('handbook')).toBe('/handbook/');
+    expect(wikiUrl('handbook', 'p1')).toBe('/handbook/p1/');
+
+    setWikiHostMode({ kind: 'domain', slug: 'handbook' });
+    expect(wikiUrl('handbook', 'p1')).toBe('/p1/');
+    // another wiki stays at its address on the app
+    expect(wikiUrl('other', 'p1')).toBe('/wiki/other/p1/');
+  });
+
+  it('leads back to the app from a wiki address', () => {
+    expect(appUrl('/docs/p1/', config)).toBe('/docs/p1/');
+    setWikiHostMode({ kind: 'workspace' });
+    expect(appUrl('/docs/p1/', config)).toBe(
+      `${window.location.protocol}//collaborators.community${
+        window.location.port ? `:${window.location.port}` : ''
+      }/docs/p1/`,
+    );
   });
 });

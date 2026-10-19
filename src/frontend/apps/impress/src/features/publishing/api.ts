@@ -19,6 +19,14 @@ export interface Publication {
     slug: string;
     accent: string;
     title: string;
+    /** The address of its logo, or "" */
+    logo: string;
+    /** A domain of its own, if any */
+    domain: string | null;
+    /** Its workspace's address: <workspace_slug>.<base domain> */
+    workspace_slug: string | null;
+    /** When its fixed version was published; null when it shows live pages */
+    released_at: string | null;
   } | null;
   can_configure: boolean;
   can_publish: boolean;
@@ -36,11 +44,50 @@ export interface Wiki {
   slug: string;
   title: string;
   accent: string;
+  logo: string;
+  domain: string | null;
   allow_indexing: boolean;
   workspace: string | null;
+  workspace_slug: string | null;
   updated_at: string;
+  /** A fixed version: its pages are read from it, not live */
+  released_at: string | null;
   can_edit: boolean;
   tree: WikiNode[];
+}
+
+/** A page of a wiki matching a search. */
+export interface WikiSearchResult {
+  id: string;
+  title: string;
+  /** The words around the match */
+  snippet: string;
+}
+
+/** A page of a wiki's fixed version. */
+export interface WikiReleasedPage {
+  id: string;
+  title: string;
+  released_at: string;
+  /** Its content: a Yjs update, base64 encoded */
+  content: string;
+}
+
+/** What a wiki address shows. */
+export type WikiHost =
+  | { kind: 'domain'; slug: string }
+  | {
+      kind: 'workspace';
+      workspace: { name: string; slug: string };
+      wikis: { slug: string; title: string }[];
+    };
+
+export interface WikiSettingsData {
+  slug: string;
+  accent: string;
+  allow_indexing: boolean;
+  logo?: string;
+  domain?: string;
 }
 
 export interface PublicationLogEntry {
@@ -117,11 +164,7 @@ export function useWikiMutations(spaceId: string) {
     void queryClient.invalidateQueries({ queryKey: [KEY_LIST_DOC] });
     void queryClient.invalidateQueries({ queryKey: [KEY_PUBLICATION_LOG] });
   };
-  const publish = useMutation<
-    { slug: string; accent: string; allow_indexing: boolean },
-    APIError,
-    { slug: string; accent: string; allow_indexing: boolean }
-  >({
+  const publish = useMutation<WikiSettingsData, APIError, WikiSettingsData>({
     mutationFn: (data) =>
       request(`spaces/${spaceId}/wiki/`, 'Failed to publish the wiki', {
         method: 'PUT',
@@ -136,7 +179,65 @@ export function useWikiMutations(spaceId: string) {
       }),
     onSuccess,
   });
-  return { publish, unpublish };
+  // A fixed version: publish the pages as they are now, or show them live
+  const release = useMutation<{ released_at: string }, APIError, void>({
+    mutationFn: () =>
+      request(
+        `spaces/${spaceId}/wiki/release/`,
+        'Failed to publish this version',
+        { method: 'POST' },
+      ),
+    onSuccess,
+  });
+  const goLive = useMutation<void, APIError, void>({
+    mutationFn: () =>
+      request(
+        `spaces/${spaceId}/wiki/release/`,
+        'Failed to show the live pages',
+        { method: 'DELETE' },
+      ),
+    onSuccess,
+  });
+  return { publish, unpublish, release, goLive };
+}
+
+export function useWikiSearch(slug: string, query: string) {
+  return useQuery<WikiSearchResult[], APIError>({
+    queryKey: [KEY_WIKI, slug, 'search', query],
+    queryFn: () =>
+      request<WikiSearchResult[]>(
+        `wiki/${slug}/search/?q=${encodeURIComponent(query)}`,
+        'Failed to search the wiki',
+      ),
+    enabled: !!slug && query.trim().length >= 2,
+    staleTime: 30_000,
+  });
+}
+
+export function useWikiReleasedPage(slug: string, pageId: string) {
+  return useQuery<WikiReleasedPage, APIError>({
+    queryKey: [KEY_WIKI, slug, 'page', pageId],
+    queryFn: () =>
+      request<WikiReleasedPage>(
+        `wiki/${slug}/pages/${pageId}/`,
+        'Failed to get the page',
+      ),
+    enabled: !!slug && !!pageId,
+    retry: noRetryOnDenied,
+  });
+}
+
+export function useWikiHost(host: string, enabled = true) {
+  return useQuery<WikiHost, APIError>({
+    queryKey: [KEY_WIKI, 'host', host],
+    queryFn: () =>
+      request<WikiHost>(
+        `wiki-hosts/${encodeURIComponent(host)}/`,
+        'Failed to read the address',
+      ),
+    enabled: enabled && !!host,
+    retry: noRetryOnDenied,
+  });
 }
 
 export function useWiki(slug: string) {

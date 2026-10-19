@@ -109,4 +109,8 @@ CONVERSION_UPLOAD_ENABLED=true
 # (bin/setup-sso-providers.sh writes this list to common.local), and the
 # password form of the dev and test accounts
 COLLABORATORS_SIGNIN_PASSWORD=True
+# Wikis are read at <workspace>.localhost:3000/<wiki> in dev
+COLLABORATORS_WIKI_BASE_DOMAIN=localhost
+COLLABORATORS_APP_HOSTS=localhost,127.0.0.1
+COLLABORATORS_WIKI_DOMAIN_TARGET=wikis.localhost
 COLLABORATORS_ACCOUNT_URL=http://localhost:8083/realms/impress/account/account-security/linked-accounts

@@ -6,11 +6,21 @@ A page is public when its link reach is public (set in the share dialog). A
 space published as a wiki is a public space with a slug: anyone can read it at
 /wiki/<slug>, with its tree of pages. Pages kept private inherit no link
 access from above, so they stay out of both.
+
+A wiki shows its live pages, or a fixed version of them (a release): then the
+pages themselves are not public, and readers get the release's copy. A wiki
+can also be read at <workspace>.<base domain>/<slug>, and at a domain of its
+own.
 """
 
+import base64
 import re
 
+from django.conf import settings
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.db import transaction
+from django.db.models import Q
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
@@ -21,10 +31,18 @@ from rest_framework.views import APIView
 
 from core import choices, models
 from core.api import permissions
+from core.api.filters import remove_accents
+from core.services.yhub_services import YHubError, YHubService
+from core.tasks.wiki import ensure_texts, refresh_text_task
+from core.utils.yjs import yjs_to_text
 
 # pylint: disable=abstract-method
 
 ACCENT_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
+DOMAIN_RE = re.compile(
+    r"^(?=.{4,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$"
+)
+SEARCH_LIMIT = 30
 
 
 def home_workspace(document):
@@ -67,16 +85,57 @@ def log_publication(document, user, action, **details):
     )
 
 
+def is_published(space):
+    """A wiki is published live (public pages) or as a fixed version."""
+    return bool(space.wiki_slug) and (
+        space.link_reach == choices.LinkReachChoices.PUBLIC
+        or space.wiki_release_id is not None
+    )
+
+
 def published_wiki(document):
     """The wiki the document belongs to, when its space is published as one."""
     root = document if document.is_root() else document.get_root()
-    if (
-        root.kind != choices.DocumentKindChoices.SPACE
-        or not root.wiki_slug
-        or root.link_reach != choices.LinkReachChoices.PUBLIC
-    ):
+    if root.kind != choices.DocumentKindChoices.SPACE or not is_published(root):
         return None
     return root
+
+
+def published_space(slug):
+    """The space published as a wiki at this address, or a 404."""
+    space = (
+        models.Document.objects.filter(
+            Q(link_reach=choices.LinkReachChoices.PUBLIC)
+            | Q(wiki_release__isnull=False),
+            wiki_slug=slug,
+            kind=choices.DocumentKindChoices.SPACE,
+            ancestors_deleted_at__isnull=True,
+        )
+        .select_related("wiki_release")
+        .first()
+    )
+    if space is None:
+        raise drf.exceptions.NotFound()
+    return space
+
+
+def is_wiki_file(key):
+    """
+    Whether anyone may load this file: it belongs to the fixed version of a
+    published wiki, or it is a published wiki's logo.
+    """
+    published = Q(wiki_slug__isnull=False, ancestors_deleted_at__isnull=True)
+    return models.Document.objects.filter(
+        published
+        & (Q(wiki_release__attachments__contains=[key]) | Q(wiki_logo__endswith=key))
+    ).exists()
+
+
+def flatten(tree):
+    """The ids of the pages of a tree, in order."""
+    for node in tree:
+        yield node["id"]
+        yield from flatten(node["children"])
 
 
 # -- A page's publishing settings
@@ -114,7 +173,9 @@ class DocumentPublicationView(APIView):
                 else drf.exceptions.NotAuthenticated()
             )
         is_public = document.computed_link_reach == choices.LinkReachChoices.PUBLIC
-        wiki = published_wiki(document) if is_public else None
+        wiki = published_wiki(document)
+        if wiki is not None and not is_public and not wiki.wiki_release_id:
+            wiki = None
         return {
             "is_public": is_public,
             "keep_private": document.keep_private,
@@ -127,6 +188,12 @@ class DocumentPublicationView(APIView):
                 "slug": wiki.wiki_slug,
                 "accent": wiki.wiki_accent,
                 "title": wiki.title,
+                "logo": wiki.wiki_logo,
+                "domain": wiki.wiki_domain,
+                "workspace_slug": getattr(home_workspace(wiki), "slug", None),
+                "released_at": wiki.wiki_release.created_at
+                if wiki.wiki_release
+                else None,
             }
             if wiki
             else None,
@@ -178,6 +245,38 @@ class WikiSerializer(serializers.Serializer):
     slug = serializers.CharField(max_length=100)
     accent = serializers.CharField(max_length=7, required=False, allow_blank=True)
     allow_indexing = serializers.BooleanField(required=False, default=False)
+    # The address of an image attached to the space, or none
+    logo = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    # A domain of its own, e.g. help.example.com, or none
+    domain = serializers.CharField(max_length=253, required=False, allow_blank=True)
+
+    def validate_logo(self, value):
+        """The logo is an image attached to the space itself."""
+        if value and f"/{self.context['space'].pk!s}/attachments/" not in value:
+            raise serializers.ValidationError(_("Upload the logo to the space first."))
+        return value
+
+    def validate_domain(self, value):
+        """A domain of its own, not one of Collaborators', and unique."""
+        domain = value.strip().lower().rstrip(".")
+        if not domain:
+            return None
+        base = settings.COLLABORATORS_WIKI_BASE_DOMAIN
+        if (
+            not DOMAIN_RE.match(domain)
+            or domain in settings.COLLABORATORS_APP_HOSTS
+            or domain == base
+            or domain.endswith(f".{base}")
+        ):
+            raise serializers.ValidationError(
+                _("Use a domain of your own, such as help.example.com.")
+            )
+        taken = models.Document.objects.filter(wiki_domain=domain).exclude(
+            pk=self.context["space"].pk
+        )
+        if taken.exists():
+            raise serializers.ValidationError(_("This domain is used by another wiki."))
+        return domain
 
     def validate_slug(self, value):
         """Addresses are lowercase words separated by dashes, and unique."""
@@ -235,15 +334,23 @@ class SpaceWikiView(APIView):
         space.wiki_slug = data["slug"]
         space.wiki_accent = data.get("accent", space.wiki_accent)
         space.allow_indexing = data["allow_indexing"]
-        # a wiki is read-only for everybody who isn't invited to edit
-        space.link_reach = choices.LinkReachChoices.PUBLIC
-        space.link_role = choices.LinkRoleChoices.READER
+        if "logo" in data:
+            space.wiki_logo = data["logo"]
+        if "domain" in data:
+            space.wiki_domain = data["domain"]
+        # a live wiki is read-only for everybody who isn't invited to edit;
+        # with a fixed version, its pages stay private
+        if space.wiki_release_id is None:
+            space.link_reach = choices.LinkReachChoices.PUBLIC
+            space.link_role = choices.LinkRoleChoices.READER
         with transaction.atomic():
             space.save(
                 update_fields=[
                     "wiki_slug",
                     "wiki_accent",
                     "allow_indexing",
+                    "wiki_logo",
+                    "wiki_domain",
                     "link_reach",
                     "link_role",
                     "updated_at",
@@ -257,11 +364,19 @@ class SpaceWikiView(APIView):
                 else choices.PublicationActionChoices.WIKI_PUBLISHED,
                 slug=space.wiki_slug,
             )
+        if not was_published:
+            # its pages' text, for the wiki's search
+            for page_id in [space.pk, *flatten(wiki_tree(space))]:
+                transaction.on_commit(
+                    lambda page_id=page_id: refresh_text_task.delay(str(page_id))
+                )
         return drf.response.Response(
             {
                 "slug": space.wiki_slug,
                 "accent": space.wiki_accent,
                 "allow_indexing": space.allow_indexing,
+                "logo": space.wiki_logo,
+                "domain": space.wiki_domain,
             }
         )
 
@@ -270,14 +385,105 @@ class SpaceWikiView(APIView):
         space = self._space(request, resource_id)
         slug = space.wiki_slug
         space.wiki_slug = None
+        space.wiki_release = None
         space.link_reach = choices.LinkReachChoices.RESTRICTED
         with transaction.atomic():
-            space.save(update_fields=["wiki_slug", "link_reach", "updated_at"])
+            space.save(
+                update_fields=[
+                    "wiki_slug",
+                    "wiki_release",
+                    "link_reach",
+                    "updated_at",
+                ]
+            )
             log_publication(
                 space,
                 request.user,
                 choices.PublicationActionChoices.WIKI_UNPUBLISHED,
                 slug=slug,
+            )
+        return drf.response.Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SpaceWikiReleaseView(SpaceWikiView):
+    """
+    POST   /spaces/<id>/wiki/release/ — publish the pages as they are now: a
+           fixed version readers see until the next one; the pages
+           themselves are no longer public
+    DELETE /spaces/<id>/wiki/release/ — show the live pages again
+    """
+
+    def post(self, request, resource_id):
+        """Copy every page of the wiki, as it is now, into a new release."""
+        space = self._space(request, resource_id)
+        if not space.wiki_slug:
+            raise drf.exceptions.ValidationError(
+                {"detail": _("Publish the space as a wiki first.")}
+            )
+        tree = wiki_tree(space)
+        page_ids = [str(space.pk), *flatten(tree)]
+        pages = {
+            str(page.pk): page
+            for page in models.Document.objects.filter(pk__in=page_ids)
+        }
+        service = YHubService(user=request.user)
+        contents = {}
+        try:
+            for page_id in page_ids:
+                contents[page_id] = service.get_ydoc(pages[page_id]) or b""
+        except YHubError as err:
+            raise drf.exceptions.APIException(
+                _("The pages could not be read. Try again in a moment.")
+            ) from err
+
+        with transaction.atomic():
+            release = models.WikiRelease.objects.create(
+                space=space, published_by=request.user, tree=tree
+            )
+            attachments = set()
+            for page_id in page_ids:
+                page = pages[page_id]
+                default_storage.save(
+                    release.content_key(page_id), ContentFile(contents[page_id])
+                )
+                release.pages[page_id] = {
+                    "title": page.title or "",
+                    "text": yjs_to_text(contents[page_id]) if contents[page_id] else "",
+                }
+                attachments.update(page.attachments or [])
+            release.attachments = sorted(attachments)
+            release.save(update_fields=["pages", "attachments", "updated_at"])
+            space.wiki_release = release
+            space.link_reach = choices.LinkReachChoices.RESTRICTED
+            space.save(update_fields=["wiki_release", "link_reach", "updated_at"])
+            log_publication(
+                space,
+                request.user,
+                choices.PublicationActionChoices.WIKI_RELEASED,
+                slug=space.wiki_slug,
+                pages=len(page_ids),
+            )
+        return drf.response.Response(
+            {"released_at": release.created_at}, status=status.HTTP_201_CREATED
+        )
+
+    def delete(self, request, resource_id):
+        """Readers see the live pages again, which become public again."""
+        space = self._space(request, resource_id)
+        if space.wiki_release_id is None:
+            return drf.response.Response(status=status.HTTP_204_NO_CONTENT)
+        space.wiki_release = None
+        space.link_reach = choices.LinkReachChoices.PUBLIC
+        space.link_role = choices.LinkRoleChoices.READER
+        with transaction.atomic():
+            space.save(
+                update_fields=["wiki_release", "link_reach", "link_role", "updated_at"]
+            )
+            log_publication(
+                space,
+                request.user,
+                choices.PublicationActionChoices.WIKI_LIVE,
+                slug=space.wiki_slug,
             )
         return drf.response.Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -317,29 +523,177 @@ class PublicWikiView(APIView):
 
     def get(self, request, slug):
         """Return the wiki's space and its pages."""
-        space = models.Document.objects.filter(
-            wiki_slug=slug,
-            kind=choices.DocumentKindChoices.SPACE,
-            link_reach=choices.LinkReachChoices.PUBLIC,
-            ancestors_deleted_at__isnull=True,
-        ).first()
-        if space is None:
-            raise drf.exceptions.NotFound()
+        space = published_space(slug)
         workspace = home_workspace(space)
+        release = space.wiki_release
         return drf.response.Response(
             {
                 "id": str(space.id),
                 "slug": space.wiki_slug,
-                "title": space.title or "",
+                "title": (release.pages.get(str(space.id), {}).get("title"))
+                if release
+                else space.title or "",
                 "accent": space.wiki_accent,
+                "logo": space.wiki_logo,
+                "domain": space.wiki_domain,
                 "allow_indexing": space.allow_indexing,
                 "workspace": workspace.name if workspace else None,
-                "updated_at": space.updated_at,
+                "workspace_slug": workspace.slug if workspace else None,
+                "updated_at": release.created_at if release else space.updated_at,
+                # A fixed version: its pages are read from the release
+                "released_at": release.created_at if release else None,
                 "can_edit": request.user.is_authenticated
                 and space.get_abilities(request.user)["update"],
-                "tree": wiki_tree(space),
+                "tree": release.tree if release else wiki_tree(space),
             }
         )
+
+
+def snippet(text, query):
+    """The words around the first place the text matches the query."""
+    plain = remove_accents(text).lower()
+    index = plain.find(query)
+    if index < 0:
+        return text[:160].strip()
+    start = max(0, index - 60)
+    end = min(len(text), index + len(query) + 100)
+    # start on a word
+    if start:
+        space = text.find(" ", start)
+        start = space + 1 if 0 <= space < index else start
+    return (
+        ("…" if start else "")
+        + " ".join(text[start:end].split())
+        + ("…" if end < len(text) else "")
+    )
+
+
+class WikiSearchView(APIView):
+    """GET /wiki/<slug>/search/?q= — pages whose title or text match."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug):
+        """Titles first, then texts, in the order of the wiki."""
+        space = published_space(slug)
+        query = remove_accents((request.query_params.get("q") or "").strip()).lower()
+        if len(query) < 2:
+            return drf.response.Response([])
+        release = space.wiki_release
+        if release:
+            page_ids = [str(space.pk), *flatten(release.tree)]
+            entries = [
+                (
+                    page_id,
+                    release.pages.get(page_id, {}).get("title", ""),
+                    release.pages.get(page_id, {}).get("text", ""),
+                )
+                for page_id in page_ids
+            ]
+        else:
+            page_ids = [str(space.pk), *flatten(wiki_tree(space))]
+            documents = {
+                str(document.pk): document
+                for document in models.Document.objects.filter(pk__in=page_ids)
+            }
+            ensure_texts(documents.values())
+            entries = [
+                (
+                    page_id,
+                    documents[page_id].title or "",
+                    documents[page_id].text_content or "",
+                )
+                for page_id in page_ids
+                if page_id in documents
+            ]
+
+        in_title, in_text = [], []
+        for page_id, title, text in entries:
+            if query in remove_accents(title).lower():
+                in_title.append(
+                    {"id": page_id, "title": title, "snippet": snippet(text, query)}
+                )
+            elif query in remove_accents(text).lower():
+                in_text.append(
+                    {"id": page_id, "title": title, "snippet": snippet(text, query)}
+                )
+        return drf.response.Response((in_title + in_text)[:SEARCH_LIMIT])
+
+
+class WikiPageView(APIView):
+    """
+    GET /wiki/<slug>/pages/<id>/ — a page of a wiki's fixed version, with its
+    content (a Yjs update, base64 encoded), for anyone.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug, page_id):
+        """Return the page as the release holds it."""
+        space = published_space(slug)
+        release = space.wiki_release
+        page = release.pages.get(str(page_id)) if release else None
+        if page is None:
+            raise drf.exceptions.NotFound()
+        try:
+            with default_storage.open(release.content_key(page_id), "rb") as file:
+                content = file.read()
+        except (FileNotFoundError, OSError) as err:
+            raise drf.exceptions.NotFound() from err
+        return drf.response.Response(
+            {
+                "id": str(page_id),
+                "title": page["title"],
+                "released_at": release.created_at,
+                "content": base64.b64encode(content).decode(),
+            }
+        )
+
+
+class WikiHostView(APIView):
+    """
+    GET /wiki-hosts/<host>/ — what a wiki address shows: a wiki's own domain,
+    or a workspace's address (<workspace>.<base domain>) and its wikis.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, host):
+        """Resolve the address."""
+        host = host.lower().split(":")[0].rstrip(".")
+        base = settings.COLLABORATORS_WIKI_BASE_DOMAIN
+        published = Q(
+            Q(link_reach=choices.LinkReachChoices.PUBLIC)
+            | Q(wiki_release__isnull=False),
+            wiki_slug__isnull=False,
+            kind=choices.DocumentKindChoices.SPACE,
+            ancestors_deleted_at__isnull=True,
+        )
+        if host.endswith(f".{base}") and host.count(".") == base.count(".") + 1:
+            workspace = models.Workspace.objects.filter(
+                slug=host[: -len(base) - 1]
+            ).first()
+            if workspace is None:
+                raise drf.exceptions.NotFound()
+            spaces = models.Document.objects.filter(
+                published,
+                workspace_links__workspace=workspace,
+                workspace_links__is_home=True,
+            ).order_by("title")
+            return drf.response.Response(
+                {
+                    "kind": "workspace",
+                    "workspace": {"name": workspace.name, "slug": workspace.slug},
+                    "wikis": [
+                        {"slug": space.wiki_slug, "title": space.title or ""}
+                        for space in spaces
+                    ],
+                }
+            )
+        space = models.Document.objects.filter(published, wiki_domain=host).first()
+        if space is None:
+            raise drf.exceptions.NotFound()
+        return drf.response.Response({"kind": "domain", "slug": space.wiki_slug})
 
 
 # -- The publishing log of a workspace

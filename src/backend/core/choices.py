@@ -151,6 +151,8 @@ class PublicationActionChoices(TextChoices):
     WIKI_PUBLISHED = "wiki_published", _("Wiki published")
     WIKI_UPDATED = "wiki_updated", _("Wiki updated")
     WIKI_UNPUBLISHED = "wiki_unpublished", _("Wiki unpublished")
+    WIKI_RELEASED = "wiki_released", _("Fixed version of a wiki published")
+    WIKI_LIVE = "wiki_live", _("Wiki shown live again")
 
 
 class GroupKindChoices(TextChoices):

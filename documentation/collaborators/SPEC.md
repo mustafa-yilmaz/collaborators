@@ -211,11 +211,23 @@ See **section 3**: it is the largest single piece of work.
   - *Who can publish*: space owners and administrators, or workspace administrators only.
   - The **publishing log**: page published or unpublished, and wiki published, updated or unpublished.
 
-**Still to do:**
-- Full-text wiki search (titles only today).
-- An image logo for a wiki (it shows the space title).
-- `<workspace>.collaborators.community` addresses and custom domains.
-- Publishing a fixed version.
+**Built after phase 6 (wiki extras):**
+- **Full-text search:** the wiki's search finds pages by their text as well as their titles, showing the words around the match.
+  - Each page of a published wiki keeps a plain-text copy (`Document.text_content`). It is refreshed whenever the collaboration server reports a change, and on first search for older pages.
+- **A logo:** an image uploaded in the share dialog. It shows in the wiki's header, beside its title.
+- **A fixed version:** in the share dialog, *Publish a fixed version* copies every page of the wiki as it is now (`WikiRelease`).
+  - Readers see that copy until the next one. *Publish the current version* replaces it; *Show the live pages* goes back to live.
+  - Meanwhile the live pages are not public (the space is restricted), but the copy's images are.
+- **Addresses:** a wiki is also read at `<workspace>.collaborators.community/<wiki>/` (that address lists the workspace's wikis). It can also have its own domain (e.g. `help.example.com/`), set in the share dialog.
+  - Settings: `COLLABORATORS_WIKI_BASE_DOMAIN`, `COLLABORATORS_APP_HOSTS` (any other address is looked up as a wiki's domain) and `COLLABORATORS_WIKI_DOMAIN_TARGET` (the CNAME target shown to admins).
+  - In dev: `<workspace>.localhost:3000`.
+  - **To deploy:**
+    - DNS: a wildcard record for `*.collaborators.community`, and a CNAME from each own domain to the target.
+    - TLS: certificates for those addresses (e.g. on-demand TLS at the reverse proxy).
+    - Routing: the proxy serves the frontend, `/api`, `/media` and the collaboration websocket on them too (or allows their origins).
+- The wiki's page tree is hidden until the reader shows it, as in the app.
+
+**Still to do:** checking a domain's DNS before accepting it, and keeping several fixed versions to go back to.
 
 ---
 
@@ -374,12 +386,11 @@ Moved out of the table v1:
 
 ### To do next, in order
 
-Done: the Loop table tweaks, and Loop table v2 (T9, T5, T56).
+Done: the Loop table tweaks, Loop table v2 (T9, T5, T56), and the wiki extras (F8).
 
-1. Wikis: full-text search (titles only today), an image logo, `<workspace>.collaborators.community` addresses and custom domains, publishing a fixed version (F8).
-2. Setting up the sign-in providers for real: the apps at Google, Microsoft, Apple, LinkedIn, X (and any other), the Apple extension, production addresses, and asking X users for a verified email (F2). Until then, sign-in works locally with the test accounts.
-3. A sign-in-methods page inside Collaborators, instead of Keycloak's (F2).
-4. Joining: join requests approved by admins; joining by Google Workspace domain or Microsoft organisation (F2).
+1. Setting up the sign-in providers for real: the apps at Google, Microsoft, Apple, LinkedIn, X (and any other), the Apple extension, production addresses, and asking X users for a verified email (F2). Until then, sign-in works locally with the test accounts.
+2. A sign-in-methods page inside Collaborators, instead of Keycloak's (F2).
+3. Joining: join requests approved by admins; joining by Google Workspace domain or Microsoft organisation (F2).
 
 ## 5. Open questions
 

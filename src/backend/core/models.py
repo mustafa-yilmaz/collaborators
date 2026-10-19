@@ -1102,6 +1102,22 @@ class Document(MP_Node, BaseModel):
     # A space published as a wiki, at /wiki/<slug>, in its accent colour
     wiki_slug = models.SlugField(max_length=100, unique=True, null=True, blank=True)
     wiki_accent = models.CharField(max_length=7, blank=True, default="")
+    # The wiki's logo: the address of an image attached to the space
+    wiki_logo = models.CharField(max_length=500, blank=True, default="")
+    # A domain of its own (e.g. help.example.com), pointed at Collaborators
+    wiki_domain = models.CharField(max_length=253, unique=True, null=True, blank=True)
+    # A fixed version readers see instead of the live pages, if published
+    wiki_release = models.ForeignKey(
+        "WikiRelease",
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    # The page's text, as the collaboration server last saved it, for the
+    # full-text search of wikis (refreshed when its content changes)
+    text_content = models.TextField(blank=True, default="")
+    text_updated_at = models.DateTimeField(null=True, blank=True)
     creator = models.ForeignKey(
         User,
         on_delete=models.RESTRICT,
@@ -2865,6 +2881,45 @@ class TableAssignment(BaseModel):
 
     def __str__(self):
         return f"{self.assignee or self.team} on {self.document!s}"
+
+
+class WikiRelease(BaseModel):
+    """
+    A fixed version of a wiki: its pages as they were when it was published.
+    Readers see it until the next one, while editors keep working on the
+    live pages, which are not public meanwhile. The content of each page is
+    kept in object storage, under `wiki-releases/<release>/<page>`.
+    """
+
+    space = models.ForeignKey(
+        Document, on_delete=models.CASCADE, related_name="wiki_releases"
+    )
+    published_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="wiki_releases",
+        null=True,
+        blank=True,
+    )
+    # The tree of pages, as the wiki reader shows it
+    tree = models.JSONField(default=list, blank=True)
+    # By page id: its title and text (for search)
+    pages = models.JSONField(default=dict, blank=True)
+    # The files of its pages (images...), which its readers may load
+    attachments = ArrayField(models.CharField(max_length=255), default=list, blank=True)
+
+    class Meta:
+        db_table = "collaborators_wiki_release"
+        ordering = ("-created_at",)
+        verbose_name = _("Wiki release")
+        verbose_name_plural = _("Wiki releases")
+
+    def __str__(self):
+        return f"{self.space_id!s} {self.created_at:%Y-%m-%d %H:%M}"
+
+    def content_key(self, page_id):
+        """Where the content of one of its pages is kept."""
+        return f"wiki-releases/{self.id!s}/{page_id!s}"
 
 
 class PublicationLog(BaseModel):

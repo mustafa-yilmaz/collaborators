@@ -3,14 +3,18 @@ import Head from 'next/head';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
+import { useDebounce } from 'use-debounce';
 
 import { Box, BoxButton, Icon, Loading, StyledLink, Text } from '@/components';
 import { Title } from '@/components/Title';
+import { useConfig } from '@/core';
+import { BlockNoteReader } from '@/docs/doc-editor/components/BlockNoteEditor';
 import { DocCoreEditor } from '@/docs/doc-editor/components/DocEditor';
 import { useCollaboration } from '@/docs/doc-editor/hook/useCollaboration';
 import {
   Doc,
   KEY_DOC,
+  base64ToBlocknoteXmlFragment,
   getEmojiAndTitle,
   useDoc,
   useDocStore,
@@ -21,10 +25,16 @@ import { useDate } from '@/hooks/useDate';
 import { useResponsiveStore } from '@/stores';
 
 import { WikiContext } from '../WikiContext';
-import { Wiki, WikiNode, useWiki } from '../api';
-import { WIKI_ACCENTS, wikiUrl } from '../utils';
+import {
+  Wiki,
+  WikiNode,
+  useWiki,
+  useWikiReleasedPage,
+  useWikiSearch,
+} from '../api';
+import { WIKI_ACCENTS, appUrl, wikiUrl } from '../utils';
 
-import { flattenTree, pathTo, searchPages } from './tree';
+import { flattenTree, pathTo } from './tree';
 
 const TreeItem = ({
   node,
@@ -138,8 +148,15 @@ const WikiNav = ({ wiki, currentId }: { wiki: Wiki; currentId: string }) => {
   const { t } = useTranslation();
   const { untitledDocument } = useTrans();
   const [query, setQuery] = useState('');
+  const [debounced] = useDebounce(query, 250);
   const pages = useMemo(() => flattenTree(wiki.tree), [wiki.tree]);
-  const results = searchPages(pages, query);
+  // Titles and texts of the pages, from the server
+  const { data: found, isFetching } = useWikiSearch(wiki.slug, debounced);
+  const isSearching = query.trim().length >= 2;
+  const results = (found ?? []).map((result) => ({
+    ...result,
+    trail: pages.find((page) => page.id === result.id)?.trail ?? [],
+  }));
   const openIds = useMemo(
     () => pathTo(wiki.tree, currentId),
     [wiki.tree, currentId],
@@ -179,27 +196,52 @@ const WikiNav = ({ wiki, currentId }: { wiki: Wiki; currentId: string }) => {
           }}
         />
       </Box>
-      {query.trim() ? (
+      {isSearching ? (
         <Box as="ul" $css="list-style: none; margin: 0; padding: 0;">
-          {results.length === 0 && (
+          {found && results.length === 0 && !isFetching && (
             <Text $size="sm" $variation="secondary">
               {t('No page matches.', {
                 description: 'Wiki search without results',
               })}
             </Text>
           )}
+          {!found && (
+            <Text $size="sm" $variation="secondary">
+              {t('Searching…', { description: 'Wiki search in progress' })}
+            </Text>
+          )}
           {results.map((page) => (
             <li key={page.id}>
               <StyledLink
-                href={wikiUrl(wiki.slug, page.id)}
-                $css="display: block; padding: 4px 6px; color: inherit;"
+                href={
+                  page.id === wiki.id
+                    ? wikiUrl(wiki.slug)
+                    : wikiUrl(wiki.slug, page.id)
+                }
+                $css="display: block; padding: 6px; color: inherit;"
               >
-                <Text $size="sm" $weight="500" $ellipsis>
-                  {page.title || untitledDocument}
+                <Text $size="sm" $weight="500" $ellipsis $display="block">
+                  {page.id === wiki.id
+                    ? t('Home', { description: 'Home page of a wiki' })
+                    : page.title || untitledDocument}
                 </Text>
                 {page.trail.length > 0 && (
-                  <Text $size="xs" $variation="secondary" $ellipsis>
+                  <Text
+                    $size="xs"
+                    $variation="secondary"
+                    $ellipsis
+                    $display="block"
+                  >
                     {page.trail.join(' › ')}
+                  </Text>
+                )}
+                {page.snippet && (
+                  <Text
+                    $size="xs"
+                    $variation="secondary"
+                    $css="display: block; margin-top: 2px; line-height: 1.4;"
+                  >
+                    {page.snippet}
                   </Text>
                 )}
               </StyledLink>
@@ -277,6 +319,65 @@ const WikiDocReader = ({ doc }: { doc: Doc }) => {
   );
 };
 
+/** A page of a wiki's fixed version, as it was when it was published. */
+const WikiReleasedReader = ({
+  slug,
+  pageId,
+}: {
+  slug: string;
+  pageId: string;
+}) => {
+  const { t } = useTranslation();
+  const { untitledDocument } = useTrans();
+  const { formatDate } = useDate();
+  const { isDesktop } = useResponsiveStore();
+  const { data: page, isError } = useWikiReleasedPage(slug, pageId);
+  const content = useMemo(
+    () => (page ? base64ToBlocknoteXmlFragment(page.content) : undefined),
+    [page],
+  );
+  if (isError) {
+    return (
+      <Text $variation="secondary">
+        {t('This page cannot be shown.', {
+          description: 'A wiki page that failed to load',
+        })}
+      </Text>
+    );
+  }
+  if (!page || !content) {
+    return <Loading />;
+  }
+  const { emoji, titleWithoutEmoji } = getEmojiAndTitle(
+    page.title || untitledDocument,
+  );
+  return (
+    <Box as="article" $gap="2xs">
+      <Box $padding={{ horizontal: isDesktop ? '54px' : 'base' }} $gap="2xs">
+        <Text as="h1" $size="h2" $margin="none" $weight="700">
+          {emoji ? `${emoji} ` : ''}
+          {titleWithoutEmoji}
+        </Text>
+        <Text $size="xs" $variation="secondary">
+          {t('Published {{date}}', {
+            description: 'When the fixed version of a wiki was published',
+            date: formatDate(page.released_at),
+          })}
+        </Text>
+      </Box>
+      <Box className="--docs--editor-container --docs--doc-readonly">
+        <BlockNoteReader
+          key={page.id}
+          initialContent={content}
+          // not the page itself: a copy of it, with no comments to read
+          docId={`wiki-release-${page.id}`}
+          isMainEditor={false}
+        />
+      </Box>
+    </Box>
+  );
+};
+
 const WikiArticle = ({ docId }: { docId: string }) => {
   const { t } = useTranslation();
   const { data: doc, isError } = useDoc(
@@ -298,7 +399,7 @@ const WikiArticle = ({ docId }: { docId: string }) => {
   return <WikiDocReader key={doc.id} doc={doc} />;
 };
 
-const NotFound = () => {
+export const WikiNotFound = () => {
   const { t } = useTranslation();
   return (
     <Box
@@ -363,10 +464,25 @@ export const WikiView = ({
     }
   };
   const { data: wiki, isLoading } = useWiki(slug);
+  const { data: config } = useConfig();
   const pageIds = useMemo(
     () =>
       new Set(
         wiki ? [wiki.id, ...flattenTree(wiki.tree).map((page) => page.id)] : [],
+      ),
+    [wiki],
+  );
+  const titles = useMemo(
+    () =>
+      new Map(
+        wiki
+          ? [
+              [wiki.id, wiki.title],
+              ...flattenTree(wiki.tree).map(
+                (page) => [page.id, page.title] as [string, string],
+              ),
+            ]
+          : [],
       ),
     [wiki],
   );
@@ -382,7 +498,7 @@ export const WikiView = ({
     return <Loading $height="100vh" />;
   }
   if (!wiki) {
-    return <NotFound />;
+    return <WikiNotFound />;
   }
   const currentId = pageId ?? wiki.id;
   const pageTitle = flattenTree(wiki.tree).find(
@@ -393,7 +509,7 @@ export const WikiView = ({
   const showNav = isNavOpen;
 
   return (
-    <WikiContext.Provider value={{ slug: wiki.slug, pageIds }}>
+    <WikiContext.Provider value={{ slug: wiki.slug, pageIds, titles }}>
       <Head>
         <title>{pageTitle ? `${pageTitle} - ${wiki.title}` : wiki.title}</title>
         <meta
@@ -456,8 +572,21 @@ export const WikiView = ({
             </BoxButton>
             <StyledLink
               href={wikiUrl(wiki.slug)}
-              $css="color: inherit; min-width: 0;"
+              $css="color: inherit; min-width: 0; display: flex; align-items: center; gap: 8px;"
             >
+              {wiki.logo && (
+                <img
+                  src={wiki.logo}
+                  alt=""
+                  style={{
+                    height: 32,
+                    width: 'auto',
+                    maxWidth: 140,
+                    objectFit: 'contain',
+                    flexShrink: 0,
+                  }}
+                />
+              )}
               <Text
                 $size="lg"
                 $weight="700"
@@ -478,7 +607,7 @@ export const WikiView = ({
           </Box>
           <Box $direction="row" $align="center" $gap="sm">
             {wiki.can_edit && (
-              <StyledLink href={`/docs/${currentId}/`}>
+              <StyledLink href={appUrl(`/docs/${currentId}/`, config)}>
                 <Button
                   size="small"
                   variant="secondary"
@@ -488,7 +617,7 @@ export const WikiView = ({
                 </Button>
               </StyledLink>
             )}
-            <StyledLink href="/" aria-label="Collaborators">
+            <StyledLink href={appUrl('/', config)} aria-label="Collaborators">
               <Title headingLevel="h2" $size="0.95rem" />
             </StyledLink>
           </Box>
@@ -524,7 +653,9 @@ export const WikiView = ({
               $padding={{ vertical: 'md' }}
               $gap="lg"
             >
-              {isInWiki ? (
+              {isInWiki && wiki.released_at ? (
+                <WikiReleasedReader slug={wiki.slug} pageId={currentId} />
+              ) : isInWiki ? (
                 <WikiArticle docId={currentId} />
               ) : (
                 <Text $variation="secondary">
@@ -550,7 +681,7 @@ export const WikiView = ({
                     description: 'Footer of a public wiki, before the logo',
                   })}
                 </Text>
-                <StyledLink href="/">
+                <StyledLink href={appUrl('/', config)}>
                   <Title headingLevel="h3" $size="0.8rem" />
                 </StyledLink>
               </Box>

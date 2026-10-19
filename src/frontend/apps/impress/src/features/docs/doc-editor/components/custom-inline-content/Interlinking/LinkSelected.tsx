@@ -21,16 +21,21 @@ interface LinkSelectedProps {
   isEditable: boolean;
 }
 export const LinkSelected = ({ docId, blockId }: LinkSelectedProps) => {
-  const { data: doc, isLoading } = useDoc(
+  const wiki = useWikiContext();
+  // A page of the wiki being read is named as the wiki publishes it
+  const wikiTitle = wiki?.titles?.get(docId);
+  const { data: fetchedDoc, isLoading } = useDoc(
     { id: docId },
     {
       queryKey: [KEY_DOC, { id: docId }],
       refetchOnWindowFocus: (query) => query.state.error?.status !== 403,
+      enabled: wikiTitle === undefined,
     },
   );
+  const doc =
+    wikiTitle !== undefined ? { title: wikiTitle } : (fetchedDoc ?? undefined);
   const { t } = useTranslation();
   const { untitledDocument } = useTrans();
-  const wiki = useWikiContext();
   const anchor = blockId ? `#${blockId}` : '';
   // Inside a public wiki, links to its pages stay in the wiki
   const href =

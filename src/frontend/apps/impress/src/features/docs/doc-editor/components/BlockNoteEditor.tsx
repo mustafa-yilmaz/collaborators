@@ -78,6 +78,7 @@ const localesBNAI = BlockNoteAI?.localesAI || {};
 import { createSafeCodeBlockSpec } from './custom-blocks/CodeBlock';
 import { LoopTableBlock } from './custom-blocks/loop-table/LoopTableBlock';
 import { LoopTableDocContext } from './custom-blocks/loop-table/LoopTableContext';
+import { useLoopTableHandlesGuard } from './custom-blocks/loop-table/useLoopTableHandlesGuard';
 import {
   InterlinkingLinkInlineContent,
   getPastedDocInterlink,
@@ -370,6 +371,8 @@ export const BlockNoteEditor = ({ doc, provider }: BlockNoteEditorProps) => {
   useShortcuts(editor, refEditorContainer.current);
 
   useUploadStatus(editor);
+
+  useLoopTableHandlesGuard(editor);
 
   useScrollToBlockAnchor();
 

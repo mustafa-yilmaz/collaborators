@@ -28,8 +28,9 @@ export const useLoopTableUiStore = create<{
 
 /**
  * What can be done to a table as a whole, in its block's "⋮⋮" menu: add a
- * row or a column, filter, show hidden columns, and the colours and
- * alignments of the header row and the numbers column (which can be hidden).
+ * row or a column, filter, show hidden columns, spread it into the margins,
+ * and the colours and alignments of the header row and the numbers column
+ * (which can be hidden).
  */
 export const tableMenuItems = (
   t: TFunction<'translation', undefined>,
@@ -73,6 +74,20 @@ export const tableMenuItems = (
         icon: <Icon iconName="visibility" $size="18px" />,
         callback: () => updateColumn(table, column.id, { hidden: false }),
       })),
+    },
+    {
+      label: snapshot.layout.expanded
+        ? t('Fit to the page', { description: 'Loop table menu' })
+        : t('Expand to margins', { description: 'Loop table menu' }),
+      icon: (
+        <Icon
+          iconName={
+            snapshot.layout.expanded ? 'close_fullscreen' : 'open_in_full'
+          }
+          $size="18px"
+        />
+      ),
+      callback: () => setLayout(table, { expanded: !snapshot.layout.expanded }),
     },
     { type: 'separator' },
     // Two levels at most: the block menu can't open a third

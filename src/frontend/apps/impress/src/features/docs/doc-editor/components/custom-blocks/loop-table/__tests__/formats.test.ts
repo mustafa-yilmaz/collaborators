@@ -102,6 +102,7 @@ describe('Loop table formats', () => {
     });
     expect(snapshot.layout).toEqual({
       showRowNumbers: false,
+      expanded: false,
       header: { background: '#f1f1ef' },
       numbers: { align: 'right' },
     });
@@ -117,6 +118,7 @@ describe('Loop table formats', () => {
     const { table } = setup();
     expect(readTable(table).layout).toEqual({
       showRowNumbers: true,
+      expanded: false,
       header: {},
       numbers: {},
     });
@@ -204,5 +206,17 @@ describe('Loop table formats', () => {
     expect(readTable(table).layout.showRowNumbers).toBe(false);
     entry(menu(), 'Show the numbers column').callback?.();
     expect(readTable(table).layout.showRowNumbers).toBe(true);
+  });
+
+  it('spreads a table into the margins, and back', () => {
+    const { ydoc, table } = setup();
+    setLayout(table, { expanded: true });
+    expect(readTable(table).layout.expanded).toBe(true);
+    // A copy is spread too
+    const copy = getTable(ydoc, cloneTable(ydoc, readTable(table)))!;
+    expect(readTable(copy).layout.expanded).toBe(true);
+
+    setLayout(table, { expanded: false });
+    expect(readTable(table).layout.expanded).toBe(false);
   });
 });

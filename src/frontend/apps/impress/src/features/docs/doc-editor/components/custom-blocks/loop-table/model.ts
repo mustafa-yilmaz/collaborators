@@ -12,7 +12,7 @@
  *     rows:    Y.Array<Y.Map>   id, cells: Y.Map<columnId, value>
  *     labelGroups: Y.Map<groupId, Y.Map>   name, options (JSON)
  *     view:    Y.Map            sort, filters, summaries (JSON)
- *     layout:  Y.Map            showRowNumbers, header, numbers (formats)
+ *     layout:  Y.Map            showRowNumbers, expanded, header, numbers
  *
  * Formats (background colour, horizontal and vertical alignment) are kept
  * on a column (`format`), a row (`format`), a cell (the row's `cellFormats`
@@ -152,6 +152,8 @@ export interface Row {
 /** The header row and the numbers column (the row numbers on the left). */
 export interface TableLayout {
   showRowNumbers: boolean;
+  /** Spread beyond the page's text column into the margins (T5) */
+  expanded: boolean;
   header: CellFormat;
   numbers: CellFormat;
 }
@@ -432,6 +434,7 @@ export const readTable = (table: Y.Map<unknown>): TableSnapshot => {
     },
     layout: {
       showRowNumbers: layout?.get('showRowNumbers') !== false,
+      expanded: layout?.get('expanded') === true,
       header: (layout?.get('header') as CellFormat) ?? {},
       numbers: (layout?.get('numbers') as CellFormat) ?? {},
     },

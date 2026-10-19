@@ -58,6 +58,7 @@ import {
   setTextCell,
 } from './model';
 import { LoopTableStyle } from './styles';
+import { useExpandToMargins } from './useExpandToMargins';
 import { useLoopTable } from './useLoopTable';
 import { visibleRows } from './view';
 
@@ -261,6 +262,10 @@ export const LoopTableView = ({
   } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const expandStyle = useExpandToMargins(
+    wrapperRef,
+    !!snapshot?.layout.expanded,
+  );
 
   // Undo and redo inside the table, separate from the page's text history
   const undoManager = useMemo(
@@ -692,7 +697,8 @@ export const LoopTableView = ({
   return (
     <div
       ref={wrapperRef}
-      className="loop-table"
+      className={`loop-table ${expandStyle ? 'is-expanded' : ''}`}
+      style={expandStyle ?? undefined}
       contentEditable={false}
       data-testid="loop-table"
       onMouseOver={(event) => {

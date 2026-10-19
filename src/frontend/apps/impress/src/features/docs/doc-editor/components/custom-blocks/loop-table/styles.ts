@@ -25,6 +25,11 @@ export const LoopTableStyle = createGlobalStyle`
   .loop-table {
     position: relative;
   }
+  /* Spread into the margins: its width and offset are set on the element */
+  .loop-table.is-expanded {
+    max-width: none;
+    flex: none;
+  }
   /* Where the filter panel opens from, when nothing else is shown above */
   .loop-table__toolbar-anchor {
     position: relative;

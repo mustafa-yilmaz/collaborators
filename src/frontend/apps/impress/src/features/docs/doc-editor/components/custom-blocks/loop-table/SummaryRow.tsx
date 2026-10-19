@@ -21,6 +21,8 @@ interface SummaryRowProps {
   columns: Column[];
   rows: Row[];
   isEditable: boolean;
+  /** Whether the table shows its numbers column, on the left */
+  withNumbersColumn?: boolean;
 }
 
 /** Sum, average, count... per column, under the rows shown. */
@@ -30,13 +32,14 @@ export const SummaryRow = ({
   columns,
   rows,
   isEditable,
+  withNumbersColumn = true,
 }: SummaryRowProps) => {
   const { t } = useTranslation();
   const [openColumnId, setOpenColumnId] = useState<string | null>(null);
 
   return (
     <tr className="loop-table__summary">
-      <td />
+      {withNumbersColumn && <td />}
       {columns.map((column) => {
         const kind =
           snapshot.view.summaries[column.id] ?? defaultSummary(column.type);

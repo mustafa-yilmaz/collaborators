@@ -11,6 +11,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import { DropdownMenu, DropdownMenuItem } from '@gouvfr-lasuite/ui-components';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,11 +24,13 @@ import { useDocStore } from '@/features/docs/doc-management/stores/useDocStore';
 
 import { Cell, Direction } from './Cell';
 import { ColumnHeader } from './ColumnHeader';
-import { Popover } from './Popover';
+import { CornerHeader } from './CornerHeader';
 import { SummaryRow } from './SummaryRow';
 import { Toolbar } from './Toolbar';
 import { formatCell, labelOptionsOf } from './format';
+import { formatMenuItems, formatStyle } from './formatMenu';
 import {
+  CellFormat,
   Column,
   ColumnType,
   Row,
@@ -36,9 +39,12 @@ import {
   addRow,
   deleteRows,
   duplicateRow,
+  mergeFormats,
   moveColumn,
   moveRow,
+  setCellFormat,
   setCellValue,
+  setRowFormat,
   setTextCell,
 } from './model';
 import { LoopTableStyle } from './styles';
@@ -70,18 +76,28 @@ const useMyTeams = (enabled: boolean) =>
     staleTime: 60_000,
   });
 
+const JUSTIFY = { left: 'flex-start', center: 'center', right: 'flex-end' };
+
 const RowNumberCell = ({
   row,
   index,
   isEditable,
   canDrag,
-  onMenu,
+  showNumber,
+  look,
+  menuOptions,
+  isMenuOpen,
+  onMenuOpenChange,
 }: {
   row: Row;
   index: number;
   isEditable: boolean;
   canDrag: boolean;
-  onMenu: () => void;
+  showNumber: boolean;
+  look: CellFormat;
+  menuOptions: DropdownMenuItem[];
+  isMenuOpen: boolean;
+  onMenuOpenChange: (isOpen: boolean) => void;
 }) => {
   const { t } = useTranslation();
   const drag = useDraggable({
@@ -89,9 +105,17 @@ const RowNumberCell = ({
     disabled: !isEditable || !canDrag,
   });
   return (
-    <td className="loop-table__rownum">
-      <div className="loop-table__rownum-inner">
-        <span className="loop-table__rownum-number">{index + 1}</span>
+    <td
+      className={`loop-table__rownum ${showNumber ? '' : 'is-numbers-hidden'}`}
+      style={formatStyle(look)}
+    >
+      <div
+        className="loop-table__rownum-inner"
+        style={look.align ? { justifyContent: JUSTIFY[look.align] } : undefined}
+      >
+        {showNumber && (
+          <span className="loop-table__rownum-number">{index + 1}</span>
+        )}
         {isEditable && (
           <>
             <span
@@ -113,17 +137,23 @@ const RowNumberCell = ({
             >
               <Icon iconName="drag_indicator" $size="16px" />
             </span>
-            <button
-              type="button"
-              className="loop-table__handle"
-              aria-label={t('Row {{number}} actions', {
-                description: 'Accessible name of a row menu button',
-                number: index + 1,
-              })}
-              onClick={onMenu}
+            <DropdownMenu
+              options={menuOptions}
+              isOpen={isMenuOpen}
+              onOpenChange={onMenuOpenChange}
             >
-              <Icon iconName="more_vert" $size="16px" />
-            </button>
+              <button
+                type="button"
+                className={`loop-table__handle ${isMenuOpen ? 'is-open' : ''}`}
+                aria-label={t('Row {{number}} actions', {
+                  description: 'Accessible name of a row menu button',
+                  number: index + 1,
+                })}
+                onClick={() => onMenuOpenChange(!isMenuOpen)}
+              >
+                <Icon iconName="more_vert" $size="16px" />
+              </button>
+            </DropdownMenu>
           </>
         )}
       </div>
@@ -186,6 +216,8 @@ export const LoopTableView = ({
   const [active, setActive] = useState<ActiveCell | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [rowMenuId, setRowMenuId] = useState<string | null>(null);
+  // The cell whose format menu is open, as "rowId:columnId"
+  const [cellMenuFor, setCellMenuFor] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -317,6 +349,42 @@ export const LoopTableView = ({
   }
 
   const canDragRows = !snapshot.view.sort;
+  // Hidden row numbers leave readers without the column; editors keep a
+  // narrow one, for the row handles and menu
+  const showNumbersColumn = snapshot.layout.showRowNumbers || isEditable;
+
+  const rowMenuOptions = (row: Row): DropdownMenuItem[] => {
+    const index = snapshot.rows.findIndex((item) => item.id === row.id);
+    return [
+      {
+        label: t('Insert row above', { description: 'Loop table row menu' }),
+        icon: <Icon iconName="north" $size="18px" />,
+        callback: () => addRow(table, index),
+      },
+      {
+        label: t('Insert row below', { description: 'Loop table row menu' }),
+        icon: <Icon iconName="south" $size="18px" />,
+        callback: () => addRow(table, index + 1),
+      },
+      {
+        label: t('Duplicate row', { description: 'Loop table row menu' }),
+        icon: <Icon iconName="content_copy" $size="18px" />,
+        callback: () => duplicateRow(table, row.id),
+      },
+      { type: 'separator' },
+      // The whole row: its cells and its number
+      ...formatMenuItems(t, row.format, (patch) =>
+        setRowFormat(table, row.id, patch),
+      ),
+      { type: 'separator' },
+      {
+        label: t('Delete row', { description: 'Loop table row menu' }),
+        icon: <Icon iconName="delete" $size="18px" />,
+        variant: 'danger',
+        callback: () => deleteRows(table, [row.id]),
+      },
+    ];
+  };
 
   const onKeyDown = (event: React.KeyboardEvent) => {
     // Keep the page editor out of the table's keystrokes
@@ -510,7 +578,13 @@ export const LoopTableView = ({
           >
             <thead>
               <tr>
-                <th className="loop-table__rownum" aria-label="#" />
+                {showNumbersColumn && (
+                  <CornerHeader
+                    table={table}
+                    snapshot={snapshot}
+                    isEditable={isEditable}
+                  />
+                )}
                 {columns.map((column) => (
                   <ColumnHeader
                     key={column.id}
@@ -561,26 +635,50 @@ export const LoopTableView = ({
                       : '',
                   ].join(' ')}
                 >
-                  <RowNumberCell
-                    row={row}
-                    index={rowIndex}
-                    isEditable={isEditable}
-                    canDrag={canDragRows}
-                    onMenu={() =>
-                      setRowMenuId(rowMenuId === row.id ? null : row.id)
-                    }
-                  />
+                  {showNumbersColumn && (
+                    <RowNumberCell
+                      row={row}
+                      index={rowIndex}
+                      isEditable={isEditable}
+                      canDrag={canDragRows}
+                      showNumber={snapshot.layout.showRowNumbers}
+                      // The numbers column's own format comes first
+                      look={mergeFormats(snapshot.layout.numbers, row.format)}
+                      menuOptions={rowMenuOptions(row)}
+                      isMenuOpen={rowMenuId === row.id}
+                      onMenuOpenChange={(isOpen) =>
+                        setRowMenuId(isOpen ? row.id : null)
+                      }
+                    />
+                  )}
                   {columns.map((column) => {
                     const isActive =
                       active?.rowId === row.id &&
                       active?.columnId === column.id;
+                    // A cell's own format, then its row's, then its column's
+                    const look = mergeFormats(
+                      row.cellFormats?.[column.id],
+                      row.format,
+                      column.format,
+                    );
                     return (
                       <td
                         key={column.id}
                         data-row-id={row.id}
                         data-column-id={column.id}
+                        data-align={look.align}
+                        style={formatStyle(look)}
                         role="gridcell"
                         aria-selected={isActive}
+                        onContextMenu={(event) => {
+                          if (!isEditable) {
+                            return;
+                          }
+                          event.preventDefault();
+                          setActive({ rowId: row.id, columnId: column.id });
+                          setIsEditing(false);
+                          setCellMenuFor(`${row.id}:${column.id}`);
+                        }}
                         className={[
                           isActive ? 'is-active' : '',
                           dragId === `col:${column.id}` ? 'is-drag-source' : '',
@@ -621,73 +719,54 @@ export const LoopTableView = ({
                             }
                           }}
                         />
+                        {isActive && isEditable && !isEditing && (
+                          <DropdownMenu
+                            options={formatMenuItems(
+                              t,
+                              row.cellFormats?.[column.id],
+                              (patch) =>
+                                setCellFormat(table, row.id, column.id, patch),
+                              {
+                                clear: t('Clear cell formatting', {
+                                  description: 'Loop table cell menu',
+                                }),
+                              },
+                            )}
+                            isOpen={cellMenuFor === `${row.id}:${column.id}`}
+                            onOpenChange={(isOpen) =>
+                              setCellMenuFor(
+                                isOpen ? `${row.id}:${column.id}` : null,
+                              )
+                            }
+                          >
+                            <button
+                              type="button"
+                              className="loop-table__cell-menu"
+                              aria-label={t('Format this cell', {
+                                description:
+                                  'Accessible name of the Loop table cell menu',
+                              })}
+                              title={t('Format this cell', {
+                                description:
+                                  'Accessible name of the Loop table cell menu',
+                              })}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setCellMenuFor(
+                                  cellMenuFor === `${row.id}:${column.id}`
+                                    ? null
+                                    : `${row.id}:${column.id}`,
+                                );
+                              }}
+                            >
+                              <Icon iconName="format_color_fill" $size="14px" />
+                            </button>
+                          </DropdownMenu>
+                        )}
                       </td>
                     );
                   })}
                   {isEditable && <td />}
-                  {rowMenuId === row.id && (
-                    <td style={{ position: 'absolute', border: 'none' }}>
-                      <Popover
-                        onClose={() => setRowMenuId(null)}
-                        label={t('Row actions', { description: 'Loop table' })}
-                      >
-                        {[
-                          {
-                            icon: 'north',
-                            label: t('Insert row above', {
-                              description: 'Loop table row menu',
-                            }),
-                            action: () =>
-                              addRow(
-                                table,
-                                snapshot.rows.findIndex((r) => r.id === row.id),
-                              ),
-                          },
-                          {
-                            icon: 'south',
-                            label: t('Insert row below', {
-                              description: 'Loop table row menu',
-                            }),
-                            action: () =>
-                              addRow(
-                                table,
-                                snapshot.rows.findIndex(
-                                  (r) => r.id === row.id,
-                                ) + 1,
-                              ),
-                          },
-                          {
-                            icon: 'content_copy',
-                            label: t('Duplicate row', {
-                              description: 'Loop table row menu',
-                            }),
-                            action: () => duplicateRow(table, row.id),
-                          },
-                          {
-                            icon: 'delete',
-                            label: t('Delete row', {
-                              description: 'Loop table row menu',
-                            }),
-                            action: () => deleteRows(table, [row.id]),
-                          },
-                        ].map((item, index) => (
-                          <button
-                            key={item.icon}
-                            type="button"
-                            autoFocus={index === 0}
-                            className="loop-table__popover-item"
-                            onClick={() => {
-                              item.action();
-                              setRowMenuId(null);
-                            }}
-                          >
-                            <Icon iconName={item.icon} $size="18px" />
-                            {item.label}
-                          </button>
-                        ))}
-                      </Popover>
-                    </td>
-                  )}
                 </DroppableRow>
               ))}
             </tbody>
@@ -698,6 +777,7 @@ export const LoopTableView = ({
                 columns={columns}
                 rows={rows}
                 isEditable={isEditable}
+                withNumbersColumn={showNumbersColumn}
               />
             </tfoot>
           </table>

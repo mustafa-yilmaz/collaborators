@@ -12,6 +12,12 @@
  *     rows:    Y.Array<Y.Map>   id, cells: Y.Map<columnId, value>
  *     labelGroups: Y.Map<groupId, Y.Map>   name, options (JSON)
  *     view:    Y.Map            sort, filters, summaries (JSON)
+ *     layout:  Y.Map            showRowNumbers, header, numbers (formats)
+ *
+ * Formats (background colour, horizontal and vertical alignment) are kept
+ * on a column (`format`), a row (`format`), a cell (the row's `cellFormats`
+ * Y.Map, by column id, so people formatting different cells don't clash),
+ * and in `layout` for the header row and the numbers column.
  *
  * Cell values by column type:
  *   text    Y.Text
@@ -69,6 +75,21 @@ export interface LabelGroup {
   options: LabelOption[];
 }
 
+export type HorizontalAlign = 'left' | 'center' | 'right';
+export type VerticalAlign = 'top' | 'middle' | 'bottom';
+
+/** How a column, a row, a cell, the header row or the numbers column look. */
+export interface CellFormat {
+  background?: string;
+  align?: HorizontalAlign;
+  valign?: VerticalAlign;
+}
+
+/** A change of format: a value sets it, null takes it away. */
+export type FormatPatch = {
+  [Key in keyof CellFormat]?: CellFormat[Key] | null;
+};
+
 export interface Column {
   id: string;
   name: string;
@@ -78,6 +99,7 @@ export interface Column {
   currency?: string;
   labelGroupId?: string;
   hidden?: boolean;
+  format?: CellFormat;
 }
 
 export type FilterOperator =
@@ -118,6 +140,16 @@ export interface Row {
   id: string;
   /** Plain snapshot of every cell, for display, sorting and filtering. */
   cells: Record<string, CellValue>;
+  format?: CellFormat;
+  /** Formats of single cells, by column id */
+  cellFormats?: Record<string, CellFormat>;
+}
+
+/** The header row and the numbers column (the row numbers on the left). */
+export interface TableLayout {
+  showRowNumbers: boolean;
+  header: CellFormat;
+  numbers: CellFormat;
 }
 
 export interface TableSnapshot {
@@ -125,6 +157,7 @@ export interface TableSnapshot {
   rows: Row[];
   labelGroups: LabelGroup[];
   view: ViewState;
+  layout: TableLayout;
 }
 
 export const DEFAULT_COLUMN_WIDTH = 180;
@@ -172,6 +205,15 @@ const getRowsArray = (table: Y.Map<unknown>) =>
 const getView = (table: Y.Map<unknown>) => table.get('view') as Y.Map<unknown>;
 const getLabelGroups = (table: Y.Map<unknown>) =>
   table.get('labelGroups') as Y.Map<Y.Map<unknown>>;
+/** The layout map, created on the first change (older tables have none). */
+const getLayout = (table: Y.Map<unknown>, create = false) => {
+  let layout = table.get('layout') as Y.Map<unknown> | undefined;
+  if (!layout && create) {
+    layout = new Y.Map<unknown>();
+    table.set('layout', layout);
+  }
+  return layout;
+};
 
 const emptyValueFor = (type: ColumnType): unknown => {
   switch (type) {
@@ -290,6 +332,22 @@ export const cloneTable = (ydoc: Y.Doc, snapshot: TableSnapshot): string => {
       view.set('sort', snapshot.view.sort);
       view.set('filters', snapshot.view.filters);
       view.set('summaries', snapshot.view.summaries);
+      getRowsArray(table)
+        .toArray()
+        .forEach((yrow, index) => {
+          const row = snapshot.rows[index];
+          if (row?.format) {
+            yrow.set('format', row.format);
+          }
+          if (row?.cellFormats && Object.keys(row.cellFormats).length) {
+            const formats = new Y.Map<unknown>();
+            yrow.set('cellFormats', formats);
+            Object.entries(row.cellFormats).forEach(([columnId, format]) =>
+              formats.set(columnId, format),
+            );
+          }
+        });
+      setLayout(table, snapshot.layout);
     });
   }
   return tableId;
@@ -321,6 +379,7 @@ export const readTable = (table: Y.Map<unknown>): TableSnapshot => {
     .toArray()
     .map((yrow) => {
       const cells = yrow.get('cells') as Y.Map<unknown>;
+      const cellFormats = yrow.get('cellFormats') as Y.Map<unknown> | undefined;
       return {
         id: yrow.get('id') as string,
         cells: Object.fromEntries(
@@ -329,6 +388,8 @@ export const readTable = (table: Y.Map<unknown>): TableSnapshot => {
             readCell(column, cells.get(column.id)),
           ]),
         ),
+        format: yrow.get('format') as CellFormat | undefined,
+        cellFormats: cellFormats?.toJSON(),
       };
     });
   const labelGroups = Array.from(getLabelGroups(table).entries()).map(
@@ -339,6 +400,7 @@ export const readTable = (table: Y.Map<unknown>): TableSnapshot => {
     }),
   );
   const view = getView(table);
+  const layout = getLayout(table);
   return {
     columns,
     rows,
@@ -347,6 +409,11 @@ export const readTable = (table: Y.Map<unknown>): TableSnapshot => {
       sort: (view.get('sort') as SortRule | null) ?? null,
       filters: (view.get('filters') as FilterRule[]) ?? [],
       summaries: (view.get('summaries') as Record<string, SummaryKind>) ?? {},
+    },
+    layout: {
+      showRowNumbers: layout?.get('showRowNumbers') !== false,
+      header: (layout?.get('header') as CellFormat) ?? {},
+      numbers: (layout?.get('numbers') as CellFormat) ?? {},
     },
   };
 };
@@ -740,4 +807,130 @@ export const setView = (table: Y.Map<unknown>, changes: Partial<ViewState>) => {
     const view = getView(table);
     Object.entries(changes).forEach(([key, value]) => view.set(key, value));
   });
+};
+
+// -- Formats
+
+/** The format with the patch applied, or undefined when nothing is left. */
+export const applyFormatPatch = (
+  format: CellFormat | undefined,
+  patch: FormatPatch,
+): CellFormat | undefined => {
+  const next: Record<string, unknown> = { ...format };
+  Object.entries(patch).forEach(([key, value]) => {
+    if (value === null || value === undefined) {
+      delete next[key];
+    } else {
+      next[key] = value;
+    }
+  });
+  return Object.keys(next).length ? next : undefined;
+};
+
+/** Take away every format property. */
+export const CLEAR_FORMAT: FormatPatch = {
+  background: null,
+  align: null,
+  valign: null,
+};
+
+/**
+ * The format shown, from the most specific to the least: each property
+ * comes from the first format that sets it.
+ */
+export const mergeFormats = (
+  ...formats: (CellFormat | undefined)[]
+): CellFormat => ({
+  background: formats.find((format) => format?.background)?.background,
+  align: formats.find((format) => format?.align)?.align,
+  valign: formats.find((format) => format?.valign)?.valign,
+});
+
+export const setColumnFormat = (
+  table: Y.Map<unknown>,
+  columnId: string,
+  patch: FormatPatch,
+) => {
+  const column = readTable(table).columns.find((item) => item.id === columnId);
+  if (column) {
+    updateColumn(table, columnId, {
+      format: applyFormatPatch(column.format, patch),
+    });
+  }
+};
+
+const getRowYMap = (table: Y.Map<unknown>, rowId: string) => {
+  const rows = getRowsArray(table);
+  return rows.get(findIndex(rows, rowId)) as Y.Map<unknown> | undefined;
+};
+
+export const setRowFormat = (
+  table: Y.Map<unknown>,
+  rowId: string,
+  patch: FormatPatch,
+) => {
+  table.doc?.transact(() => {
+    const yrow = getRowYMap(table, rowId);
+    if (!yrow) {
+      return;
+    }
+    const format = applyFormatPatch(
+      yrow.get('format') as CellFormat | undefined,
+      patch,
+    );
+    if (format) {
+      yrow.set('format', format);
+    } else {
+      yrow.delete('format');
+    }
+  });
+};
+
+export const setCellFormat = (
+  table: Y.Map<unknown>,
+  rowId: string,
+  columnId: string,
+  patch: FormatPatch,
+) => {
+  table.doc?.transact(() => {
+    const yrow = getRowYMap(table, rowId);
+    if (!yrow) {
+      return;
+    }
+    let formats = yrow.get('cellFormats') as Y.Map<unknown> | undefined;
+    const format = applyFormatPatch(
+      formats?.get(columnId) as CellFormat | undefined,
+      patch,
+    );
+    if (format) {
+      if (!formats) {
+        formats = new Y.Map<unknown>();
+        yrow.set('cellFormats', formats);
+      }
+      formats.set(columnId, format);
+    } else {
+      formats?.delete(columnId);
+    }
+  });
+};
+
+/** Show or hide the row numbers, or format the header row or numbers column. */
+export const setLayout = (
+  table: Y.Map<unknown>,
+  changes: Partial<TableLayout>,
+) => {
+  table.doc?.transact(() => {
+    const layout = getLayout(table, true);
+    Object.entries(changes).forEach(([key, value]) => layout?.set(key, value));
+  });
+};
+
+/** Change the format of the header row or of the numbers column. */
+export const setLayoutFormat = (
+  table: Y.Map<unknown>,
+  part: 'header' | 'numbers',
+  patch: FormatPatch,
+) => {
+  const current = readTable(table).layout[part];
+  setLayout(table, { [part]: applyFormatPatch(current, patch) ?? {} });
 };

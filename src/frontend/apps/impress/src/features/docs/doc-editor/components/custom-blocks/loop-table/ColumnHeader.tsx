@@ -12,6 +12,7 @@ import {
   columnTypeLabel,
   numberFormatLabel,
 } from './columnTypes';
+import { formatMenuItems, formatStyle } from './formatMenu';
 import {
   Column,
   ColumnType,
@@ -21,7 +22,9 @@ import {
   allLabelGroups,
   changeColumnType,
   deleteColumn,
+  mergeFormats,
   newId,
+  setColumnFormat,
   setView,
   updateColumn,
 } from './model';
@@ -125,6 +128,16 @@ export const ColumnHeader = ({
             updateColumn(table, column.id, { numberFormat: format }),
         })),
       },
+      ...(isEditable
+        ? [
+            { type: 'separator' as const },
+            // The whole column: its cells, and its header unless the header
+            // row has its own format
+            ...formatMenuItems(t, column.format, (patch) =>
+              setColumnFormat(table, column.id, patch),
+            ),
+          ]
+        : []),
       { type: 'separator' },
       {
         label: t('Sort ascending', { description: 'Loop table column menu' }),
@@ -195,11 +208,18 @@ export const ColumnHeader = ({
   }, [t, column, snapshot, table, index, isEditable, sortedHere]);
 
   const width = liveWidth ?? column.width;
+  // The header row's own format comes first, then the column's
+  const look = mergeFormats(snapshot.layout.header, column.format);
 
   return (
     <th
       ref={drop.setNodeRef}
-      style={{ width, minWidth: width, maxWidth: width }}
+      style={{
+        width,
+        minWidth: width,
+        maxWidth: width,
+        ...formatStyle(look),
+      }}
       className={`${isDropTarget ? 'is-drop-before' : ''} ${isDragSource ? 'is-drag-source' : ''}`}
       aria-sort={
         sortedHere === 'asc'
@@ -270,7 +290,12 @@ export const ColumnHeader = ({
               </span>
             )}
             <Icon iconName={columnTypeIcon[column.type]} $size="16px" />
-            <span className="loop-table__header-name">{column.name}</span>
+            <span
+              className="loop-table__header-name"
+              style={{ textAlign: look.align }}
+            >
+              {column.name}
+            </span>
             {sortedHere && (
               <Icon
                 iconName={

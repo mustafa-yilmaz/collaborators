@@ -6,7 +6,14 @@
 import { useProviderStore } from '@/features/docs/doc-management/stores/useProviderStore';
 
 import { formatCell } from './format';
-import { TableSnapshot, getTable, readTable } from './model';
+import { BACKGROUND_COLOURS } from './formatMenu';
+import {
+  CellFormat,
+  TableSnapshot,
+  getTable,
+  mergeFormats,
+  readTable,
+} from './model';
 import { visibleRows } from './view';
 
 interface LoopTableBlockLike {
@@ -43,10 +50,37 @@ export const loopTableToTextRows = (snapshot: TableSnapshot) => {
   ];
 };
 
+/**
+ * The format of every exported cell, row by row like loopTableToTextRows:
+ * the header row, then the visible rows.
+ */
+export const loopTableFormats = (snapshot: TableSnapshot): CellFormat[][] => {
+  const columns = snapshot.columns.filter((column) => !column.hidden);
+  return [
+    columns.map((column) =>
+      mergeFormats(snapshot.layout.header, column.format),
+    ),
+    ...visibleRows(snapshot).map((row) =>
+      columns.map((column) =>
+        mergeFormats(row.cellFormats?.[column.id], row.format, column.format),
+      ),
+    ),
+  ];
+};
+
+/** BlockNote names its colours; teal has no match and goes with blue. */
+const blockNoteColour = (background?: string) => {
+  const name = BACKGROUND_COLOURS.find(
+    (colour) => colour.value === background,
+  )?.name;
+  return !name ? 'default' : name === 'teal' ? 'blue' : name;
+};
+
 /** A regular BlockNote table block with the values of a Loop table. */
 export const loopTableAsTableBlock = (block: LoopTableBlockLike) => {
   const snapshot = getLoopTableSnapshot(block.props.tableId);
   const rows = snapshot ? loopTableToTextRows(snapshot) : [['']];
+  const formats = snapshot ? loopTableFormats(snapshot) : [];
   const widths = snapshot
     ? snapshot.columns
         .filter((column) => !column.hidden)
@@ -62,13 +96,15 @@ export const loopTableAsTableBlock = (block: LoopTableBlockLike) => {
       type: 'tableContent' as const,
       columnWidths: widths,
       headerRows: 1,
-      rows: rows.map((cells) => ({
-        cells: cells.map((text) => ({
+      rows: rows.map((cells, rowIndex) => ({
+        cells: cells.map((text, columnIndex) => ({
           type: 'tableCell' as const,
           props: {
-            backgroundColor: 'default',
+            backgroundColor: blockNoteColour(
+              formats[rowIndex]?.[columnIndex]?.background,
+            ),
             textColor: 'default',
-            textAlignment: 'left' as const,
+            textAlignment: formats[rowIndex]?.[columnIndex]?.align ?? 'left',
             colspan: 1,
             rowspan: 1,
           },

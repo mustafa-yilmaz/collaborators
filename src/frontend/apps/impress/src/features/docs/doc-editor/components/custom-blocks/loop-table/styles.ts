@@ -121,12 +121,19 @@ export const LoopTableStyle = createGlobalStyle`
   tr:hover .loop-table__rownum-number {
     display: none;
   }
+  /* The menu trigger around a header fills it, so the header's alignment
+     (left by default) shows */
+  .loop-table__grid th > .c__dropdown-menu-trigger {
+    width: 100%;
+    justify-content: stretch;
+  }
   .loop-table__header {
     display: flex;
     align-items: center;
     gap: 6px;
     padding: 0 8px;
     height: 36px;
+    width: 100%;
     cursor: pointer;
   }
   .loop-table__header:hover {
@@ -162,6 +169,45 @@ export const LoopTableStyle = createGlobalStyle`
   .loop-table__cell.is-number {
     text-align: right;
     font-variant-numeric: tabular-nums;
+  }
+  /* An alignment chosen for the cell, row or column wins */
+  .loop-table__grid td[data-align] .loop-table__cell {
+    text-align: inherit;
+  }
+  .loop-table__rownum.is-numbers-hidden {
+    width: 36px;
+    min-width: 36px;
+  }
+  .loop-table__handle.is-open {
+    visibility: visible;
+  }
+  .loop-table__corner,
+  .loop-table__cell-menu {
+    border: none;
+    background: transparent;
+    color: var(--lt-muted);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 4px;
+    display: inline-flex;
+  }
+  .loop-table__corner {
+    width: 100%;
+    height: 36px;
+    justify-content: center;
+    align-items: center;
+  }
+  .loop-table__corner:hover,
+  .loop-table__cell-menu:hover {
+    background: var(--lt-hover);
+  }
+  .loop-table__cell-menu {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    z-index: 3;
+    background: var(--c--contextuals--background--surface--primary, white);
+    box-shadow: 0 0 0 1px var(--lt-border);
   }
   td.is-active {
     box-shadow: inset 0 0 0 2px var(--lt-accent);

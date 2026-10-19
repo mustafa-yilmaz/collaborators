@@ -108,9 +108,10 @@ See **section 3**: it is the largest single piece of work.
   - **Disconnect** removes the link, never the last way in.
   - The backend reads and removes links through Keycloak's admin API, with its own service client `collaborators-backend` (`COLLABORATORS_KEYCLOAK_*`).
 - The sign-in buttons and the methods page show each provider's official logo.
+- **Several Google or Microsoft accounts** can open one collaborator's account: *Add another Google account* on the sign-in methods page, through the provider's account chooser. Keycloak links one account per provider, so the others are recorded in the app (`SignInIdentity`). One that already opens a separate Collaborators account isn't added. LinkedIn: one account.
 - **Dashboard hints**, one at a time, each closed for good:
   - a new account is welcomed, warning that an account under another email is a separate one;
-  - someone connected with a single provider is offered to connect the others, so they open this same account even with a different email.
+  - someone connected with a single provider is told, with a yellow symbol, that another account under a different email opens a separate account, and where to connect it. The sign-in methods page shows the same note.
 
 **Still to do:** emailing admins about requests to join (they reach the in-app inbox only).
 

@@ -222,11 +222,12 @@ def organizations_from_claims(provider, claims):
     return []
 
 
-def read_organizations(user, access_token):
+def read_organizations(user, access_token, identity=None):
     """
-    Record the organisations the user's identity providers vouch for, from
-    the ID tokens Keycloak stored. Keep what was known if Keycloak can't be
-    asked.
+    Record the organisations the identity providers vouch for, from the ID
+    tokens Keycloak stored for the account just signed in with: the user's
+    own, or one more sign-in identity of theirs. Keep what was known if
+    Keycloak can't be asked.
     """
     if not (
         access_token
@@ -245,11 +246,30 @@ def read_organizations(user, access_token):
     except keycloak.KeycloakError:
         logger.warning("Could not read the organisations of %s", user.pk)
         return
-    if organizations != user.collaborator_organizations:
+    if identity is not None:
+        if organizations != identity.organizations:
+            identity.organizations = organizations
+            identity.save(update_fields=["organizations", "updated_at"])
+    elif organizations != user.collaborator_own_organizations:
+        user.collaborator_own_organizations = organizations
         models.User.objects.filter(pk=user.pk).update(
-            collaborator_organizations=organizations
+            collaborator_own_organizations=organizations
         )
-        user.collaborator_organizations = organizations
+    merge_organizations(user)
+
+
+def merge_organizations(user):
+    """The organisations of the user's own account and of its other identities."""
+    merged = list(user.collaborator_own_organizations or [])
+    for organizations in user.sign_in_identities.values_list(
+        "organizations", flat=True
+    ):
+        for organization in organizations or []:
+            if all(item["id"] != organization["id"] for item in merged):
+                merged.append(organization)
+    if merged != user.collaborator_organizations:
+        models.User.objects.filter(pk=user.pk).update(collaborator_organizations=merged)
+        user.collaborator_organizations = merged
 
 
 def join_by_organization(user):

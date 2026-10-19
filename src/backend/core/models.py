@@ -193,6 +193,9 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
     # The organisations the identity providers vouch for, read at sign-in:
     # [{"id": "google:<Workspace domain>" | "microsoft:<tenant id>", "name"}]
     collaborator_organizations = models.JSONField(default=list, blank=True)
+    # Those of the account it signs in with first; collaborator_organizations
+    # adds those of its other sign-in identities
+    collaborator_own_organizations = models.JSONField(default=list, blank=True)
     # The dashboard hints closed for good: "welcome" (to a new account),
     # "connect-accounts" (connect another sign-in method)
     collaborator_dismissed_hints = ArrayField(
@@ -2778,6 +2781,34 @@ def get_team_label(team):
             return str(_("All members of {name}")).format(name=workspace.name)
         return str(_("Administrators of {name}")).format(name=workspace.name)
     return team
+
+
+class SignInIdentity(BaseModel):
+    """
+    One more Google or Microsoft account that opens a collaborator's
+    account. Keycloak links one account per provider to a person; the
+    others are separate Keycloak users, sent to this collaborator here (by
+    the `sub` they sign in with).
+    """
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="sign_in_identities"
+    )
+    provider = models.CharField(max_length=40)
+    sub = models.CharField(max_length=255, unique=True)
+    # The account's email, to show which one it is
+    account = models.CharField(max_length=255, blank=True, default="")
+    # The organisations it vouches for, see User.collaborator_organizations
+    organizations = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        db_table = "collaborators_sign_in_identity"
+        ordering = ("created_at",)
+        verbose_name = _("Sign-in identity")
+        verbose_name_plural = _("Sign-in identities")
+
+    def __str__(self):
+        return f"{self.provider} {self.account} for {self.user!s}"
 
 
 class WorkspaceJoinRequest(BaseModel):

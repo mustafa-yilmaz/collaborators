@@ -101,6 +101,14 @@ urlpatterns = [
                     "users/me/sign-in-methods/<slug:provider>/",
                     signin_methods.SignInMethodView.as_view(),
                 ),
+                path(
+                    "users/me/sign-in-methods/<slug:provider>/add/",
+                    signin_methods.AddSignInAccountView.as_view(),
+                ),
+                path(
+                    "users/me/sign-in-methods/<slug:provider>/accounts/<uuid:identity_id>/",
+                    signin_methods.SignInAccountView.as_view(),
+                ),
                 path("users/me/hints/", signin_methods.HintsView.as_view()),
                 *router.urls,
                 *oidc_urls,

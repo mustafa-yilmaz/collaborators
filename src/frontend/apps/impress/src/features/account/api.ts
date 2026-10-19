@@ -10,12 +10,24 @@ export interface SignInMethod {
   connected: boolean;
   /** The account it's connected to, e.g. an email, when known */
   account: string;
+  /** More accounts of this provider opening this account (Google, Microsoft) */
+  more_accounts: { id: string; account: string }[];
+  /** Whether another account of this provider can be added */
+  can_add_accounts: boolean;
+}
+
+/** What happened to the account last added, said once */
+export interface AddedAccountNotice {
+  outcome: 'added' | 'already' | 'separate';
+  provider: string;
+  account: string;
 }
 
 export interface SignInMethods {
   methods: SignInMethod[];
   /** The development test accounts sign in with a password too */
   has_password: boolean;
+  notice: AddedAccountNotice | null;
 }
 
 export function useSignInMethods(enabled = true) {
@@ -46,6 +58,53 @@ export function useDisconnectSignInMethod() {
       if (!response.ok) {
         throw new APIError(
           'Failed to disconnect the sign-in method',
+          await errorCauses(response),
+        );
+      }
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: [KEY_SIGN_IN_METHODS] }),
+  });
+}
+
+/**
+ * Add another Google or Microsoft account: the server says where to go (the
+ * sign-in server's sign-out, then that provider's account chooser), and the
+ * browser comes back to this page.
+ */
+export function useAddSignInAccount() {
+  return useMutation<void, APIError, string>({
+    mutationFn: async (provider) => {
+      const response = await fetchAPI(
+        `users/me/sign-in-methods/${provider}/add/`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ next: window.location.href }),
+        },
+      );
+      if (!response.ok) {
+        throw new APIError(
+          'Failed to add the account',
+          await errorCauses(response),
+        );
+      }
+      const { url } = (await response.json()) as { url: string };
+      window.location.assign(url);
+    },
+  });
+}
+
+export function useRemoveSignInAccount() {
+  const queryClient = useQueryClient();
+  return useMutation<void, APIError, { provider: string; id: string }>({
+    mutationFn: async ({ provider, id }) => {
+      const response = await fetchAPI(
+        `users/me/sign-in-methods/${provider}/accounts/${id}/`,
+        { method: 'DELETE' },
+      );
+      if (!response.ok) {
+        throw new APIError(
+          'Failed to disconnect the account',
           await errorCauses(response),
         );
       }

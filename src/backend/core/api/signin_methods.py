@@ -1,7 +1,8 @@
 """
 The in-app "Sign-in methods" page: the providers a collaborator signs in
 with, and removing one. Connecting another provider goes through sign-in
-(Keycloak's "idp_link" action, started by the frontend).
+(Keycloak's "idp_link" action, started by the frontend). More Google or
+Microsoft accounts can be added (see `core.identities`).
 
 Also the dashboard hints about them, closed for good one by one: the
 welcome note of a new account, and the suggestion to connect another
@@ -15,6 +16,7 @@ import rest_framework as drf
 from rest_framework import status
 from rest_framework.views import APIView
 
+from core import identities, joining
 from core.api import permissions
 from core.services import keycloak
 
@@ -46,7 +48,8 @@ def _methods(user_id):
 class SignInMethodsView(APIView):
     """
     GET /users/me/sign-in-methods/ — each provider offered, and whether it's
-    connected (with the account it's connected to).
+    connected (with the account it's connected to, and any more accounts of
+    it added); and, once, what happened to the account last added.
     """
 
     permission_classes = [permissions.IsAuthenticated]
@@ -54,6 +57,7 @@ class SignInMethodsView(APIView):
     def get(self, request):
         """List the providers, connected or not."""
         links, has_password = _methods(_user_id(request))
+        more = list(request.user.sign_in_identities.all())
         return drf.response.Response(
             {
                 "methods": [
@@ -61,11 +65,19 @@ class SignInMethodsView(APIView):
                         "provider": provider,
                         "connected": provider in links,
                         "account": links.get(provider, ""),
+                        "more_accounts": [
+                            {"id": str(identity.id), "account": identity.account}
+                            for identity in more
+                            if identity.provider == provider
+                        ],
+                        "can_add_accounts": provider in links
+                        and provider in identities.MULTI_ACCOUNT_PROVIDERS,
                     }
                     for provider in settings.COLLABORATORS_SIGNIN_PROVIDERS
                 ],
                 # The development test accounts sign in with a password too
                 "has_password": has_password,
+                "notice": identities.pop_notice(request),
             }
         )
 
@@ -81,7 +93,8 @@ class SignInMethodView(APIView):
         links, has_password = _methods(user_id)
         if provider not in links:
             raise drf.exceptions.NotFound()
-        if len(links) + int(has_password) <= 1:
+        count = len(links) + int(has_password) + request.user.sign_in_identities.count()
+        if count <= 1:
             raise drf.exceptions.ValidationError(
                 {
                     "provider": _(
@@ -95,6 +108,48 @@ class SignInMethodView(APIView):
             raise drf.exceptions.APIException(
                 _("This sign-in method can't be disconnected right now.")
             ) from err
+        return drf.response.Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AddSignInAccountView(APIView):
+    """
+    POST /users/me/sign-in-methods/<provider>/add/ {"next": "<app URL>"} —
+    start adding another account of this provider; returns {"url"} to go to.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, provider):
+        """Start adding an account."""
+        if (
+            provider not in identities.MULTI_ACCOUNT_PROVIDERS
+            or provider not in settings.COLLABORATORS_SIGNIN_PROVIDERS
+        ):
+            raise drf.exceptions.NotFound()
+        try:
+            url = identities.start_adding(
+                request, provider, str(request.data.get("next") or "/")
+            )
+        except identities.CantAddError as err:
+            raise drf.exceptions.ValidationError(
+                {"provider": _("Sign out and in again, then add the account.")}
+            ) from err
+        return drf.response.Response({"url": url})
+
+
+class SignInAccountView(APIView):
+    """DELETE /users/me/sign-in-methods/<provider>/accounts/<id>/ — remove one."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, provider, identity_id):
+        """It no longer opens this account."""
+        deleted, _count = request.user.sign_in_identities.filter(
+            pk=identity_id, provider=provider
+        ).delete()
+        if not deleted:
+            raise drf.exceptions.NotFound()
+        joining.merge_organizations(request.user)
         return drf.response.Response(status=status.HTTP_204_NO_CONTENT)
 
 

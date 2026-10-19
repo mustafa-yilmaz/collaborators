@@ -130,6 +130,9 @@ upsert_provider() {
   fi
 }
 
+# Google and Microsoft always show their account chooser ("prompt":
+# "select_account"): someone with several accounts picks which one, which
+# is also how another one is added on the sign-in methods page
 if [[ -n "${GOOGLE_CLIENT_ID}" ]]; then
   # Google verifies the email addresses it returns, so they can be trusted
   # for linking a second sign-in method to an existing account.
@@ -146,6 +149,7 @@ if [[ -n "${GOOGLE_CLIENT_ID}" ]]; then
     "clientId": "${GOOGLE_CLIENT_ID}",
     "clientSecret": "${GOOGLE_CLIENT_SECRET}",
     "defaultScope": "openid profile email",
+    "prompt": "select_account",
     "syncMode": "IMPORT",
     "guiOrder": "1"
   }
@@ -174,6 +178,7 @@ if [[ -n "${MICROSOFT_CLIENT_ID}" ]]; then
     "clientSecret": "${MICROSOFT_CLIENT_SECRET}",
     "tenantId": "${MICROSOFT_TENANT_ID:-common}",
     "defaultScope": "openid profile email User.Read",
+    "prompt": "select_account",
     "syncMode": "IMPORT",
     "guiOrder": "2"
   }

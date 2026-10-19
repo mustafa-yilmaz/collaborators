@@ -98,6 +98,11 @@ In development the page also has **Use a test account**. It opens Keycloak's own
   - **Connect** asks to sign in with that provider once, then links it.
   - **Disconnect** removes one, never the last.
   - The backend reads and removes the links through Keycloak's admin API, with its own client `collaborators-backend`. `make sso-providers` creates it (with the dev secret already in `env.d/development/common`, `COLLABORATORS_KEYCLOAK_*`). In production, give that client its own secret.
+  - **Several Google or Microsoft accounts** (e.g. a personal Gmail and a work Google Workspace) can open one Collaborators account. Keycloak links one account per provider to a person, so the others are separate Keycloak users that the app sends to the collaborator (`SignInIdentity`).
+    - **Add another Google account** ends the Keycloak session (the app's stays) and signs in again with Google. Google and Microsoft always show their account chooser (`prompt=select_account`, set by `make sso-providers`), where the other account is picked.
+    - An account that already opens a separate Collaborators account isn't added.
+    - Organisations of every account count for joining workspaces.
+    - In production, Keycloak's allowed post-logout redirect addresses must include the app's `/api/v1.0/authenticate/` address.
   - The dashboard suggests connecting another provider to people who have only one, until they close it for good. A new account gets a welcome note first: signing in with another provider under a different email makes a separate account.
   - Linking is allowed up to an hour after signing in (`max_auth_age` of Keycloak's `idp_link` action); later, Keycloak asks to sign in again first.
 - **Joining workspaces:** in a workspace's settings, admins can create a **join link**. They can also open the workspace to an **email domain** or an **organisation**, optionally adding joiners to an organisation group:

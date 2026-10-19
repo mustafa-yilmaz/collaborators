@@ -5,6 +5,7 @@ import os
 
 from django.conf import settings
 from django.core.exceptions import SuspiciousOperation
+from django.utils.translation import gettext_lazy as _
 
 from lasuite.marketing.tasks import create_or_update_contact
 from lasuite.oidc_login.backends import (
@@ -14,7 +15,7 @@ from rest_framework.authentication import (
     SessionAuthentication as BaseSessionAuthentication,
 )
 
-from core import joining
+from core import identities, joining, models
 from core.models import DuplicateEmailError, User
 from core.utils.analytics import PosthogEventName, posthog_capture
 
@@ -59,11 +60,44 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
 
     def get_userinfo(self, access_token, id_token, payload):
         """Keep the user info: whether the email is verified is read later."""
+        if getattr(self, "collaborators_access_token", None) == access_token:
+            return self.collaborators_user_info
         user_info = super().get_userinfo(access_token, id_token, payload)
         self.collaborators_user_info = user_info
         # To read the organisations the identity providers vouch for
         self.collaborators_access_token = access_token
         return user_info
+
+    def get_or_create_user(self, access_token, id_token, payload):
+        """
+        Another Google or Microsoft account of a collaborator opens theirs;
+        one being added from the sign-in methods page is recorded first.
+        """
+        user_info = self.get_userinfo(access_token, id_token, payload)
+        sub = user_info.get("sub")
+        adding = identities.pending_addition(getattr(self, "request", None))
+        if sub and adding:
+            user, identity, outcome = identities.finish_adding(
+                self.request, adding, sub, user_info.get("email")
+            )
+            if user is not None:
+                # Not added: the account signed in with opens another
+                # Collaborators account, whose details aren't this one's
+                if outcome != identities.SEPARATE:
+                    self.collaborators_after_sign_in(user, identity)
+                return user
+        identity = (
+            models.SignInIdentity.objects.filter(sub=sub).select_related("user").first()
+            if sub
+            else None
+        )
+        if identity is not None:
+            if not identity.user.is_active:
+                raise SuspiciousOperation(_("User account is disabled"))
+            posthog_capture(PosthogEventName.USER_LOGIN, identity.user)
+            self.collaborators_after_sign_in(identity.user, identity)
+            return identity.user
+        return super().get_or_create_user(access_token, id_token, payload)
 
     def get_existing_user(self, sub, email):
         """Fetch existing user by sub or email."""
@@ -96,20 +130,25 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
             posthog_capture(PosthogEventName.USER_LOGIN, user)
             self.collaborators_after_sign_in(user)
 
-    def collaborators_after_sign_in(self, user):
+    def collaborators_after_sign_in(self, user, identity=None):
         """
         Record whether the identity provider verified the email and which
         organisations the providers vouch for, and join the workspaces open to
-        them (or ask their admins).
+        them (or ask their admins). Signed in with another of the user's
+        accounts (`identity`), its email isn't the user's: only its
+        organisations count.
         """
-        user_info = getattr(self, "collaborators_user_info", None) or {}
-        verified = user_info.get("email_verified") is True
-        if user.collaborator_email_verified != verified:
-            User.objects.filter(pk=user.pk).update(collaborator_email_verified=verified)
-            user.collaborator_email_verified = verified
+        if identity is None:
+            user_info = getattr(self, "collaborators_user_info", None) or {}
+            verified = user_info.get("email_verified") is True
+            if user.collaborator_email_verified != verified:
+                User.objects.filter(pk=user.pk).update(
+                    collaborator_email_verified=verified
+                )
+                user.collaborator_email_verified = verified
         joining.join_by_domain(user)
         joining.read_organizations(
-            user, getattr(self, "collaborators_access_token", None)
+            user, getattr(self, "collaborators_access_token", None), identity
         )
         joining.join_by_organization(user)
 

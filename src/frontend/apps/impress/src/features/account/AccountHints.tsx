@@ -30,7 +30,7 @@ export const hasUnconnectedProviders = (methods?: SignInMethods) => {
   );
 };
 
-/** A bordered note: informative, or a yellow warning. */
+/** A bordered note; a warning only has its symbol in yellow. */
 export const HintCard = ({
   icon,
   testId,
@@ -54,24 +54,13 @@ export const HintCard = ({
     $direction="row"
     $gap="sm"
     $padding={{ horizontal: 'sm', vertical: 'xs' }}
-    $css={
-      tone === 'warning'
-        ? css`
-            border: 1px solid
-              var(--c--contextuals--border--semantic--warning--secondary);
-            border-radius: var(--c--globals--spacings--xs);
-            background: var(
-              --c--contextuals--background--semantic--warning--tertiary
-            );
-          `
-        : css`
-            border: 1px solid var(--c--contextuals--border--surface--primary);
-            border-radius: var(--c--globals--spacings--xs);
-            background: var(
-              --c--contextuals--background--semantic--contextual--primary
-            );
-          `
-    }
+    $css={css`
+      border: 1px solid var(--c--contextuals--border--surface--primary);
+      border-radius: var(--c--globals--spacings--xs);
+      background: var(
+        --c--contextuals--background--semantic--contextual--primary
+      );
+    `}
   >
     <Icon
       iconName={icon}
@@ -101,21 +90,30 @@ export const HintCard = ({
   </Box>
 );
 
-/** The warning about unconnected sign-in methods, on its own words. */
-export const ConnectAccountsText = () => {
+/** The note about unconnected sign-in methods, in its own words. */
+export const ConnectAccountsText = ({
+  onSignInMethodsPage = false,
+}: {
+  onSignInMethodsPage?: boolean;
+}) => {
   const { t } = useTranslation();
   return (
     <>
       <Text $weight="600">
-        {t('Your other accounts are not connected yet', {
-          description: 'Warning that only one sign-in method is connected',
+        {t('Good to know: signing in with another account', {
+          description: 'Note that only one sign-in method is connected',
         })}
       </Text>
       <Text $size="sm">
-        {t(
-          'Do you also sign in with another Google, Microsoft or LinkedIn account? Connect it so it opens this same account, even if its email is different. Otherwise it would make a separate account.',
-          { description: 'Hint to connect other sign-in methods' },
-        )}
+        {onSignInMethodsPage
+          ? t(
+              'Signing in with another Google, Microsoft or LinkedIn account under a different email opens a separate Collaborators account. To have it open this one instead, connect it below.',
+              { description: 'Hint to connect other sign-in methods' },
+            )
+          : t(
+              'Signing in with another Google, Microsoft or LinkedIn account under a different email opens a separate Collaborators account. To have it open this one instead, connect it on the sign-in methods page.',
+              { description: 'Hint to connect other sign-in methods' },
+            )}
       </Text>
     </>
   );
@@ -227,9 +225,8 @@ export const AccountHints = () => {
       actions={
         <>
           <SignInMethodsLink
-            primary
-            label={t('Connect an account', {
-              description: 'Button opening the sign-in methods page',
+            label={t('Sign-in methods', {
+              description: 'Link to the sign-in methods page',
             })}
           />
           <Button

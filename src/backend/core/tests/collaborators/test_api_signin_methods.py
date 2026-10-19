@@ -46,11 +46,30 @@ def test_sign_in_methods_list_each_provider(configured):  # pylint: disable=unus
     find.assert_called_once_with("ada@x.test")
     assert response.json() == {
         "methods": [
-            {"provider": "google", "connected": True, "account": "ada@gmail.test"},
-            {"provider": "microsoft", "connected": False, "account": ""},
-            {"provider": "linkedin", "connected": False, "account": ""},
+            {
+                "provider": "google",
+                "connected": True,
+                "account": "ada@gmail.test",
+                "more_accounts": [],
+                "can_add_accounts": True,
+            },
+            {
+                "provider": "microsoft",
+                "connected": False,
+                "account": "",
+                "more_accounts": [],
+                "can_add_accounts": False,
+            },
+            {
+                "provider": "linkedin",
+                "connected": False,
+                "account": "",
+                "more_accounts": [],
+                "can_add_accounts": False,
+            },
         ],
         "has_password": False,
+        "notice": None,
     }
 
 

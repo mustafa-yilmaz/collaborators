@@ -99,7 +99,7 @@ export default function HomeBanner() {
         $align="center"
         $position="relative"
         $direction={!isMobile ? 'row' : 'column'}
-        $gap={!isMobile ? '3rem' : '1.5rem'}
+        $gap={!isMobile ? '4.5rem' : '1.5rem'}
         $height="100%"
         $padding={{ horizontal: !isMobile ? 'lg' : 'none' }}
       >
@@ -108,6 +108,10 @@ export default function HomeBanner() {
           $justify="center"
           $align={!isMobile ? 'flex-start' : 'center'}
           $gap="1.25rem"
+          // Its own width: the logo never runs into the illustration
+          $css={css`
+            min-width: 0;
+          `}
         >
           {icon?.src && (
             <Image
@@ -125,9 +129,7 @@ export default function HomeBanner() {
           {!icon?.src && (
             <Title
               as="span"
-              $size={
-                isMobile ? '2rem' : 'clamp(2.25rem, 1.2rem + 2.6vw, 3.4rem)'
-              }
+              $size={isMobile ? '2rem' : 'clamp(2rem, 0.9rem + 2.2vw, 3rem)'}
               $weight="bold"
               $css={css`
                 letter-spacing: -0.01em;
@@ -144,14 +146,23 @@ export default function HomeBanner() {
             $variation="secondary"
             $css={css`
               line-height: 1.45;
-              max-width: 30ch;
-              text-wrap: balance;
               ${entrance(120)}
+              span {
+                display: block;
+              }
             `}
           >
-            {t('Collaborative proposal idea development for projects', {
-              description: 'Main headline of the home page',
-            })}
+            {/* Two rows: what it is, then what for */}
+            <span>
+              {t('Collaborative proposal idea development', {
+                description: 'Main headline of the home page, first row',
+              })}
+            </span>
+            <span>
+              {t('for projects', {
+                description: 'Main headline of the home page, second row',
+              })}
+            </span>
           </Text>
           <Box
             $margin={{ top: '0.5rem' }}

@@ -180,6 +180,9 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
     )
 
     full_name = models.CharField(_("full name"), max_length=100, null=True, blank=True)
+    # Whether mentions and assignments are also sent by email (they always
+    # reach the in-app notification inbox)
+    collaborator_email_notifications = models.BooleanField(default=True)
     # Derived from workspace and group memberships, see `teams`
     collaborator_teams = ArrayField(
         models.CharField(max_length=100), default=list, blank=True, editable=False
@@ -2155,6 +2158,14 @@ class Mention(BaseModel):
         related_name="mentions_sent",
     )
     notified_at = models.DateTimeField(null=True, blank=True)
+    # When a group was mentioned, the mention of each of its members carries
+    # the group's team string (see `make_team`)
+    mentioned_team = models.CharField(max_length=100, blank=True, default="")
+    reason = models.CharField(
+        max_length=20,
+        choices=[("mention", _("Mention")), ("assignment", _("Assignment"))],
+        default="mention",
+    )
 
     class Meta:
         db_table = "impress_mention"
@@ -2224,7 +2235,12 @@ class Mention(BaseModel):
             return False
 
         user = self.mentioned_user
-        if user is None or not user.email or self.is_notification_in_cooldown():
+        if (
+            user is None
+            or not user.email
+            or not user.collaborator_email_notifications
+            or self.is_notification_in_cooldown()
+        ):
             return False
 
         # Guard against concurrent notification tasks for the same context.
@@ -2246,7 +2262,23 @@ class Mention(BaseModel):
 
         with override(language):
             title = self.document.title or str(_("Untitled Document"))
-            if self.thread_id:
+            if self.reason == "assignment":
+                subject = _('{name} assigned you in "{title}"').format(
+                    name=sender_name, title=title
+                )
+                message = _("{name} assigned you in a table of this document:").format(
+                    name=sender_name
+                )
+            elif self.mentioned_team:
+                group = get_team_label(self.mentioned_team)
+                subject = _('{name} mentioned {group} in "{title}"').format(
+                    name=sender_name, group=group, title=title
+                )
+                message = _(
+                    "{name} mentioned {group}, a group you belong to, in the "
+                    "following document:"
+                ).format(name=sender_name, group=group)
+            elif self.thread_id:
                 subject = _('{name} mentioned you in a comment in "{title}"').format(
                     name=sender_name, title=title
                 )
@@ -2648,3 +2680,64 @@ def get_team_label(team):
             return str(_("All members of {name}")).format(name=workspace.name)
         return str(_("Administrators of {name}")).format(name=workspace.name)
     return team
+
+
+class Notification(BaseModel):
+    """
+    An entry of a collaborator's notification inbox: they were mentioned
+    (directly or through a group) or assigned somewhere in a document.
+    """
+
+    KIND_MENTION = "mention"
+    KIND_COMMENT_MENTION = "comment_mention"
+    KIND_ASSIGNMENT = "assignment"
+
+    recipient = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="notifications"
+    )
+    actor = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="notifications_sent",
+        null=True,
+        blank=True,
+    )
+    kind = models.CharField(
+        max_length=20,
+        choices=[
+            (KIND_MENTION, _("Mention")),
+            (KIND_COMMENT_MENTION, _("Mention in a comment")),
+            (KIND_ASSIGNMENT, _("Assignment")),
+        ],
+        default=KIND_MENTION,
+    )
+    document = models.ForeignKey(
+        Document, on_delete=models.CASCADE, related_name="notifications"
+    )
+    # Where to go: a block id, or "cell:<table>:<row>:<column>" for a table cell
+    anchor_id = models.TextField(blank=True, default="")
+    thread = models.ForeignKey(
+        Thread,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+        null=True,
+        blank=True,
+    )
+    # The group the recipient was reached through, if any
+    team = models.CharField(max_length=100, blank=True, default="")
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "collaborators_notification"
+        ordering = ("-created_at",)
+        verbose_name = _("Notification")
+        verbose_name_plural = _("Notifications")
+        indexes = [
+            models.Index(
+                fields=["recipient", "read_at", "-created_at"],
+                name="notification_inbox_idx",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.kind} for {self.recipient!s} on {self.document!s}"

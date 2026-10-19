@@ -24,6 +24,7 @@ from core.services.converter_services import (
 )
 from core.services.yhub_services import YHubError, YHubService
 from core.utils.analytics import PosthogEventName, posthog_capture
+from core.utils.anchors import is_valid_anchor
 from core.utils.treebeard import create_tree_node_with_retry
 
 
@@ -1054,10 +1055,21 @@ class MentionSerializer(serializers.ModelSerializer):
     """
 
     document_id = serializers.PrimaryKeyRelatedField(source="document", read_only=True)
-    anchor_id = serializers.UUIDField()
+    # A block id, or "cell:<table>:<row>:<column>" for a Loop table cell
+    anchor_id = serializers.CharField(max_length=255)
     mentioned_user_id = serializers.PrimaryKeyRelatedField(
         queryset=models.User.objects.filter(is_active=True),
         source="mentioned_user",
+        required=False,
+        allow_null=True,
+        default=None,
+    )
+    # Mention a group (a team string) instead of a person
+    mentioned_team = serializers.CharField(
+        max_length=100, required=False, allow_blank=True, default=""
+    )
+    reason = serializers.ChoiceField(
+        choices=["mention", "assignment"], required=False, default="mention"
     )
     mentioned_by_user_id = serializers.PrimaryKeyRelatedField(
         source="mentioned_by_user", read_only=True
@@ -1078,6 +1090,8 @@ class MentionSerializer(serializers.ModelSerializer):
             "anchor_id",
             "thread_id",
             "mentioned_user_id",
+            "mentioned_team",
+            "reason",
             "mentioned_by_user_id",
             "created_at",
             "notified_at",
@@ -1090,23 +1104,48 @@ class MentionSerializer(serializers.ModelSerializer):
             "notified_at",
         ]
 
-    def validate_mentioned_user_id(self, user):
-        """Ensure the mentioned user is allowed to comment on the document."""
+    def validate_anchor_id(self, anchor_id):
+        """A block id (UUID) or a Loop table cell."""
+        if not is_valid_anchor(anchor_id):
+            raise serializers.ValidationError("Must be a valid UUID or table cell.")
+        return anchor_id
+
+    def validate(self, attrs):
+        """
+        Mention exactly one person or group. A mentioned person must be able to
+        see where they are mentioned: the comments need a commenting role, the
+        page and its tables only need to be readable.
+        """
+        user = attrs.get("mentioned_user")
+        team = attrs.get("mentioned_team")
+        if bool(user) == bool(team):
+            raise serializers.ValidationError(
+                {"mentioned_user_id": "Mention either a user or a group."}
+            )
+        if team:
+            if models.parse_team(team)[0] is None:
+                raise serializers.ValidationError({"mentioned_team": "Unknown group."})
+            return attrs
+
         document = models.Document.objects.annotate_user_roles(user).get(
             pk=self.context["document"].pk
         )
         role = document.get_role(user)
         if role is None:
             raise serializers.ValidationError(
-                "This user does not have access to the document."
+                {"mentioned_user_id": "This user does not have access to the document."}
             )
 
-        # A reader cannot see comments, mentioning them would lead nowhere
-        if role not in choices.COMMENTING_ROLES:
+        # A reader cannot see comments, mentioning them there would lead nowhere
+        if attrs.get("thread") and role not in choices.COMMENTING_ROLES:
             raise serializers.ValidationError(
-                "This user is not allowed to comment on the document."
+                {
+                    "mentioned_user_id": (
+                        "This user is not allowed to comment on the document."
+                    )
+                }
             )
-        return user
+        return attrs
 
     def validate_thread_id(self, thread):
         """Ensure the thread belongs to the document on which the mention is created."""

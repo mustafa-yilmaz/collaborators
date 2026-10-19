@@ -139,6 +139,8 @@ def test_api_documents_mention_authenticated_success(role):
         "anchor_id": anchor_id,
         "thread_id": None,
         "mentioned_user_id": str(mentioned_user.id),
+        "mentioned_team": "",
+        "reason": "mention",
         "mentioned_by_user_id": str(user.id),
         "created_at": mention.created_at.isoformat().replace("+00:00", "Z"),
         # The email is sent asynchronously, so the create response carries no
@@ -222,7 +224,7 @@ def test_api_documents_mention_invalid_anchor_id(anchor_id):
     )
 
     assert response.status_code == 400
-    assert response.json() == {"anchor_id": ["Must be a valid UUID."]}
+    assert response.json() == {"anchor_id": ["Must be a valid UUID or table cell."]}
     assert models.Mention.objects.exists() is False
     assert len(mail.outbox) == 0
 
@@ -293,7 +295,9 @@ def test_api_documents_mention_user_allowed_to_comment(role):
 
 
 def test_api_documents_mention_user_with_reader_role():
-    """Readers cannot see comments on the document and should not be mentionable."""
+    """
+    Readers can be mentioned in the page (Collaborators): they can read it.
+    """
     user = factories.UserFactory()
     document = factories.DocumentFactory()
     factories.UserDocumentAccessFactory(document=document, user=user, role="commenter")
@@ -307,6 +311,32 @@ def test_api_documents_mention_user_with_reader_role():
     response = client.post(
         f"/api/v1.0/documents/{document.id!s}/mention/",
         {"anchor_id": str(uuid4()), "mentioned_user_id": str(mentioned_user.id)},
+    )
+
+    assert response.status_code == 201
+
+
+def test_api_documents_mention_user_with_reader_role_in_thread():
+    """Readers cannot see comments on the document and should not be mentionable there."""
+    user = factories.UserFactory()
+    document = factories.DocumentFactory()
+    factories.UserDocumentAccessFactory(document=document, user=user, role="commenter")
+    mentioned_user = factories.UserFactory()
+    factories.UserDocumentAccessFactory(
+        document=document, user=mentioned_user, role="reader"
+    )
+
+    thread = factories.ThreadFactory(document=document)
+
+    client = APIClient()
+    client.force_login(user)
+    response = client.post(
+        f"/api/v1.0/documents/{document.id!s}/mention/",
+        {
+            "anchor_id": str(uuid4()),
+            "mentioned_user_id": str(mentioned_user.id),
+            "thread_id": str(thread.id),
+        },
     )
 
     assert response.status_code == 400

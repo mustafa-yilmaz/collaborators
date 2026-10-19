@@ -1,0 +1,202 @@
+"""
+Tests for Collaborators notifications: mentions of people and groups in
+pages, comments and table cells, assignments, and the inbox API.
+"""
+
+from uuid import uuid4
+
+from django.core import mail
+
+import pytest
+from rest_framework.test import APIClient
+
+from core import factories, models
+from core.choices import WorkspaceRoleChoices
+
+pytestmark = pytest.mark.django_db
+
+
+def client_for(user):
+    """An API client logged in as the user."""
+    client = APIClient()
+    client.force_login(user)
+    return client
+
+
+def make_group(owner, members, name="Q4 Launch"):
+    """A workspace owned by `owner` with a group of `members`."""
+    workspace = models.Workspace.objects.create(name="Acme")
+    models.WorkspaceAccess.objects.create(
+        workspace=workspace, user=owner, role=WorkspaceRoleChoices.OWNER
+    )
+    group = models.Group.objects.create(workspace=workspace, name=name)
+    for member in members:
+        if member != owner:
+            models.WorkspaceAccess.objects.create(workspace=workspace, user=member)
+        models.GroupMembership.objects.create(group=group, user=member)
+    return group
+
+
+def test_api_mention_user_lands_in_their_inbox():
+    """A mention creates an unread notification pointing at the block."""
+    author, reader = factories.UserFactory.create_batch(2)
+    document = factories.DocumentFactory(
+        users=[(author, "editor"), (reader, "reader")], title="Plan"
+    )
+    anchor = str(uuid4())
+
+    response = client_for(author).post(
+        f"/api/v1.0/documents/{document.id}/mention/",
+        {"anchor_id": anchor, "mentioned_user_id": str(reader.id)},
+    )
+
+    assert response.status_code == 201
+    inbox = client_for(reader).get("/api/v1.0/notifications/").json()
+    assert [(n["kind"], n["anchor_id"], n["document"]["title"]) for n in inbox] == [
+        ("mention", anchor, "Plan")
+    ]
+    assert inbox[0]["actor"]["id"] == str(author.id)
+    count = client_for(reader).get("/api/v1.0/notifications/unread-count/").json()
+    assert count == {"count": 1}
+
+
+def test_api_mention_group_reaches_members_with_access():
+    """A group mention notifies each member who can see the page, once."""
+    author, member, other = factories.UserFactory.create_batch(3)
+    group = make_group(author, [author, member, other])
+    document = factories.DocumentFactory(
+        users=[(author, "editor")], link_reach="restricted"
+    )
+    models.DocumentAccess.objects.create(document=document, user=member, role="reader")
+
+    response = client_for(author).post(
+        f"/api/v1.0/documents/{document.id}/mention/",
+        {"anchor_id": str(uuid4()), "mentioned_team": group.team},
+    )
+
+    assert response.status_code == 201
+    assert [m["mentioned_user_id"] for m in response.json()] == [str(member.id)]
+    notification = models.Notification.objects.get()
+    assert (notification.recipient, notification.team) == (member, group.team)
+    assert len(mail.outbox) == 1
+    # Docs capitalizes email subjects, lowercasing the rest
+    assert "q4 launch" in mail.outbox[0].subject
+
+
+def test_api_mention_in_a_table_cell_and_assignment():
+    """Table cells are valid anchors, and assignments have their own kind."""
+    author, assignee = factories.UserFactory.create_batch(2)
+    document = factories.DocumentFactory(
+        users=[(author, "editor"), (assignee, "editor")]
+    )
+    cell = f"cell:{uuid4()}:{uuid4()}:{uuid4()}"
+
+    response = client_for(author).post(
+        f"/api/v1.0/documents/{document.id}/mention/",
+        {
+            "anchor_id": cell,
+            "mentioned_user_id": str(assignee.id),
+            "reason": "assignment",
+        },
+    )
+
+    assert response.status_code == 201
+    notification = models.Notification.objects.get()
+    assert (notification.kind, notification.anchor_id) == ("assignment", cell)
+    assert "assigned you" in mail.outbox[0].subject
+
+
+def test_api_mention_needs_exactly_one_target():
+    """Mention a person or a group, not both, not neither."""
+    author = factories.UserFactory()
+    document = factories.DocumentFactory(users=[(author, "editor")])
+
+    response = client_for(author).post(
+        f"/api/v1.0/documents/{document.id}/mention/", {"anchor_id": str(uuid4())}
+    )
+
+    assert response.status_code == 400
+
+
+def test_api_comment_mentions_notify_once():
+    """Mentions written in a comment notify, and editing it doesn't repeat them."""
+    author, mentioned = factories.UserFactory.create_batch(2)
+    document = factories.DocumentFactory(
+        users=[(author, "editor"), (mentioned, "commenter")]
+    )
+    mention = {
+        "type": "mention",
+        "props": {"kind": "user", "targetId": str(mentioned.id), "label": "M"},
+    }
+    body = [{"type": "paragraph", "content": [mention]}]
+
+    response = client_for(author).post(
+        f"/api/v1.0/documents/{document.id}/threads/", {"body": body}, format="json"
+    )
+    assert response.status_code == 201
+    thread_id = response.json()["id"]
+    notification = models.Notification.objects.get()
+    assert notification.kind == "comment_mention"
+    assert str(notification.thread_id) == thread_id
+
+    comment = models.Comment.objects.get()
+    edited = [
+        {
+            "type": "paragraph",
+            "content": [mention, {"type": "text", "text": " thanks", "styles": {}}],
+        }
+    ]
+    response = client_for(author).patch(
+        f"/api/v1.0/documents/{document.id}/threads/{thread_id}/comments/{comment.id}/",
+        {"body": edited},
+        format="json",
+    )
+    assert response.status_code == 200
+    assert models.Notification.objects.count() == 1
+
+
+def test_api_notifications_read_and_preferences():
+    """Notifications can be read one by one or all at once; email can be turned off."""
+    author, reader = factories.UserFactory.create_batch(2)
+    document = factories.DocumentFactory(users=[(author, "editor"), (reader, "reader")])
+    url = f"/api/v1.0/documents/{document.id}/mention/"
+    for _ in range(2):
+        client_for(author).post(
+            url, {"anchor_id": str(uuid4()), "mentioned_user_id": str(reader.id)}
+        )
+    client = client_for(reader)
+    first = client.get("/api/v1.0/notifications/").json()[0]
+
+    assert (
+        client.post(f"/api/v1.0/notifications/{first['id']}/read/").status_code == 200
+    )
+    assert client.get("/api/v1.0/notifications/unread-count/").json() == {"count": 1}
+    assert client.post("/api/v1.0/notifications/read-all/").status_code == 204
+    assert client.get("/api/v1.0/notifications/?unread=true").json() == []
+
+    assert client.patch(
+        "/api/v1.0/notifications/preferences/", {"email": False}, format="json"
+    ).json() == {"email": False}
+    mail.outbox.clear()
+    client_for(author).post(
+        url, {"anchor_id": str(uuid4()), "mentioned_user_id": str(reader.id)}
+    )
+    assert models.Notification.objects.filter(recipient=reader).count() == 3
+    assert mail.outbox == []
+
+
+def test_api_notifications_are_private():
+    """Nobody reads or marks someone else's notifications."""
+    author, reader, stranger = factories.UserFactory.create_batch(3)
+    document = factories.DocumentFactory(users=[(author, "editor"), (reader, "reader")])
+    client_for(author).post(
+        f"/api/v1.0/documents/{document.id}/mention/",
+        {"anchor_id": str(uuid4()), "mentioned_user_id": str(reader.id)},
+    )
+    notification = models.Notification.objects.get()
+
+    assert client_for(stranger).get("/api/v1.0/notifications/").json() == []
+    response = client_for(stranger).post(
+        f"/api/v1.0/notifications/{notification.id}/read/"
+    )
+    assert response.status_code == 404

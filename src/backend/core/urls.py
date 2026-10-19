@@ -7,7 +7,7 @@ from lasuite.oidc_login.urls import urlpatterns as oidc_urls
 from lasuite.oidc_resource_server.urls import urlpatterns as oidc_resource_server_urls
 from rest_framework.routers import DefaultRouter
 
-from core.api import viewsets, workspaces
+from core.api import notifications, viewsets, workspaces
 from core.external_api import viewsets as external_api_viewsets
 
 # - Main endpoints
@@ -16,6 +16,9 @@ router.register("documents", viewsets.DocumentViewSet, basename="documents")
 router.register("users", viewsets.UserViewSet, basename="users")
 router.register("workspaces", workspaces.WorkspaceViewSet, basename="workspaces")
 router.register("spaces", workspaces.SpaceViewSet, basename="spaces")
+router.register(
+    "notifications", notifications.NotificationViewSet, basename="notifications"
+)
 
 # - Routes nested under a workspace
 workspace_related_router = DefaultRouter()

@@ -45,7 +45,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from treebeard.exceptions import InvalidMoveToDescendant
 
-from core import authentication, choices, enums, models
+from core import authentication, choices, enums, models, notifications
 from core.api.filters import remove_accents
 from core.services import mime_types
 from core.services.ai_services.blocknote import AIService
@@ -77,7 +77,7 @@ from core.services.search_indexers import (
 from core.services.yhub_services import YHubError, YHubService
 from core.tasks.access import reset_service_connections_on_commit
 from core.tasks.documents import sync_service_restorations_in_cascade
-from core.tasks.mail import send_ask_for_access_mail, send_mention_notification_mail
+from core.tasks.mail import send_ask_for_access_mail
 from core.tasks.search import trigger_batch_document_indexer
 from core.utils.analytics import PosthogEventName, posthog_capture
 from core.utils.dicts import lowercase_keys
@@ -1983,9 +1983,27 @@ class DocumentViewSet(
             context={**self.get_serializer_context(), "document": document},
         )
         serializer.is_valid(raise_exception=True)
-        mention = serializer.save(document=document, mentioned_by_user=request.user)
+        data = serializer.validated_data
 
-        send_mention_notification_mail.delay(str(mention.id))
+        # A group: one mention per member who can see the document
+        if data.get("mentioned_team"):
+            mentions = notifications.mention_team(
+                document,
+                request.user,
+                data["mentioned_team"],
+                data["anchor_id"],
+                thread=data.get("thread"),
+                reason=data.get("reason", "mention"),
+            )
+            return drf.response.Response(
+                serializers.MentionSerializer(
+                    mentions, many=True, context={"document": document}
+                ).data,
+                status=drf.status.HTTP_201_CREATED,
+            )
+
+        mention = serializer.save(document=document, mentioned_by_user=request.user)
+        notifications.notify(mention)
 
         return drf.response.Response(
             serializer.data, status=drf.status.HTTP_201_CREATED
@@ -3245,11 +3263,12 @@ class ThreadViewSet(
 
         user = self.request.user if self.request.user.is_authenticated else None
 
-        models.Comment.objects.create(
+        comment = models.Comment.objects.create(
             thread=thread,
             user=user,
             body=body,
         )
+        notifications.notify_comment_mentions(comment, user)
 
         posthog_capture(
             PosthogEventName.THREAD_CREATED,
@@ -3318,6 +3337,7 @@ class CommentViewSet(
         """Attach the request user as the comment author."""
         user = self.request.user if self.request.user.is_authenticated else None
         comment = serializer.save(user=user)
+        notifications.notify_comment_mentions(comment, user)
 
         posthog_capture(
             PosthogEventName.COMMENT_CREATED,
@@ -3325,6 +3345,13 @@ class CommentViewSet(
             {"comment_id": str(comment.id), "thread_id": str(comment.thread_id)},
             document=self.get_document_or_404(),
         )
+
+    def perform_update(self, serializer):
+        """Notify the people and groups newly mentioned in an edited comment."""
+        previous_body = serializer.instance.body
+        comment = serializer.save()
+        user = self.request.user if self.request.user.is_authenticated else None
+        notifications.notify_comment_mentions(comment, user, previous_body)
 
     @drf.decorators.action(
         detail=True,

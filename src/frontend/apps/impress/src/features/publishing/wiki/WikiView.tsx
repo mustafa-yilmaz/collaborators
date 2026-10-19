@@ -19,6 +19,8 @@ import {
 import { useDate } from '@/hooks/useDate';
 import { useResponsiveStore } from '@/stores';
 
+import LeftPanelIcon from '@/features/left-panel/assets/left-panel.svg';
+
 import { WikiContext } from '../WikiContext';
 import { Wiki, WikiNode, useWiki } from '../api';
 import { WIKI_ACCENTS, wikiUrl } from '../utils';
@@ -327,6 +329,16 @@ const NotFound = () => {
   );
 };
 
+const NAV_OPEN_KEY = 'collaborators-wiki-nav-open';
+
+const readNavOpen = () => {
+  try {
+    return localStorage.getItem(NAV_OPEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
+
 /**
  * A space published as a wiki, for anyone: its tree of pages and a search on
  * the side, the page being read in the middle, in the wiki's colour.
@@ -340,7 +352,17 @@ export const WikiView = ({
 }) => {
   const { t } = useTranslation();
   const { isDesktop } = useResponsiveStore();
-  const [isNavOpen, setIsNavOpen] = useState(false);
+  // The page tree is hidden until the reader shows it, and stays as they
+  // left it from page to page
+  const [isNavOpen, setNavOpen] = useState(readNavOpen);
+  const setIsNavOpen = (isOpen: boolean) => {
+    setNavOpen(isOpen);
+    try {
+      localStorage.setItem(NAV_OPEN_KEY, isOpen ? '1' : '0');
+    } catch {
+      // private browsing: kept for this page only
+    }
+  };
   const { data: wiki, isLoading } = useWiki(slug);
   const pageIds = useMemo(
     () =>
@@ -350,9 +372,12 @@ export const WikiView = ({
     [wiki],
   );
 
+  // On a phone the tree covers the page: it closes once a page is chosen
   useEffect(() => {
-    setIsNavOpen(false);
-  }, [pageId]);
+    if (!isDesktop) {
+      setNavOpen(false);
+    }
+  }, [pageId, isDesktop]);
 
   if (isLoading) {
     return <Loading $height="100vh" />;
@@ -366,7 +391,7 @@ export const WikiView = ({
   )?.title;
   const accent = wiki.accent || WIKI_ACCENTS[0].value;
   const isInWiki = pageIds.has(currentId);
-  const showNav = isDesktop || isNavOpen;
+  const showNav = isNavOpen;
 
   return (
     <WikiContext.Provider value={{ slug: wiki.slug, pageIds }}>
@@ -404,18 +429,32 @@ export const WikiView = ({
           `}
         >
           <Box $direction="row" $align="center" $gap="xs" $css="min-width: 0;">
-            {!isDesktop && (
-              <BoxButton
-                aria-label={t('Pages of the wiki', {
-                  description: 'Accessible name of the wiki page tree',
-                })}
-                aria-expanded={isNavOpen}
-                onClick={() => setIsNavOpen(!isNavOpen)}
-                $padding="3xs"
-              >
-                <Icon iconName="menu" $size="22px" $variation="secondary" />
-              </BoxButton>
-            )}
+            <BoxButton
+              aria-label={
+                isNavOpen
+                  ? t('Hide the pages of the wiki', {
+                      description: 'Button hiding the page tree of a wiki',
+                    })
+                  : t('Show the pages of the wiki', {
+                      description: 'Button showing the page tree of a wiki',
+                    })
+              }
+              title={
+                isNavOpen
+                  ? t('Hide the pages of the wiki', {
+                      description: 'Button hiding the page tree of a wiki',
+                    })
+                  : t('Show the pages of the wiki', {
+                      description: 'Button showing the page tree of a wiki',
+                    })
+              }
+              aria-expanded={isNavOpen}
+              onClick={() => setIsNavOpen(!isNavOpen)}
+              $padding="3xs"
+              $css="flex-shrink: 0;"
+            >
+              <LeftPanelIcon width={24} height={24} aria-hidden="true" />
+            </BoxButton>
             <StyledLink
               href={wikiUrl(wiki.slug)}
               $css="color: inherit; min-width: 0;"

@@ -675,6 +675,10 @@ class DocumentViewSet(
         # inside them are reached through their space.
         queryset = queryset.exclude(kind=choices.DocumentKindChoices.SPACE)
 
+        # Independent pages: in no space, nor under another page
+        if request.GET.get("independent") in ("true", "1"):
+            queryset = queryset.filter(depth=1)
+
         # Annotate favorite status and filter if applicable as late as possible
         queryset = queryset.annotate_is_favorite(user)
         queryset = filterset.filters["is_favorite"].filter(

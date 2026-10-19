@@ -8,6 +8,7 @@ import { useDocStore } from '@/features/docs/doc-management/stores/useDocStore';
 import { DocTree } from '@/features/docs/doc-tree/components/DocTree';
 import { TreeSkeleton } from '@/features/skeletons/components/TreeSkeleton';
 import {
+  PageList,
   SpaceList,
   WorkspaceSwitcher,
   useWorkspaceStore,
@@ -39,9 +40,12 @@ export const LeftPanelContent = () => {
           <SpaceList />
           {/* Independent pages live outside workspaces */}
           {!currentWorkspaceId && (
-            <SeparatedSection showSeparator={true}>
-              <LeftPanelTargetFilters />
-            </SeparatedSection>
+            <>
+              <PageList />
+              <SeparatedSection showSeparator={true}>
+                <LeftPanelTargetFilters />
+              </SeparatedSection>
+            </>
           )}
         </Box>
       </>

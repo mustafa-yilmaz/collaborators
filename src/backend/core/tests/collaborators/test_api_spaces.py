@@ -229,6 +229,21 @@ def test_api_documents_list_excludes_spaces():
     assert [d["title"] for d in response.json()["results"]] == ["Page"]
 
 
+def test_api_documents_list_independent_pages():
+    """independent=true keeps the pages in no space, nor under another page."""
+    user = factories.UserFactory()
+    factories.DocumentFactory(users=[(user, "owner")], title="Free page")
+    space = factories.DocumentFactory(title="Space", kind="space")
+    factories.DocumentFactory(parent=space, users=[(user, "owner")], title="In space")
+
+    client = client_for(user)
+    every = client.get("/api/v1.0/documents/").json()["results"]
+    independent = client.get("/api/v1.0/documents/?independent=true").json()
+
+    assert sorted(d["title"] for d in every) == ["Free page", "In space"]
+    assert [d["title"] for d in independent["results"]] == ["Free page"]
+
+
 def test_api_documents_move_rejects_spaces():
     """A space stays a root: it can't be moved under another document."""
     user = factories.UserFactory()

@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { ButtonLink, Text } from '@/components';
 import { useConfig } from '@/core/config/api/useConfig';
 import { useLeftPanelStore } from '@/features/left-panel/stores/useLeftPanelStore';
+import { useWorkspaceStore } from '@/features/workspaces/stores/useWorkspaceStore';
 import ArrowDownIcon from '@/icons/arrow-drop-down.svg';
 import SubDocIcon from '@/icons/doc-new-subdoc.svg';
 import PlusIcon from '@/icons/doc-plus.svg';
@@ -30,6 +31,7 @@ export const NewDocButton = ({ onClose }: NewDocButtonProps) => {
   const { currentDoc } = useDocStore();
   const { data: config } = useConfig();
   const isDropdownEnabled = config?.CONVERSION_UPLOAD_ENABLED || currentDoc;
+  const { setCurrentWorkspaceId } = useWorkspaceStore();
 
   return (
     <>
@@ -38,6 +40,8 @@ export const NewDocButton = ({ onClose }: NewDocButtonProps) => {
         data-testid="new-doc-button"
         color="brand"
         onClick={() => {
+          // A new page belongs to no space: show it among "My spaces & pages"
+          setCurrentWorkspaceId(null);
           onClose?.();
         }}
         icon={<PlusIcon aria-hidden="true" width={24} height={24} />}

@@ -326,6 +326,21 @@ export const columnDefaults = (column: Column): CellFormat => ({
   ...(column.type === ColumnType.NUMBER ? { align: 'right' } : {}),
 });
 
+/** Adds or takes away the row of sums, counts… under the rows. */
+export const summaryRowItem = (
+  t: T,
+  table: Y.Map<unknown>,
+  layout: TableLayout,
+): DropdownMenuItem => ({
+  label: layout.showSummary
+    ? t('Remove the summary row', { description: 'Loop table menu' })
+    : t('Add a summary row', { description: 'Loop table menu' }),
+  icon: (
+    <Icon iconName={layout.showSummary ? 'remove' : 'functions'} $size="18px" />
+  ),
+  callback: () => setLayout(table, { showSummary: !layout.showSummary }),
+});
+
 /** The header row is bold unless chosen otherwise. */
 export const HEADER_DEFAULTS: CellFormat = { bold: true };
 
@@ -359,6 +374,7 @@ export const layoutMenuItems = (
     callback: () =>
       setLayout(table, { showRowNumbers: !layout.showRowNumbers }),
   },
+  summaryRowItem(t, table, layout),
   { type: 'separator' },
   {
     label: t('All cells', { description: 'Loop table corner menu' }),

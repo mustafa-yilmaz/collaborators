@@ -12,8 +12,8 @@
  *     rows:    Y.Array<Y.Map>   id, cells: Y.Map<columnId, value>
  *     labelGroups: Y.Map<groupId, Y.Map>   name, options (JSON)
  *     view:    Y.Map            sort, filters, summaries (JSON)
- *     layout:  Y.Map            showRowNumbers, expanded, cells, header,
- *                               numbers
+ *     layout:  Y.Map            showRowNumbers, showSummary, expanded,
+ *                               cells, header, numbers
  *
  * Formats (background colour, horizontal and vertical alignment, text style
  * and colour) are kept on a column (`format`), a row (`format`), a cell (the
@@ -185,6 +185,8 @@ export interface Row {
 /** The header row and the numbers column (the row numbers on the left). */
 export interface TableLayout {
   showRowNumbers: boolean;
+  /** The row of sums, counts… under the rows, added from the table menu */
+  showSummary: boolean;
   /** Spread beyond the page's text column into the margins (T5) */
   expanded: boolean;
   /** All the body cells, under their columns', rows' and own formats */
@@ -339,9 +341,11 @@ export const createTable = (
     view.set('filters', []);
     view.set('summaries', {});
     table.set('view', view);
-    // New tables start without the row-number column (the table menu shows it)
+    // New tables start without the row-number column and the summary row
+    // (the table menu shows them)
     const layout = new Y.Map<unknown>();
     layout.set('showRowNumbers', false);
+    layout.set('showSummary', false);
     table.set('layout', layout);
     getTablesMap(ydoc).set(tableId, table);
   });
@@ -462,6 +466,8 @@ export const readTable = (table: Y.Map<unknown>): TableSnapshot => {
   );
   const view = getView(table);
   const layout = getLayout(table);
+  const summaries =
+    (view.get('summaries') as Record<string, SummaryKind>) ?? {};
   return {
     columns,
     rows,
@@ -469,10 +475,15 @@ export const readTable = (table: Y.Map<unknown>): TableSnapshot => {
     view: {
       sort: (view.get('sort') as SortRule | null) ?? null,
       filters: (view.get('filters') as FilterRule[]) ?? [],
-      summaries: (view.get('summaries') as Record<string, SummaryKind>) ?? {},
+      summaries,
     },
     layout: {
       showRowNumbers: layout?.get('showRowNumbers') !== false,
+      // Tables made before the choice keep the row only where a summary
+      // was chosen
+      showSummary:
+        (layout?.get('showSummary') as boolean | undefined) ??
+        Object.values(summaries).some((kind) => kind !== SummaryKind.NONE),
       expanded: layout?.get('expanded') === true,
       cells: (layout?.get('cells') as CellFormat) ?? {},
       header: (layout?.get('header') as CellFormat) ?? {},

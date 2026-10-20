@@ -263,7 +263,7 @@ The goal is Microsoft Loop's table with all its features, plus what Collaborator
 | T1 | `/table` inserts a table into a page; it starts as 2 columns × 2 rows | L | v1 |
 | T2 | A built-in, non-removable **row-number column** on the left. It holds the row's drag handle and the "open details" icon | L | v1 |
 | T3 | A header row with column names; header text is plain (no rich formatting) | L | v1 |
-| T4 | A **summary row** at the bottom (see T25) | L | v1 |
+| T4 | A **summary row** at the bottom (see T25), off by default: added or removed from the table menu ("Add a summary row", 2026-10-20); older tables keep it where a summary was chosen | L | v1 |
 | T5 | The table can be widened into the page margins ("expand to margins") | L | v1 |
 | T6 | Pasting cells from Excel or Google Sheets fills the table, adding rows and columns as needed | L | v1 |
 | T7 | Import a CSV file into a new table | L? | v2 |

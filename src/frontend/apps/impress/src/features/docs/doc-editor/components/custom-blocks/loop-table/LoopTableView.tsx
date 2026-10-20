@@ -1015,16 +1015,18 @@ export const LoopTableView = ({
                 </tr>
               )}
             </tbody>
-            <tfoot>
-              <SummaryRow
-                table={table}
-                snapshot={snapshot}
-                columns={columns}
-                rows={rows}
-                isEditable={isEditable}
-                withNumbersColumn={showNumbersColumn}
-              />
-            </tfoot>
+            {snapshot.layout.showSummary && (
+              <tfoot>
+                <SummaryRow
+                  table={table}
+                  snapshot={snapshot}
+                  columns={columns}
+                  rows={rows}
+                  isEditable={isEditable}
+                  withNumbersColumn={showNumbersColumn}
+                />
+              </tfoot>
+            )}
           </table>
         </div>
         {controlsRow && controlsBox && (

@@ -5,7 +5,11 @@ import { create } from 'zustand';
 
 import { Icon } from '@/components';
 
-import { HEADER_DEFAULTS, flatFormatEntries } from './formatMenu';
+import {
+  HEADER_DEFAULTS,
+  flatFormatEntries,
+  summaryRowItem,
+} from './formatMenu';
 import {
   TableSnapshot,
   addColumn,
@@ -75,6 +79,7 @@ export const tableMenuItems = (
         callback: () => updateColumn(table, column.id, { hidden: false }),
       })),
     },
+    summaryRowItem(t, table, snapshot.layout),
     {
       label: snapshot.layout.expanded
         ? t('Fit to the page', { description: 'Loop table menu' })

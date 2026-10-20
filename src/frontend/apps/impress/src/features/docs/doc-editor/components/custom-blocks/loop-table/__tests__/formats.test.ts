@@ -6,6 +6,7 @@ import { loopTableFormats } from '../export';
 import { formatMenuItems, formatStyle, layoutMenuItems } from '../formatMenu';
 import {
   CLEAR_FORMAT,
+  SummaryKind,
   applyFormatPatch,
   cellLook,
   cloneTable,
@@ -19,6 +20,7 @@ import {
   setLayout,
   setLayoutFormat,
   setRowFormat,
+  setView,
 } from '../model';
 
 const setup = () => {
@@ -103,6 +105,7 @@ describe('Loop table formats', () => {
     });
     expect(snapshot.layout).toEqual({
       showRowNumbers: false,
+      showSummary: false,
       expanded: false,
       cells: {},
       header: { background: '#f1f1ef' },
@@ -127,6 +130,7 @@ describe('Loop table formats', () => {
     table.delete('layout');
     expect(readTable(table).layout).toEqual({
       showRowNumbers: true,
+      showSummary: false,
       expanded: false,
       cells: {},
       header: {},
@@ -336,5 +340,30 @@ describe('Loop table formats', () => {
       fontWeight: undefined,
       color: undefined,
     });
+  });
+
+  it('adds the summary row from the menu; new tables have none', () => {
+    const { ydoc, table } = setup();
+    const menu = () => layoutMenuItems(t, table, readTable(table).layout);
+    expect(readTable(table).layout.showSummary).toBe(false);
+
+    entry(menu(), 'Add a summary row').callback?.();
+    expect(readTable(table).layout.showSummary).toBe(true);
+    // A copy has it too
+    const copy = getTable(ydoc, cloneTable(ydoc, readTable(table)))!;
+    expect(readTable(copy).layout.showSummary).toBe(true);
+
+    entry(menu(), 'Remove the summary row').callback?.();
+    expect(readTable(table).layout.showSummary).toBe(false);
+  });
+
+  it('keeps the summary row of older tables where one was chosen', () => {
+    const { table, columnId } = setup();
+    const layout = table.get('layout') as Y.Map<unknown>;
+    layout.delete('showSummary');
+    expect(readTable(table).layout.showSummary).toBe(false);
+
+    setView(table, { summaries: { [columnId]: SummaryKind.COUNT } });
+    expect(readTable(table).layout.showSummary).toBe(true);
   });
 });

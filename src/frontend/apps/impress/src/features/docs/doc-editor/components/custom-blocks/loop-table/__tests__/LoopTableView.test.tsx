@@ -25,7 +25,7 @@ const setup = (isEditable = true) => {
   return { table, tableId, container };
 };
 
-/** The number of cells in each row of the grid: header, rows, summary. */
+/** The number of cells in each row of the grid: header, rows, summary if any. */
 const cellCounts = (container: HTMLElement) =>
   Array.from(container.querySelectorAll('.loop-table__grid tr')).map(
     (tr) => tr.children.length,
@@ -52,9 +52,9 @@ describe('LoopTableView', () => {
     const { columns, rows } = readTable(table);
 
     expect(screen.queryByRole('button', { name: 'New' })).toBeNull();
-    // The numbers column, then one cell per column
+    // The numbers column, then one cell per column; no summary row yet
     expect(cellCounts(container)).toEqual(
-      Array(rows.length + 2).fill(columns.length + 1),
+      Array(rows.length + 1).fill(columns.length + 1),
     );
 
     expect(screen.queryByRole('button', { name: 'Add row' })).toBeNull();
@@ -63,8 +63,17 @@ describe('LoopTableView', () => {
     expect(readTable(table).rows).toHaveLength(rows.length + 1);
     expect(readTable(table).columns).toHaveLength(columns.length + 1);
     expect(cellCounts(container)).toEqual(
+      Array(rows.length + 2).fill(columns.length + 2),
+    );
+
+    // The summary row is added from the menu, and taken away
+    chooseInTableMenu(table, tableId, 'Add a summary row');
+    expect(container.querySelector('.loop-table__summary')).not.toBeNull();
+    expect(cellCounts(container)).toEqual(
       Array(rows.length + 3).fill(columns.length + 2),
     );
+    chooseInTableMenu(table, tableId, 'Remove the summary row');
+    expect(container.querySelector('.loop-table__summary')).toBeNull();
   });
 
   it('hides the numbers column for editors too, rows keeping their menu', () => {
@@ -74,7 +83,7 @@ describe('LoopTableView', () => {
 
     expect(container.querySelector('.loop-table__rownum')).toBeNull();
     expect(cellCounts(container)).toEqual(
-      Array(rows.length + 2).fill(columns.length),
+      Array(rows.length + 1).fill(columns.length),
     );
 
     // The row's handle and menu show beside the row under the pointer

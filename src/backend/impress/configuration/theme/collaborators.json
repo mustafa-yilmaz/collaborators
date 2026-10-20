@@ -221,15 +221,15 @@
       "legalLinks": [
         {
           "label": "Legal Notice",
-          "href": "#"
+          "href": "/legal-notice/"
         },
         {
           "label": "Personal data and cookies",
-          "href": "#"
+          "href": "/privacy/"
         },
         {
           "label": "Accessibility",
-          "href": "#"
+          "href": "/accessibility/"
         }
       ],
       "bottomInformation": {
@@ -244,15 +244,15 @@
       "legalLinks": [
         {
           "label": "Mentions légales",
-          "href": "#"
+          "href": "/legal-notice/"
         },
         {
           "label": "Données personnelles et cookies",
-          "href": "#"
+          "href": "/privacy/"
         },
         {
           "label": "Accessibilité",
-          "href": "#"
+          "href": "/accessibility/"
         }
       ],
       "bottomInformation": {
@@ -267,15 +267,15 @@
       "legalLinks": [
         {
           "label": "Impressum",
-          "href": "#"
+          "href": "/legal-notice/"
         },
         {
           "label": "Personenbezogene Daten und Cookies",
-          "href": "#"
+          "href": "/privacy/"
         },
         {
           "label": "Barrierefreiheit",
-          "href": "#"
+          "href": "/accessibility/"
         }
       ],
       "bottomInformation": {
@@ -290,15 +290,15 @@
       "legalLinks": [
         {
           "label": "Wettelijke bepalingen",
-          "href": "#"
+          "href": "/legal-notice/"
         },
         {
           "label": "Persoonlijke gegevens en cookies",
-          "href": "#"
+          "href": "/privacy/"
         },
         {
           "label": "Toegankelijkheid",
-          "href": "#"
+          "href": "/accessibility/"
         }
       ],
       "bottomInformation": {

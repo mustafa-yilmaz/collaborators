@@ -122,9 +122,23 @@ In development the page also has **Use a test account**. It opens Keycloak's own
 Once the production addresses exist, typically Keycloak at `https://auth.collaborators.community` with realm `collaborators`:
 
 - **Redirect addresses:** add `https://<auth address>/realms/<realm>/broker/<google|microsoft|linkedin>/endpoint` at each provider, next to the local ones. Separate production apps are cleaner but not required.
-- **Google:**
-  - Fill in the Branding page with the home page and privacy policy (on the verified domain).
-  - Then **Publish app**, so every Google account can sign in. Basic sign-in (name and email) needs no review.
+- **Google:** publishing the app lets every Google account sign in, not only the test users. Basic sign-in (`openid`, `email`, `profile`) needs no sensitive-scope review, only a brand verification of the Branding page. The owner does these steps in the [Google Cloud console](https://console.cloud.google.com/), in the production project:
+  1. **Check the legal pages are live** (deployed), and replace their *To be completed* placeholders (legal entity, address, data centre, email provider, backups, authority) first:
+     - home page: https://collaborators.community/home/ (its footer links to the privacy policy, which Google checks);
+     - privacy policy: https://collaborators.community/privacy/
+     - legal notice: https://collaborators.community/legal-notice/ (optional for Google).
+  2. **Verify the domain** `collaborators.community`, if it isn't yet, in [Google Search Console](https://search.google.com/search-console) as a *Domain* property: add the TXT record it shows to the DNS, then click **Verify**. Use a Google account that is an owner or editor of the Cloud project.
+  3. **Google Auth Platform → Branding:**
+     - App name **Collaborators**, user support email, and an app logo (square 120 × 120 px; a logo means brand verification is required, which takes a few days).
+     - **Application home page:** `https://collaborators.community/home/`
+     - **Application privacy policy link:** `https://collaborators.community/privacy/`
+     - **Application terms of service link:** leave empty (there are none yet).
+     - **Authorised domains:** `collaborators.community`.
+     - Developer contact email, then **Save**.
+  4. **Google Auth Platform → Data access:** make sure only `openid`, `.../auth/userinfo.email` and `.../auth/userinfo.profile` are listed. Any other scope would need a review.
+  5. **Google Auth Platform → Audience:** click **Publish app** and confirm. The publishing status becomes *In production*.
+  6. **Google Auth Platform → Verification centre:** if it asks for brand verification, click **Submit for verification** and answer Google's emails (sent to the developer contact). Until the brand is verified, Google's sign-in screen may show the domain instead of the app name and logo; sign-in still works.
+  7. **Try it** with a Google account that isn't a test user, in an Incognito window.
 - **Keycloak's emails:** set a real SMTP server instead of the mail catcher.
 - **Backend client:** set a new secret for `collaborators-backend` and put it in `COLLABORATORS_KEYCLOAK_CLIENT_SECRET`.
 - **Secrets:** keep them in the production secret store, never in the repository.

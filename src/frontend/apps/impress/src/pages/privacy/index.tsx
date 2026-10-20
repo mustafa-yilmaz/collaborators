@@ -168,9 +168,8 @@ const Page: NextPageWithLayout = () => (
     <p>
       Everything (the database, uploaded files, the sign-in server and the logs)
       is hosted on servers rented from Hetzner Online GmbH, in the European
-      Union (
-      <Placeholder>data centre location, e.g. Germany or Finland</Placeholder>).
-      Your data is not transferred outside the European Economic Area by us.
+      Union (Falkenstein, Germany). Your data is not transferred outside the
+      European Economic Area by us.
     </p>
 
     <h2>Who else receives data</h2>
@@ -181,10 +180,8 @@ const Page: NextPageWithLayout = () => (
         a data processing agreement).
       </li>
       <li>
-        <strong>Our email provider</strong> sends notification and sign-in
-        emails:{' '}
-        <Placeholder>name and country of the email (SMTP) provider</Placeholder>
-        .
+        <strong>Brevo (Sendinblue SAS, France)</strong> sends notification and
+        sign-in emails (processor, under a data processing agreement).
       </li>
       <li>
         <strong>Google, Microsoft and LinkedIn</strong> know that you signed in
@@ -229,9 +226,7 @@ const Page: NextPageWithLayout = () => (
         go to the trash first, and are removed for good later.
       </li>
       <li>Server logs: usually a few weeks, see above.</li>
-      <li>
-        Backups: <Placeholder>how long backups are kept, if any</Placeholder>.
-      </li>
+      <li>Backups: 14 days, then deleted.</li>
     </ul>
     <p>
       When you ask us to delete your account, we delete it and your personal

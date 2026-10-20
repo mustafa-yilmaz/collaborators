@@ -194,8 +194,8 @@ services:
   y-provider:
     <<: *app
     build:
-      context: ../../src/frontend
-      dockerfile: servers/y-provider/Dockerfile
+      context: ../..
+      dockerfile: src/frontend/servers/y-provider/Dockerfile
       target: y-provider
     image: collaborators/y-provider:latest
     user: "1000"
@@ -214,8 +214,8 @@ services:
   frontend:
     restart: unless-stopped
     build:
-      context: ../../src/frontend
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: src/frontend/Dockerfile
       target: frontend-production
       args:
         API_ORIGIN: "https://${APP_HOST:-collaborators.community}"

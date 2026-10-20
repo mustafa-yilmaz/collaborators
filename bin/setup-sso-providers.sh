@@ -19,8 +19,12 @@
 
 set -eo pipefail
 
-ENV_FILE="env.d/development/sso.local"
-REALM="impress"
+# Development by default; production (deploy/production/bin/setup-keycloak.sh)
+# sets these, and COMPOSE_FILE for `docker compose`
+ENV_FILE="${SSO_ENV_FILE:-env.d/development/sso.local}"
+REALM="${KC_REALM:-impress}"
+APP_CLIENT="${KC_APP_CLIENT:-impress}"
+PRODUCTION="${PRODUCTION:-}"
 KCADM="/opt/keycloak/bin/kcadm.sh"
 KC_CONFIG="/tmp/kcadm.config"
 
@@ -37,15 +41,21 @@ kc update "realms/${REALM}" \
   -s 'displayNameHtml=<b><i>CO</i>✍️✍️<i>ABORATORS</i></b>'
 echo "Branded the sign-in page and turned off self-registration by password"
 
-# Email through the dev mail catcher (http://localhost:1081): Keycloak can then
-# confirm by email that someone signing in with a second provider owns the
-# account it would be linked to
-kc update "realms/${REALM}" \
-  -s smtpServer.host=mailcatcher \
-  -s smtpServer.port=1025 \
-  -s smtpServer.from=noreply@collaborators.community \
-  -s smtpServer.fromDisplayName=Collaborators
-echo "Sent Keycloak's emails to the dev mail catcher"
+# Email: Keycloak confirms by email that someone signing in with a second
+# provider owns the account it would be linked to. In development, through
+# the mail catcher (http://localhost:1081); in production, the SMTP service.
+if [[ -n "${SMTP_HOST}" ]]; then
+  echo "{\"smtpServer\": {\"host\": \"${SMTP_HOST}\", \"port\": \"${SMTP_PORT:-587}\", \"from\": \"${SMTP_FROM}\", \"fromDisplayName\": \"Collaborators\", \"auth\": \"true\", \"starttls\": \"true\", \"user\": \"${SMTP_USER}\", \"password\": \"${SMTP_PASSWORD}\"}}" \
+    | kc update "realms/${REALM}" -f -
+  echo "Sent Keycloak's emails through ${SMTP_HOST}"
+else
+  kc update "realms/${REALM}" \
+    -s smtpServer.host=mailcatcher \
+    -s smtpServer.port=1025 \
+    -s smtpServer.from=noreply@collaborators.community \
+    -s smtpServer.fromDisplayName=Collaborators
+  echo "Sent Keycloak's emails to the dev mail catcher"
+fi
 
 # An email nobody has checked (Microsoft) is confirmed by a link before
 # entering. Google and LinkedIn emails are trusted as verified (trustEmail),
@@ -56,7 +66,7 @@ echo "Asked unverified emails to be confirmed by a link"
 # Signing out of the app also ends the Keycloak session, then comes back to
 # the app ("+": the client's redirect addresses). Without it, the next
 # sign-in gets the previous account back, whichever provider is chosen.
-APP_CLIENT_ID="$(kc get clients -r "${REALM}" -q clientId=impress --fields id --format csv --noquotes)"
+APP_CLIENT_ID="$(kc get clients -r "${REALM}" -q clientId="${APP_CLIENT}" --fields id --format csv --noquotes)"
 kc update "clients/${APP_CLIENT_ID}" -r "${REALM}" \
   -s 'attributes."post.logout.redirect.uris"=+'
 echo "Let signing out of the app end the Keycloak session"
@@ -95,7 +105,7 @@ if [[ -z "$(kc get clients -r "${REALM}" -q clientId="${BACKEND_CLIENT}" --field
     -s serviceAccountsEnabled=true \
     -s standardFlowEnabled=false \
     -s directAccessGrantsEnabled=false \
-    -s secret=collaborators-backend-dev-secret
+    -s secret="${KEYCLOAK_BACKEND_SECRET:-collaborators-backend-dev-secret}"
 fi
 kc add-roles -r "${REALM}" --uusername "service-account-${BACKEND_CLIENT}" \
   --cclientid realm-management --rolename view-users --rolename manage-users
@@ -220,6 +230,10 @@ order = ["google", "microsoft", "linkedin"]
 enabled = {p["alias"] for p in json.load(sys.stdin) if p.get("enabled")}
 print(",".join(alias for alias in order if alias in enabled))
 ')"
+if [[ -n "${PRODUCTION}" ]]; then
+  echo "Providers offered: ${PROVIDERS:-none} (COLLABORATORS_SIGNIN_PROVIDERS in env/app.env)"
+  exit 0
+fi
 LOCAL_ENV="env.d/development/common.local"
 touch "${LOCAL_ENV}"
 grep -v '^COLLABORATORS_SIGNIN_PROVIDERS=' "${LOCAL_ENV}" > "${LOCAL_ENV}.tmp" || true

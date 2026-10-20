@@ -269,3 +269,27 @@ def test_publication_log_for_workspace_admins():
         .status_code
         == 403
     )
+
+
+def test_tls_allowed_only_for_our_addresses(settings):
+    """Certificates for the app, workspaces and published wikis' domains only."""
+    settings.COLLABORATORS_WIKI_BASE_DOMAIN = "collaborators.community"
+    settings.COLLABORATORS_APP_HOSTS = ["collaborators.community"]
+    models.Workspace.objects.create(name="Acme", slug="acme")
+    factories.DocumentFactory(
+        kind="space",
+        link_reach="public",
+        wiki_slug="handbook",
+        wiki_domain="help.example.org",
+    )
+    client = APIClient()
+
+    def allowed(domain):
+        return client.get(f"/api/v1.0/tls-allowed/?domain={domain}").status_code
+
+    assert allowed("collaborators.community") == 200
+    assert allowed("acme.collaborators.community") == 200
+    assert allowed("help.example.org") == 200
+    assert allowed("nope.collaborators.community") == 404
+    assert allowed("a.b.collaborators.community") == 404
+    assert allowed("evil.example.com") == 404

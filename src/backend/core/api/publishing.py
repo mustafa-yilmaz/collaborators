@@ -696,6 +696,44 @@ class WikiHostView(APIView):
         return drf.response.Response({"kind": "domain", "slug": space.wiki_slug})
 
 
+class TlsAllowedView(APIView):
+    """
+    GET /tls-allowed/?domain=<host> — whether the web server may get an HTTPS
+    certificate for this address (asked by Caddy's on-demand TLS): the app's
+    own addresses, a workspace's address, or a published wiki's own domain.
+    200 if so, 404 otherwise, so nobody makes the server ask for certificates
+    of domains that aren't ours.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        """Allow or refuse the address."""
+        host = (request.query_params.get("domain") or "").lower().rstrip(".")
+        base = settings.COLLABORATORS_WIKI_BASE_DOMAIN
+        allowed = host in settings.COLLABORATORS_APP_HOSTS or host in (
+            base,
+            settings.COLLABORATORS_WIKI_DOMAIN_TARGET,
+        )
+        if (
+            not allowed
+            and host.endswith(f".{base}")
+            and host.count(".") == base.count(".") + 1
+        ):
+            allowed = models.Workspace.objects.filter(
+                slug=host[: -len(base) - 1]
+            ).exists()
+        if not allowed and host:
+            allowed = models.Document.objects.filter(
+                wiki_domain=host,
+                wiki_slug__isnull=False,
+                ancestors_deleted_at__isnull=True,
+            ).exists()
+        if not allowed:
+            raise drf.exceptions.NotFound()
+        return drf.response.Response({"domain": host})
+
+
 # -- The publishing log of a workspace
 
 

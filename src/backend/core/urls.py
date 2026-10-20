@@ -185,6 +185,7 @@ urlpatterns = [
                     publishing.WikiPageView.as_view(),
                 ),
                 path("wiki-hosts/<str:host>/", publishing.WikiHostView.as_view()),
+                path("tls-allowed/", publishing.TlsAllowedView.as_view()),
                 path(
                     "workspaces/<uuid:resource_id>/publication-log/",
                     publishing.PublicationLogView.as_view(),

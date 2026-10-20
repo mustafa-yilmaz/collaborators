@@ -1,0 +1,8 @@
+# Made on the server by bin/init.sh: secrets, keys, data. Never committed.
+/.env
+/env/*.env
+/env/.secrets
+/env/*.tmp
+/keys/
+/data/
+/keycloak/import/

@@ -1,0 +1,246 @@
+# Collaborators in production, on one server (a Hetzner CX33: 4 vCPU, 8 GB).
+#
+# Everything runs here: Caddy (HTTPS) in front of the frontend's nginx, which
+# routes to the backend, the collaboration server and the files (MinIO);
+# Keycloak for signing in. Images are built from this repository on the
+# server (`bin/deploy.sh`), so the fork's code is what runs.
+#
+# Secrets and addresses live in env/*.env, made by `bin/init.sh` and never
+# committed. Memory is capped per service so that one spike can't take the
+# others down; see "Memory" in README.md.
+
+name: collaborators
+
+x-app: &app
+  restart: unless-stopped
+  env_file:
+    - env/app.env
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "3" }
+
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    env_file:
+      - env/caddy.env
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data/caddy:/data
+    depends_on:
+      - frontend
+      - keycloak
+    mem_limit: 256m
+
+  postgresql:
+    image: postgres:16
+    restart: unless-stopped
+    env_file:
+      - env/postgres.env
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+    command:
+      - postgres
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - effective_cache_size=1GB
+      - -c
+      - max_connections=100
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data/pgdata
+      # creates the databases of the app, the collaboration server, Keycloak
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+    mem_limit: 1g
+
+  redis:
+    image: redis:8
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    mem_limit: 192m
+
+  # The collaboration server's store: what no worker has written to postgres
+  # yet, so a store and not a cache (append-only file, evicts only keys that
+  # expire).
+  yhub-valkey:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    command: ["valkey-server", "--maxmemory-policy", "volatile-lru",
+              "--appendonly", "yes", "--appendfsync", "everysec"]
+    volumes:
+      - ./data/yhub-valkey:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+    mem_limit: 256m
+
+  # Files (images, attachments, wiki versions), S3-compatible, on this disk
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    restart: unless-stopped
+    command: ["server", "/data"]
+    env_file:
+      - env/minio.env
+    volumes:
+      - ./data/minio:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    mem_limit: 384m
+
+  # Creates the bucket once (and again harmlessly at each start)
+  minio-bucket:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    env_file:
+      - env/minio.env
+    entrypoint: >
+      sh -c "mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
+             mc mb --ignore-existing local/$${BUCKET_NAME} &&
+             mc mb --ignore-existing local/yhub-storage"
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    <<: *app
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      target: backend-production
+      args:
+        DOCKER_USER: "1000"
+    image: collaborators/backend:latest
+    user: "1000"
+    environment:
+      DJANGO_CONFIGURATION: Production
+      WEB_CONCURRENCY: "3"
+    volumes:
+      - ./keys/private.pem:/keys/private.pem:ro
+    healthcheck:
+      test: ["CMD", "python", "manage.py", "check"]
+      interval: 30s
+      timeout: 30s
+      retries: 20
+      start_period: 20s
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio-bucket:
+        condition: service_completed_successfully
+    mem_limit: 1200m
+
+  # Background tasks: emails, wiki versions, notifications…
+  worker:
+    <<: *app
+    image: collaborators/backend:latest
+    user: "1000"
+    command: ["celery", "-A", "impress.celery_app", "worker", "-l", "INFO", "--concurrency=2"]
+    environment:
+      DJANGO_CONFIGURATION: Production
+    volumes:
+      - ./keys/private.pem:/keys/private.pem:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    mem_limit: 768m
+
+  # The collaboration server: the live content of the pages
+  yhub:
+    restart: unless-stopped
+    build:
+      context: ../..
+      dockerfile: src/yhub-server/Dockerfile
+      target: yhub
+    image: collaborators/yhub:latest
+    user: "1000"
+    env_file:
+      - env/yhub.env
+    volumes:
+      - ./keys/yhub-private.pem:/keys/yhub-private.pem:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3002/collaboration/ready/v1').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      yhub-valkey:
+        condition: service_healthy
+    mem_limit: 512m
+
+  # Converts documents (imports, exports); called by the backend only
+  y-provider:
+    <<: *app
+    build:
+      context: ../../src/frontend
+      dockerfile: servers/y-provider/Dockerfile
+      target: y-provider
+    image: collaborators/y-provider:latest
+    user: "1000"
+    mem_limit: 512m
+
+  # Reads Word and other files imported into pages
+  docspec:
+    image: ghcr.io/docspec/api:1.21.4
+    restart: unless-stopped
+    mem_limit: 256m
+
+  # The app (static files) and the router of every request but Keycloak's
+  frontend:
+    restart: unless-stopped
+    build:
+      context: ../../src/frontend
+      dockerfile: Dockerfile
+      target: frontend-production
+      args:
+        API_ORIGIN: "https://${APP_HOST:-collaborators.community}"
+        SW_DEACTIVATED: "false"
+        DOCKER_USER: "101"
+    image: collaborators/frontend:latest
+    user: "101"
+    entrypoint: ["/docker-entrypoint.sh"]
+    command: ["nginx", "-g", "daemon off;"]
+    env_file:
+      - env/app.env
+    volumes:
+      - ./nginx/router.conf.template:/etc/nginx/templates/router.conf.template:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+      yhub:
+        condition: service_healthy
+    mem_limit: 128m
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3
+    restart: unless-stopped
+    command: ["start", "--import-realm", "--health-enabled=true"]
+    env_file:
+      - env/keycloak.env
+    environment:
+      JAVA_OPTS_KC_HEAP: "-XX:MaxRAMPercentage=70 -Xms256m"
+    volumes:
+      - ./keycloak/import:/opt/keycloak/data/import:ro
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    mem_limit: 1g

@@ -432,7 +432,7 @@ Done: the Loop table tweaks, Loop table v2 (T9, T5, T56), the wiki extras (F8), 
 ## 5. Open questions
 
 1. **Identity broker:** Keycloak (already in the dev stack, with all four providers built in).
-2. **Hosting:** where collaborators.community will run (Docs ships Docker Compose and Kubernetes/Helm setups).
+2. ✅ **Hosting** (decided 2026-10-20): one Hetzner Cloud **CX33** server (4 vCPU, 8 GB RAM) running everything with Docker Compose (`deploy/production/`), files in MinIO on the same server, HTTPS by Caddy. Chosen over Render (about $105–180 a month) and managed Kubernetes (€150+) for cost; the same images can move to a bigger server or Kubernetes later.
 3. **GitHub:** create a public or private GitHub repository for the fork, and under which account?
 4. **Editor extras under GPL:** build with `PUBLISH_AS_MIT=true` (drops PDF export and other BlockNote XL features), or accept GPL for those parts?
 5. **Group managers:** needed in v1, or are workspace admins enough?

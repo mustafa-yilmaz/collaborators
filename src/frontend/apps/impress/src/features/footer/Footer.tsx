@@ -93,61 +93,64 @@ export const Footer = () => {
           $justify="space-between"
           $css="flex-wrap: wrap;"
         >
-          <Box className="--docs--footer-logo" $gap="2xs" $align="center">
-            <Box $align="center" $gap="6rem" $direction="row">
-              {logo && (
-                <Box
-                  $align="center"
-                  $gap="0.5rem"
-                  $direction="row"
-                  $position="relative"
-                  $height="fit-content"
+          {/* On a phone, no logo nor link: the cover above shows them */}
+          {!isMobile && (
+            <Box className="--docs--footer-logo" $gap="2xs" $align="center">
+              <Box $align="center" $gap="6rem" $direction="row">
+                {logo && (
+                  <Box
+                    $align="center"
+                    $gap="0.5rem"
+                    $direction="row"
+                    $position="relative"
+                    $height="fit-content"
+                  >
+                    {logo?.src && (
+                      <Image
+                        priority
+                        width={0}
+                        height={0}
+                        {...(({
+                          withTitle: _withTitle,
+                          titleZoom: _titleZoom,
+                          link: _link,
+                          ...rest
+                        }) => rest)(logo)}
+                      />
+                    )}
+                    {logo?.withTitle && (
+                      <Box $css={`zoom: ${logo.titleZoom ?? 1.4};`}>
+                        <Title />
+                      </Box>
+                    )}
+                  </Box>
+                )}
+              </Box>
+              {logo?.link && (
+                <StyledLink
+                  href={logo.link.href}
+                  target="__blank"
+                  className="--docs--footer-logo-link"
+                  $css={css`
+                    gap: 0.2rem;
+                    align-items: center;
+                    width: fit-content;
+                    &:hover {
+                      box-shadow: 0px 1px 0 0
+                        var(
+                          --c--contextuals--content--semantic--neutral--secondary
+                        );
+                    }
+                  `}
                 >
-                  {logo?.src && (
-                    <Image
-                      priority
-                      width={0}
-                      height={0}
-                      {...(({
-                        withTitle: _withTitle,
-                        titleZoom: _titleZoom,
-                        link: _link,
-                        ...rest
-                      }) => rest)(logo)}
-                    />
-                  )}
-                  {logo?.withTitle && (
-                    <Box $css={`zoom: ${logo.titleZoom ?? 1.4};`}>
-                      <Title />
-                    </Box>
-                  )}
-                </Box>
+                  <Text $size="sm" $variation="secondary">
+                    {logo.link.label}
+                  </Text>
+                  <IconLink width={14} />
+                </StyledLink>
               )}
             </Box>
-            {logo?.link && (
-              <StyledLink
-                href={logo.link.href}
-                target="__blank"
-                className="--docs--footer-logo-link"
-                $css={css`
-                  gap: 0.2rem;
-                  align-items: center;
-                  width: fit-content;
-                  &:hover {
-                    box-shadow: 0px 1px 0 0
-                      var(
-                        --c--contextuals--content--semantic--neutral--secondary
-                      );
-                  }
-                `}
-              >
-                <Text $size="sm" $variation="secondary">
-                  {logo.link.label}
-                </Text>
-                <IconLink width={14} />
-              </StyledLink>
-            )}
-          </Box>
+          )}
           <Box
             $direction="row"
             $justify={isMobile ? 'center' : undefined}
@@ -229,22 +232,23 @@ export const Footer = () => {
           $direction={isMobile ? 'column' : 'row'}
           $align="center"
           $justify="space-between"
-          $margin={{ top: isMobile ? '1.5rem' : 'big' }}
-          $padding={{ top: isMobile ? '1rem' : 'tiny' }}
+          $margin={{ top: isMobile ? '1rem' : 'big' }}
+          $padding={{ top: isMobile ? '0' : 'tiny' }}
           $css={`
             flex-wrap: wrap;
-            border-top: 1px solid var(--c--globals--colors--gray-200);
+            ${isMobile ? '' : 'border-top: 1px solid var(--c--globals--colors--gray-200);'}
             column-gap: 2rem;
             row-gap: .5rem;
           `}
           className="--docs--footer-bottom-row"
         >
+          {/* On a phone, one link per row */}
           <Box
-            $direction="row"
-            $justify={isMobile ? 'center' : undefined}
+            $direction={isMobile ? 'column' : 'row'}
+            $align={isMobile ? 'center' : undefined}
             $css={`
             flex-wrap: wrap;
-            column-gap: ${isMobile ? '1.25rem' : '1rem'};
+            column-gap: 1rem;
             row-gap: .5rem;
           `}
             className="--docs--footer-internal-links"

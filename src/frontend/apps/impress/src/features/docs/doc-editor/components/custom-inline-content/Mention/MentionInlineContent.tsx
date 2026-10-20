@@ -3,6 +3,7 @@ import { createReactInlineContentSpec } from '@blocknote/react';
 import { Plugin } from '@tiptap/pm/state';
 
 import { Icon } from '@/components';
+import { GroupHoverCard } from '@/features/people/GroupHoverCard';
 import { PersonHoverCard } from '@/features/people/PersonHoverCard';
 
 import { searchOrigin } from '../Interlinking/searchSession';
@@ -66,13 +67,15 @@ const MentionChip = ({
       @{label}
     </span>
   );
-  // Hovering a person shows their card
+  // Hovering a person shows their card; a group, who is in it
   return kind === 'user' ? (
     <PersonHoverCard userId={targetId} name={label}>
       {chip}
     </PersonHoverCard>
   ) : (
-    chip
+    <GroupHoverCard team={targetId} name={label}>
+      {chip}
+    </GroupHoverCard>
   );
 };
 

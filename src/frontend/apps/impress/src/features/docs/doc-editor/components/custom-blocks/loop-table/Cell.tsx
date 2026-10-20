@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import * as Y from 'yjs';
 
 import { Icon } from '@/components';
+import { GroupHoverCard } from '@/features/people/GroupHoverCard';
 import { PersonHoverCard } from '@/features/people/PersonHoverCard';
 
 import { PersonPicker } from './PersonPicker';
@@ -426,7 +427,6 @@ const PersonChips = ({ value }: { value: CellValue }) => {
             key={person.id}
             className="loop-table__chip"
             style={{ background: '#ECE6FB', color: '#4F3497' }}
-            title={person.kind === 'group' ? person.label : undefined}
           >
             <Icon
               iconName={person.kind === 'group' ? 'groups' : 'person'}
@@ -435,9 +435,11 @@ const PersonChips = ({ value }: { value: CellValue }) => {
             {person.label}
           </span>
         );
-        // Hovering a person shows their card
+        // Hovering a person shows their card; a group, who is in it
         return person.kind === 'group' ? (
-          chip
+          <GroupHoverCard key={person.id} team={person.id} name={person.label}>
+            {chip}
+          </GroupHoverCard>
         ) : (
           <PersonHoverCard
             key={person.id}

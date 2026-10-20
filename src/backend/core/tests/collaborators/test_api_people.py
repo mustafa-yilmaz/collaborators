@@ -99,3 +99,85 @@ def test_person_card_of_a_stranger_shows_only_the_name():
     assert card["email"] == ""
     assert card["workspaces"] == []
     assert APIClient().get(f"/api/v1.0/people/{stranger.id}/").status_code == 401
+
+
+def _acme_with_q4():
+    """A workspace with a group: Ada manages it, Bob is in it."""
+    acme = models.Workspace.objects.create(name="Acme")
+    ada = factories.UserFactory(full_name="Ada L")
+    bob = factories.UserFactory(full_name="Bob M")
+    models.WorkspaceAccess.objects.create(
+        workspace=acme, user=ada, role=models.WorkspaceRoleChoices.ADMIN
+    )
+    models.WorkspaceAccess.objects.create(workspace=acme, user=bob)
+    q4 = models.Group.objects.create(workspace=acme, name="Q4")
+    models.GroupMembership.objects.create(group=q4, user=bob)
+    models.GroupMembership.objects.create(group=q4, user=ada, is_manager=True)
+    return acme, q4, ada, bob
+
+
+def test_group_card_lists_the_members_managers_first():
+    """People of the workspace see who is in a mentioned group."""
+    acme, q4, _ada, bob = _acme_with_q4()
+    client = APIClient()
+    client.force_login(bob)
+
+    card = client.get(f"/api/v1.0/teams/group:{q4.id}/").json()
+
+    assert card["known"] is True
+    assert card["name"] == "Q4"
+    assert card["kind"] == "team"
+    assert card["workspace"] == {"id": str(acme.id), "name": "Acme"}
+    assert card["member_count"] == 2
+    assert [
+        (member["full_name"], member["is_manager"], member["is_me"])
+        for member in card["members"]
+    ] == [("Ada L", True, False), ("Bob M", False, True)]
+
+
+def test_group_card_of_a_whole_workspace_and_its_administrators():
+    """ "All members of Acme" lists everyone; its administrators, only them."""
+    acme, _q4, ada, bob = _acme_with_q4()
+    client = APIClient()
+    client.force_login(bob)
+
+    everyone = client.get(f"/api/v1.0/teams/workspace:{acme.id}/").json()
+    admins = client.get(f"/api/v1.0/teams/workspace-admins:{acme.id}/").json()
+
+    assert everyone["name"] == "All members of Acme"
+    assert everyone["kind"] == "workspace"
+    assert {member["id"] for member in everyone["members"]} == {
+        str(ada.id),
+        str(bob.id),
+    }
+    assert admins["kind"] == "workspace-admins"
+    assert [member["id"] for member in admins["members"]] == [str(ada.id)]
+
+
+def test_group_card_outside_the_workspace_shows_only_the_name():
+    """Someone not in the group's workspace doesn't see its members."""
+    _acme, q4, _ada, _bob = _acme_with_q4()
+    client = APIClient()
+    client.force_login(factories.UserFactory())
+
+    card = client.get(f"/api/v1.0/teams/group:{q4.id}/").json()
+
+    assert card["known"] is False
+    assert card["name"] == "Q4"
+    assert card["workspace"] is None
+    assert card["members"] == []
+    assert card["member_count"] == 0
+
+
+def test_group_card_unknown_or_signed_out():
+    """An unknown team is not found; signed out, nothing is shown."""
+    _acme, q4, _ada, bob = _acme_with_q4()
+    client = APIClient()
+    client.force_login(bob)
+
+    assert client.get("/api/v1.0/teams/group:nope/").status_code == 404
+    assert (
+        client.get(f"/api/v1.0/teams/group:{factories.UserFactory().id}/").status_code
+        == 404
+    )
+    assert APIClient().get(f"/api/v1.0/teams/group:{q4.id}/").status_code == 401

@@ -12,6 +12,7 @@ from core import models
 from core.api import permissions
 from core.api.filters import remove_accents
 from core.api.serializers import UserSerializer
+from core.choices import WORKSPACE_PRIVILEGED_ROLES
 from core.utils.users import users_sharing_documents_with
 
 # Everyone one works with, as a scrolling list; a safety bound only
@@ -98,6 +99,96 @@ class PersonCardView(APIView):
                     )
                     .distinct()
                     .order_by("name")
+                ],
+            }
+        )
+        return drf.response.Response(card)
+
+
+# Members listed on a group's card; the count gives the rest
+TEAM_CARD_MEMBERS = 50
+
+
+class TeamCardView(APIView):
+    """
+    GET /api/v1.0/teams/<team>/ — the card shown when hovering a mentioned
+    group (team string "group:<id>", "workspace:<id>" for all the members of
+    a workspace, or "workspace-admins:<id>").
+
+    People of the group's workspace see who is in it (managers first); anyone
+    else only the group's name, which the mention shows anyway.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, team):
+        """A group's card, as much as the requester may see."""
+        kind, obj_id = models.parse_team(team)
+        group = workspace = None
+        if kind == models.TEAM_GROUP:
+            group = (
+                models.Group.objects.filter(id=obj_id)
+                .select_related("workspace")
+                .first()
+            )
+            workspace = group.workspace if group else None
+        elif kind is not None:
+            workspace = models.Workspace.objects.filter(id=obj_id).first()
+        if workspace is None:
+            raise drf.exceptions.NotFound()
+
+        me = request.user
+        known = workspace.accesses.filter(user=me).exists()
+        card = {
+            "team": team,
+            "kind": group.kind if group else kind,
+            "name": group.name if group else "",
+            "known": known,
+            "workspace": None,
+            "member_count": 0,
+            "members": [],
+        }
+        if not known:
+            return drf.response.Response(card)
+
+        if group:
+            memberships = group.memberships.filter(user__is_active=True)
+            managers = set(
+                memberships.filter(is_manager=True).values_list("user_id", flat=True)
+            )
+            people = models.User.objects.filter(id__in=memberships.values("user_id"))
+        else:
+            accesses = workspace.accesses.filter(user__is_active=True)
+            if kind == models.TEAM_WORKSPACE_ADMINS:
+                accesses = accesses.filter(role__in=WORKSPACE_PRIVILEGED_ROLES)
+            managers = set(
+                accesses.filter(role__in=WORKSPACE_PRIVILEGED_ROLES).values_list(
+                    "user_id", flat=True
+                )
+            )
+            people = models.User.objects.filter(id__in=accesses.values("user_id"))
+            card["name"] = models.get_team_label(team)
+
+        people = sorted(
+            people.only("id", "full_name", "short_name", "email"),
+            key=lambda person: (
+                person.id not in managers,
+                (person.full_name or person.email or "").lower(),
+            ),
+        )
+        card.update(
+            {
+                "workspace": {"id": str(workspace.id), "name": workspace.name},
+                "member_count": len(people),
+                "members": [
+                    {
+                        "id": str(person.id),
+                        "full_name": person.full_name or person.email or "",
+                        "short_name": person.short_name or "",
+                        "is_me": person.id == me.id,
+                        "is_manager": person.id in managers,
+                    }
+                    for person in people[:TEAM_CARD_MEMBERS]
                 ],
             }
         )

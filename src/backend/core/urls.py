@@ -123,9 +123,7 @@ urlpatterns = [
                     page_links.PageSpaceLinkView.as_view(),
                 ),
                 path("profiles/me/", profiles.MyProfileView.as_view()),
-                path(
-                    "profiles/<uuid:user_id>/", profiles.ProfileView.as_view()
-                ),
+                path("profiles/<uuid:user_id>/", profiles.ProfileView.as_view()),
                 path("labels/", labels.LabelListView.as_view()),
                 path("labels/cloud/", labels.LabelCloudView.as_view()),
                 path("labels/<str:name>/", labels.LabelDetailView.as_view()),
@@ -158,6 +156,7 @@ urlpatterns = [
                 path("groups/", workspaces.GrantableTeamsView.as_view()),
                 path("people/", people.KnownPeopleView.as_view()),
                 path("people/<uuid:user_id>/", people.PersonCardView.as_view()),
+                path("teams/<str:team>/", people.TeamCardView.as_view()),
                 path("join/<str:token>/", workspaces.JoinWorkspaceView.as_view()),
                 path("dashboard/layout/", dashboard.DashboardLayoutView.as_view()),
                 path("dashboard/recent/", dashboard.DashboardRecentView.as_view()),

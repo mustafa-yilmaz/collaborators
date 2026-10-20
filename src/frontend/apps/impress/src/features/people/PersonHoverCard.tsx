@@ -121,28 +121,29 @@ const CardContent = ({
 };
 
 /**
- * Wraps a mention of a person: hovering it shows their card (name, email,
- * the workspaces and groups shared with the viewer).
+ * Wraps a mention: hovering it opens a card (`content`) below it, which
+ * stays open while the pointer is on it.
  */
-export const PersonHoverCard = ({
-  userId,
-  name,
+export const HoverCardAnchor = ({
+  label,
+  testId,
+  content,
   children,
+  dataAttributes,
 }: {
-  userId: string;
-  /** Shown until the card loads, and for people one doesn't work with */
-  name: string;
+  /** The card's accessible name */
+  label: string;
+  testId: string;
+  /** Rendered only once the card opens */
+  content: () => ReactNode;
   children: ReactNode;
+  dataAttributes?: Record<string, string>;
 }) => {
   const anchorRef = useRef<HTMLSpanElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [position, setPosition] = useState<{ top: number; left: number }>();
 
   useEffect(() => () => clearTimeout(timer.current), []);
-
-  if (!userId) {
-    return <>{children}</>;
-  }
 
   const open = () => {
     clearTimeout(timer.current);
@@ -170,15 +171,15 @@ export const PersonHoverCard = ({
       ref={anchorRef}
       onMouseEnter={open}
       onMouseLeave={close}
-      data-person-id={userId}
+      {...dataAttributes}
     >
       {children}
       {position &&
         createPortal(
           <Box
             role="dialog"
-            aria-label={name}
-            data-testid="person-hover-card"
+            aria-label={label}
+            data-testid={testId}
             onMouseEnter={() => clearTimeout(timer.current)}
             onMouseLeave={close}
             $padding="sm"
@@ -195,10 +196,39 @@ export const PersonHoverCard = ({
               user-select: text;
             `}
           >
-            <CardContent userId={userId} fallbackName={name} />
+            {content()}
           </Box>,
           document.body,
         )}
     </span>
+  );
+};
+
+/**
+ * Wraps a mention of a person: hovering it shows their card (name, email,
+ * the workspaces and groups shared with the viewer).
+ */
+export const PersonHoverCard = ({
+  userId,
+  name,
+  children,
+}: {
+  userId: string;
+  /** Shown until the card loads, and for people one doesn't work with */
+  name: string;
+  children: ReactNode;
+}) => {
+  if (!userId) {
+    return <>{children}</>;
+  }
+  return (
+    <HoverCardAnchor
+      label={name}
+      testId="person-hover-card"
+      dataAttributes={{ 'data-person-id': userId }}
+      content={() => <CardContent userId={userId} fallbackName={name} />}
+    >
+      {children}
+    </HoverCardAnchor>
   );
 };

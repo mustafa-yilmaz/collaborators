@@ -3,6 +3,7 @@ import { PropsWithChildren, useEffect, useMemo, useState } from 'react';
 
 import { Loading } from '@/components';
 import { useConfig } from '@/core';
+import { RegistrationWaiting } from '@/features/registrations/RegistrationWaiting';
 
 import { HOME_URL } from '../conf';
 import { useAuth } from '../hooks';
@@ -109,6 +110,16 @@ export const Auth = ({ children }: PropsWithChildren) => {
 
   if (shouldShowLoader) {
     return <Loading $height="100vh" $width="100vw" />;
+  }
+
+  // Collaborators: a newcomer not let in yet sees where they stand, and
+  // nothing else of the platform
+  if (
+    authenticated &&
+    user?.registration_status &&
+    user.registration_status !== 'approved'
+  ) {
+    return <RegistrationWaiting user={user} />;
   }
 
   return (

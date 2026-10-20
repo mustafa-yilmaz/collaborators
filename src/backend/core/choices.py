@@ -186,6 +186,14 @@ class JoinRequestStatusChoices(TextChoices):
     DECLINED = "declined", _("Declined")
 
 
+class RegistrationStatusChoices(TextChoices):
+    """Whether a platform administrator let a new collaborator in."""
+
+    APPROVED = "approved", _("Approved")
+    PENDING = "pending", _("Pending")
+    DECLINED = "declined", _("Declined")
+
+
 class SpaceVisibilityChoices(TextChoices):
     """Who can read a space when it is created."""
 

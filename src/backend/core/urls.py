@@ -15,6 +15,7 @@ from core.api import (
     people,
     profiles,
     publishing,
+    registrations,
     signin_methods,
     viewsets,
     visibility,
@@ -154,6 +155,15 @@ urlpatterns = [
                 *router.urls,
                 *oidc_urls,
                 path("groups/", workspaces.GrantableTeamsView.as_view()),
+                path("registrations/", registrations.RegistrationListView.as_view()),
+                path(
+                    "registrations/<uuid:user_id>/approve/",
+                    registrations.RegistrationDecisionView.as_view(decision="approve"),
+                ),
+                path(
+                    "registrations/<uuid:user_id>/decline/",
+                    registrations.RegistrationDecisionView.as_view(decision="decline"),
+                ),
                 path("people/", people.KnownPeopleView.as_view()),
                 path("people/<uuid:user_id>/", people.PersonCardView.as_view()),
                 path("teams/<str:team>/", people.TeamCardView.as_view()),

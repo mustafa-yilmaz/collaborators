@@ -69,6 +69,27 @@ class UserSerializer(serializers.ModelSerializer):
         return instance.short_name
 
 
+class UserMeSerializer(UserSerializer):
+    """
+    The signed-in user, with where their registration stands and whether
+    they decide on others' (platform administrator).
+    """
+
+    is_platform_admin = serializers.BooleanField(source="is_staff", read_only=True)
+
+    class Meta(UserSerializer.Meta):
+        fields = [
+            *UserSerializer.Meta.fields,
+            "registration_status",
+            "is_platform_admin",
+        ]
+        read_only_fields = [
+            *UserSerializer.Meta.read_only_fields,
+            "registration_status",
+            "is_platform_admin",
+        ]
+
+
 class UserLightSerializer(UserSerializer):
     """Serialize users with limited fields."""
 

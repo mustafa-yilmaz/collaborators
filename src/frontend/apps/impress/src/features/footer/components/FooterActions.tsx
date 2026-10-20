@@ -54,6 +54,21 @@ export const FooterActions = ({ withLogin }: FooterActionsProps) => {
     </Button>
   ) : undefined;
 
+  // Collaborators: platform administrators let newcomers in
+  const registrations = user?.is_platform_admin ? (
+    <Button
+      size="small"
+      variant="tertiary"
+      color="neutral"
+      href="/registrations/"
+      icon={<Icon iconName="how_to_reg" $size="18px" $color="inherit" />}
+    >
+      {t('New registrations', {
+        description: 'Link to the page approving new registrations',
+      })}
+    </Button>
+  ) : undefined;
+
   const userMenu = user || {
     full_name: t('Guest', {
       description: 'Name displayed for a user not logged in',
@@ -81,11 +96,13 @@ export const FooterActions = ({ withLogin }: FooterActionsProps) => {
                 <>
                   {myProfile}
                   {signInMethods}
+                  {registrations}
                 </>
               ) : (
                 <>
                   {myProfile}
                   {signInMethods}
+                  {registrations}
                   <LanguagePicker />
                 </>
               )

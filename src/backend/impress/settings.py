@@ -808,6 +808,15 @@ class Base(Configuration):
     COLLABORATORS_KEYCLOAK_CLIENT_SECRET = values.Value(
         "", environ_name="COLLABORATORS_KEYCLOAK_CLIENT_SECRET", environ_prefix=None
     )
+    # New collaborators wait for a platform administrator (a staff user) to
+    # let them in; the people signing in with these verified emails are
+    # platform administrators, let in at once
+    COLLABORATORS_SIGNUP_APPROVAL = values.BooleanValue(
+        False, environ_name="COLLABORATORS_SIGNUP_APPROVAL", environ_prefix=None
+    )
+    COLLABORATORS_PLATFORM_ADMIN_EMAILS = values.ListValue(
+        [], environ_name="COLLABORATORS_PLATFORM_ADMIN_EMAILS", environ_prefix=None
+    )
     # Collaborators join by signing in: no account is created from an email
     # invitation to a document
     COLLABORATORS_EMAIL_INVITATIONS = values.BooleanValue(

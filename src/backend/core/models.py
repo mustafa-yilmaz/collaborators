@@ -44,6 +44,7 @@ from core.choices import (
     LinkRoleChoices,
     PublicationActionChoices,
     PublishingPolicyChoices,
+    RegistrationStatusChoices,
     RoleChoices,
     WorkspaceRoleChoices,
     WorkspaceVisibilityChoices,
@@ -261,6 +262,14 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
         _("first connection status"),
         default=True,
         help_text=_("Whether the user has completed the first connection process."),
+    )
+    # Collaborators: a newcomer waits for a platform administrator (a staff
+    # user) to let them in, when COLLABORATORS_SIGNUP_APPROVAL is set
+    registration_status = models.CharField(
+        _("registration status"),
+        max_length=10,
+        choices=RegistrationStatusChoices.choices,
+        default=RegistrationStatusChoices.APPROVED,
     )
 
     objects = UserManager()
@@ -3131,7 +3140,8 @@ class Notification(BaseModel):
     """
     An entry of a collaborator's notification inbox: they were mentioned
     (directly or through a group) or assigned somewhere in a document, or
-    someone asks to join a workspace they administer, or they were let in.
+    someone asks to join a workspace they administer, or they were let in;
+    for platform administrators, someone registered and waits for them.
     """
 
     KIND_MENTION = "mention"
@@ -3139,6 +3149,8 @@ class Notification(BaseModel):
     KIND_ASSIGNMENT = "assignment"
     KIND_JOIN_REQUEST = "join_request"
     KIND_JOIN_APPROVED = "join_approved"
+    KIND_SIGNUP = "signup"
+    KIND_SIGNUP_APPROVED = "signup_approved"
 
     recipient = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="notifications"
@@ -3158,6 +3170,8 @@ class Notification(BaseModel):
             (KIND_ASSIGNMENT, _("Assignment")),
             (KIND_JOIN_REQUEST, _("Request to join a workspace")),
             (KIND_JOIN_APPROVED, _("Request to join approved")),
+            (KIND_SIGNUP, _("New registration")),
+            (KIND_SIGNUP_APPROVED, _("Registration approved")),
         ],
         default=KIND_MENTION,
     )

@@ -16,7 +16,7 @@ from rest_framework.authentication import (
     SessionAuthentication as BaseSessionAuthentication,
 )
 
-from core import identities, joining, models
+from core import identities, joining, models, registrations
 from core.models import DuplicateEmailError, User
 from core.utils.analytics import PosthogEventName, posthog_capture
 
@@ -140,16 +140,17 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
         if user:
             posthog_capture(PosthogEventName.USER_LOGIN, user)
             self.collaborators_after_sign_in(
-                user, getattr(self, "collaborators_identity", None)
+                user, getattr(self, "collaborators_identity", None), is_new_user
             )
 
-    def collaborators_after_sign_in(self, user, identity=None):
+    def collaborators_after_sign_in(self, user, identity=None, is_new_user=False):
         """
         Record whether the identity provider verified the email and which
         organisations the providers vouch for, and join the workspaces open to
         them (or ask their admins). Signed in with another of the user's
         accounts (`identity`), its email isn't the user's: only its
-        organisations count.
+        organisations count. A newcomer waiting for a platform administrator
+        joins nothing until let in (see core.registrations).
         """
         if identity is None:
             user_info = getattr(self, "collaborators_user_info", None) or {}
@@ -159,10 +160,13 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
                     collaborator_email_verified=verified
                 )
                 user.collaborator_email_verified = verified
-        joining.join_by_domain(user)
+            registrations.check_sign_in(user, is_new_user)
         joining.read_organizations(
             user, getattr(self, "collaborators_access_token", None), identity
         )
+        if user.registration_status != registrations.APPROVED:
+            return
+        joining.join_by_domain(user)
         joining.join_by_organization(user)
 
 
@@ -180,3 +184,25 @@ class SessionAuthentication(BaseSessionAuthentication):
     def authenticate_header(self, request):
         """Return a non-empty challenge so DRF responds with 401 rather than 403."""
         return "Session"
+
+    def authenticate(self, request):
+        """
+        Collaborators: a newcomer not let in yet (core.registrations) counts as
+        signed out, except to read who they are and where their registration
+        stands.
+        """
+        result = super().authenticate(request)
+        if result is None:
+            return None
+        user = result[0]
+        if getattr(
+            user, "registration_status", registrations.APPROVED
+        ) != registrations.APPROVED and not request.path.endswith(
+            REGISTRATION_OPEN_PATHS
+        ):
+            return None
+        return result
+
+
+# What a newcomer waiting for approval may still call
+REGISTRATION_OPEN_PATHS = ("/users/me/",)

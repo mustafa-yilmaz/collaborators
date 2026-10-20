@@ -13,6 +13,10 @@ export interface User {
   full_name: string;
   short_name: string;
   language?: string;
+  /** Collaborators: a newcomer waits for a platform administrator */
+  registration_status?: 'approved' | 'pending' | 'declined';
+  /** Decides on others' registrations */
+  is_platform_admin?: boolean;
 }
 
 export type UserLight = Pick<User, 'full_name' | 'short_name'>;

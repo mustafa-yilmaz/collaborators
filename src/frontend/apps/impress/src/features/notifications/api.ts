@@ -7,7 +7,9 @@ export type NotificationKind =
   | 'comment_mention'
   | 'assignment'
   | 'join_request'
-  | 'join_approved';
+  | 'join_approved'
+  | 'signup'
+  | 'signup_approved';
 
 export interface Notification {
   id: string;

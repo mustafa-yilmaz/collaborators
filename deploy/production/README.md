@@ -1,6 +1,7 @@
 # Collaborators in production
 
-One server (Hetzner Cloud **CX33**: 4 vCPU, 8 GB, Ubuntu 24.04) runs
+One server (Hetzner Cloud **CAX21**: 4 ARM vCPU, 8 GB, Ubuntu 26.04; an x86
+**CX33** works the same) runs
 everything with Docker Compose: Caddy (HTTPS) → the frontend's nginx router →
 the backend, its worker, the collaboration server, the converters and the
 files (MinIO); Keycloak for signing in; one PostgreSQL for the app, the

@@ -78,6 +78,8 @@ sudo chown 1000:1000 keys/*.pem 2>/dev/null || chown 1000:1000 keys/*.pem
 
 # The Keycloak realm, imported on its first start
 mkdir -p keycloak/import
+# Keycloak (uid 1000) reads it: not private like the rest (umask 077)
+chmod 755 keycloak/import
 if [[ ! -f keycloak/import/collaborators-realm.json ]]; then
   APP_HOST="${APP_HOST}" OIDC_CLIENT_SECRET="${OIDC_CLIENT_SECRET}" \
     python3 bin/make-realm.py ../../docker/auth/realm.json \

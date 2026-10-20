@@ -11,7 +11,7 @@ import { HomeHeader, getHeaderHeight } from './HomeHeader';
 
 export function HomeContent() {
   const { t } = useTranslation();
-  const { isSmallMobile } = useResponsiveStore();
+  const { isMobile, isSmallMobile } = useResponsiveStore();
 
   return (
     <Box
@@ -38,6 +38,8 @@ export function HomeContent() {
         $css={css`
           height: calc(100vh - ${getHeaderHeight(isSmallMobile)}px);
           overflow-y: auto;
+          /* the cover's glow reaches past a phone's edges: no sideways scroll */
+          ${isMobile && 'overflow-x: hidden;'}
         `}
       >
         {/* The cover fills the screen above the footer, without scrolling */}

@@ -6,6 +6,7 @@ import styled, { css } from 'styled-components';
 import { Box, StyledLink, Text } from '@/components/';
 import { Title } from '@/components/Title';
 import { useConfig } from '@/core/config';
+import { useResponsiveStore } from '@/stores';
 
 import IconLink from './assets/external-link.svg';
 import { ContentType } from './types';
@@ -33,6 +34,8 @@ export const Footer = () => {
   const { i18n } = useTranslation();
   const resolvedLanguage = i18n.resolvedLanguage;
   const [content, setContent] = useState<ContentType>();
+  // On a phone everything is centred, one piece under the other
+  const { isMobile } = useResponsiveStore();
 
   useEffect(() => {
     if (!footerJson) {
@@ -76,10 +79,16 @@ export const Footer = () => {
       className="--docs--footer"
     >
       <BlueStripe />
-      <Box $padding={{ top: 'large', horizontal: 'big', bottom: 'small' }}>
+      <Box
+        $padding={{
+          top: 'large',
+          horizontal: isMobile ? '1.25rem' : 'big',
+          bottom: isMobile ? '1.5rem' : 'small',
+        }}
+      >
         <Box
-          $direction="row"
-          $gap="1.5rem"
+          $direction={isMobile ? 'column' : 'row'}
+          $gap={isMobile ? '1rem' : '1.5rem'}
           $align="center"
           $justify="space-between"
           $css="flex-wrap: wrap;"
@@ -141,10 +150,12 @@ export const Footer = () => {
           </Box>
           <Box
             $direction="row"
+            $justify={isMobile ? 'center' : undefined}
             $css={`
               column-gap: 1.5rem;
               row-gap: .5rem;
               flex-wrap: wrap;
+              ${isMobile ? 'text-align: center;' : ''}
             `}
             className="--docs--footer-external-links"
           >
@@ -196,7 +207,17 @@ export const Footer = () => {
                       <IconLink width={14} />
                     </StyledLink>
                   ) : (
-                    <span key={index}>{part.text}</span>
+                    // On a phone the opening words take a row of their own
+                    <span
+                      key={index}
+                      style={
+                        isMobile && index === 0
+                          ? { display: 'block' }
+                          : undefined
+                      }
+                    >
+                      {part.text}
+                    </span>
                   ),
                 )}
               </Text>
@@ -205,11 +226,11 @@ export const Footer = () => {
         </Box>
         {/* Legal links on the left, the licence on the right, in one row */}
         <Box
-          $direction="row"
+          $direction={isMobile ? 'column' : 'row'}
           $align="center"
           $justify="space-between"
-          $margin={{ top: 'big' }}
-          $padding={{ top: 'tiny' }}
+          $margin={{ top: isMobile ? '1.5rem' : 'big' }}
+          $padding={{ top: isMobile ? '1rem' : 'tiny' }}
           $css={`
             flex-wrap: wrap;
             border-top: 1px solid var(--c--globals--colors--gray-200);
@@ -220,9 +241,10 @@ export const Footer = () => {
         >
           <Box
             $direction="row"
+            $justify={isMobile ? 'center' : undefined}
             $css={`
             flex-wrap: wrap;
-            column-gap: 1rem;
+            column-gap: ${isMobile ? '1.25rem' : '1rem'};
             row-gap: .5rem;
           `}
             className="--docs--footer-internal-links"
@@ -232,13 +254,18 @@ export const Footer = () => {
                 <StyledLink
                   key={label}
                   href={href}
-                  $css={css`
-                    padding-right: 1rem;
-                    &:not(:last-child) {
-                      box-shadow: inset -1px 0px 0px 0px
-                        var(--c--globals--colors--gray-200);
-                    }
-                  `}
+                  // The dividers would dangle where a phone wraps the row
+                  $css={
+                    isMobile
+                      ? undefined
+                      : css`
+                          padding-right: 1rem;
+                          &:not(:last-child) {
+                            box-shadow: inset -1px 0px 0px 0px
+                              var(--c--globals--colors--gray-200);
+                          }
+                        `
+                  }
                 >
                   <Text
                     $size="s"
@@ -265,6 +292,7 @@ export const Footer = () => {
               $margin="none"
               $variation="secondary"
               $display="inline"
+              $textAlign={isMobile ? 'center' : undefined}
               className="--docs--footer-licence"
             >
               {bottomInformation.label}{' '}

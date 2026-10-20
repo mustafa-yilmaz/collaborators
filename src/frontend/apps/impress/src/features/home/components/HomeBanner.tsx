@@ -157,12 +157,29 @@ export default function HomeBanner() {
               }
             `}
           >
-            {/* Two rows: what it is, then what for */}
-            <span>
-              {t('Collaborative proposal idea development', {
-                description: 'Main headline of the home page, first row',
-              })}
-            </span>
+            {/* Two rows: what it is, then what for; three on a phone */}
+            {!isMobile ? (
+              <span>
+                {t('Collaborative proposal idea development', {
+                  description: 'Main headline of the home page, first row',
+                })}
+              </span>
+            ) : (
+              <>
+                <span>
+                  {t('Collaborative', {
+                    description:
+                      'Main headline of the home page on a phone, first row',
+                  })}
+                </span>
+                <span>
+                  {t('proposal idea development', {
+                    description:
+                      'Main headline of the home page on a phone, second row',
+                  })}
+                </span>
+              </>
+            )}
             <span>
               {t('for projects', {
                 description: 'Main headline of the home page, second row',

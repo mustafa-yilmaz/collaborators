@@ -539,6 +539,10 @@ class Base(Configuration):
     EMAIL_USE_TLS = values.BooleanValue(False)
     EMAIL_USE_SSL = values.BooleanValue(False)
     EMAIL_FROM = values.Value("from@example.com")
+    # Collaborators: Django's own emails (and manage.py sendtestemail) come
+    # from the same address, which the mail service accepts
+    DEFAULT_FROM_EMAIL = values.Value("from@example.com", environ_name="EMAIL_FROM")
+    SERVER_EMAIL = values.Value("from@example.com", environ_name="EMAIL_FROM")
 
     AUTH_USER_MODEL = "core.User"
     INVITATION_VALIDITY_DURATION = 604800  # 7 days, in seconds

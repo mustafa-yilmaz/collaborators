@@ -9,6 +9,7 @@ from rest_framework.routers import DefaultRouter
 
 from core.api import (
     dashboard,
+    labels,
     notifications,
     page_links,
     people,
@@ -119,6 +120,17 @@ urlpatterns = [
                 path(
                     "documents/<uuid:pk>/space-links/<uuid:link_id>/",
                     page_links.PageSpaceLinkView.as_view(),
+                ),
+                path("labels/", labels.LabelListView.as_view()),
+                path("labels/cloud/", labels.LabelCloudView.as_view()),
+                path("labels/<str:name>/", labels.LabelDetailView.as_view()),
+                path(
+                    "documents/<uuid:resource_id>/labels/",
+                    labels.DocumentLabelsView.as_view(),
+                ),
+                path(
+                    "workspaces/<uuid:workspace_id>/labels/",
+                    labels.WorkspaceLabelsView.as_view(),
                 ),
                 path(
                     "workspaces/discover/",

@@ -2835,6 +2835,100 @@ class SpaceWorkspaceLink(BaseModel):
             raise ValidationError({"space": _("Only a space can join a workspace.")})
 
 
+class Label(BaseModel):
+    """
+    A label of the platform's shared vocabulary (a "tag", Web 2.0 style),
+    put on workspaces, spaces and pages. One per spelling, whatever its case:
+    the first spelling is kept.
+    """
+
+    name = models.CharField(max_length=40)
+    # The name in lower case, so "AI" and "ai" are one label
+    key = models.CharField(max_length=40, unique=True)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, related_name="+", null=True, blank=True
+    )
+
+    class Meta:
+        db_table = "collaborators_label"
+        ordering = ("key",)
+        verbose_name = _("Label")
+        verbose_name_plural = _("Labels")
+
+    def __str__(self):
+        return self.name
+
+    @classmethod
+    def normalize(cls, name):
+        """The name as stored: trimmed, single spaces, no leading "#"."""
+        return " ".join(str(name or "").strip().lstrip("#").split())[:40]
+
+    @classmethod
+    def get_or_create_named(cls, name, user=None):
+        """The label with this name (any case), created if new."""
+        name = cls.normalize(name)
+        if not name:
+            raise ValueError("empty label")
+        label, _created = cls.objects.get_or_create(
+            key=name.lower(),
+            defaults={
+                "name": name,
+                "created_by": user if user and user.is_authenticated else None,
+            },
+        )
+        return label
+
+
+class DocumentLabel(BaseModel):
+    """A label put on a page or a space."""
+
+    document = models.ForeignKey(
+        Document, on_delete=models.CASCADE, related_name="labels"
+    )
+    label = models.ForeignKey(Label, on_delete=models.CASCADE, related_name="documents")
+    added_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, related_name="+", null=True, blank=True
+    )
+
+    class Meta:
+        db_table = "collaborators_document_label"
+        ordering = ("created_at",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["document", "label"], name="unique_document_label"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.label!s} on {self.document!s}"
+
+
+class WorkspaceLabel(BaseModel):
+    """A label put on a workspace."""
+
+    workspace = models.ForeignKey(
+        "Workspace", on_delete=models.CASCADE, related_name="labels"
+    )
+    label = models.ForeignKey(
+        Label, on_delete=models.CASCADE, related_name="workspaces"
+    )
+    added_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, related_name="+", null=True, blank=True
+    )
+
+    class Meta:
+        db_table = "collaborators_workspace_label"
+        ordering = ("created_at",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["workspace", "label"], name="unique_workspace_label"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.label!s} on {self.workspace!s}"
+
+
 class PageSpaceLink(BaseModel):
     """
     Shows a page (with its subpages) in a space other than its home: the same

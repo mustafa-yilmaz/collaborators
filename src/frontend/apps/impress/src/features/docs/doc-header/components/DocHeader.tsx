@@ -13,6 +13,7 @@ import {
   useDocUtils,
   useIsDocEditable,
 } from '@/docs/doc-management';
+import { LabelEditor } from '@/features/labels/LabelEditor';
 import { useIsOffline } from '@/features/service-worker/hooks/useOffline';
 import { PageAlsoIn } from '@/features/workspaces/components/PageSpaces';
 
@@ -130,6 +131,7 @@ export const DocHeader = ({ doc }: DocHeaderProps) => {
             }}
           />
           <DocHeaderInfo doc={doc} />
+          <LabelEditor path={`documents/${doc.id}`} hideWhenEmpty />
           <PageAlsoIn doc={doc} />
         </Box>
         <HorizontalSeparator $margin={{ top: '24px' }} />

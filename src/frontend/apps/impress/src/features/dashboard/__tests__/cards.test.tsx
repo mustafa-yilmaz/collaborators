@@ -8,13 +8,13 @@ vi.mock('@/features/notifications/NotificationBell', () => ({
 }));
 
 describe('dashboard layout', () => {
-  it('is lean by default: mentions and assigned, recent pages across', () => {
+  it('is lean by default: mentions and assigned, recent pages and labels across', () => {
     expect(
       DEFAULT_LAYOUT.filter((card) => !card.hidden).map((card) => card.id),
-    ).toEqual(['notifications', 'assigned', 'recent']);
-    expect(DEFAULT_LAYOUT.find((card) => card.id === 'recent')?.wide).toBe(
-      true,
-    );
+    ).toEqual(['notifications', 'assigned', 'recent', 'labels']);
+    for (const id of ['recent', 'labels']) {
+      expect(DEFAULT_LAYOUT.find((card) => card.id === id)?.wide).toBe(true);
+    }
     expect(DEFAULT_LAYOUT).toHaveLength(CARDS.length);
   });
 
@@ -37,12 +37,15 @@ describe('dashboard layout', () => {
     expect(merged).toHaveLength(CARDS.length);
   });
 
-  it('adds cards introduced since the layout was saved, hidden', () => {
+  it('adds cards introduced since the layout was saved, shown if by default', () => {
     const merged = mergeLayout([
       { id: 'recent', hidden: false, collapsed: false },
     ]);
 
-    expect(merged.slice(1).every((card) => card.hidden)).toBe(true);
+    for (const card of merged.slice(1)) {
+      const definition = CARDS.find((item) => item.id === card.id);
+      expect(card.hidden).toBe(!definition?.defaultVisible);
+    }
   });
 
   it('lays wide cards across, the others two by two', () => {

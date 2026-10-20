@@ -6,6 +6,8 @@ import { css } from 'styled-components';
 
 import { Box, Icon, StyledLink, Text } from '@/components';
 import { getEmojiAndTitle, useTrans } from '@/features/docs/doc-management';
+import { labelHref } from '@/features/labels/LabelEditor';
+import { useLabelCloud } from '@/features/labels/api';
 import {
   useNotificationTarget,
   useNotificationText,
@@ -414,6 +416,60 @@ const WorkspacesBody = () => {
  * default Mentions & notifications on the left, Assigned to me on the right,
  * and Recent pages across, under them.
  */
+/** A cloud of the labels of what one can see: the more used, the bigger. */
+const LabelsBody = () => {
+  const { t } = useTranslation();
+  const { data = [], isLoading } = useLabelCloud();
+  if (!isLoading && !data.length) {
+    return (
+      <Empty>
+        {t(
+          'Labels put on workspaces, spaces and pages appear here. Add some under a page’s title.',
+          { description: 'Empty labels card' },
+        )}
+      </Empty>
+    );
+  }
+  const max = Math.max(1, ...data.map((item) => item.count));
+  const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name));
+  return (
+    <Box
+      $direction="row"
+      $align="baseline"
+      $gap="xs"
+      $padding="xs"
+      $css="flex-wrap: wrap; row-gap: 4px;"
+      data-testid="label-cloud"
+    >
+      {sorted.map((item) => {
+        const weight = item.count / max;
+        return (
+          <StyledLink
+            key={item.name}
+            href={labelHref(item.name)}
+            title={t('{{count}} uses', {
+              description: 'How many items carry a label',
+              count: item.count,
+            })}
+            $css={css`
+              font-size: ${0.8 + weight * 0.9}rem;
+              font-weight: ${weight > 0.6 ? 700 : weight > 0.3 ? 600 : 400};
+              color: var(--c--contextuals--content--semantic--brand--primary);
+              opacity: ${0.6 + weight * 0.4};
+              text-decoration: none;
+              &:hover {
+                text-decoration: underline;
+              }
+            `}
+          >
+            #{item.name}
+          </StyledLink>
+        );
+      })}
+    </Box>
+  );
+};
+
 export const CARDS: CardDefinition[] = [
   {
     id: 'notifications',
@@ -489,6 +545,14 @@ export const CARDS: CardDefinition[] = [
     },
   },
   {
+    id: 'labels',
+    icon: 'sell',
+    title: (t) => t('Labels', { description: 'Dashboard card' }),
+    defaultVisible: true,
+    defaultWide: true,
+    Body: LabelsBody,
+  },
+  {
     id: 'pages',
     icon: 'description',
     title: (t) => t('Independent pages', { description: 'Dashboard card' }),
@@ -515,11 +579,14 @@ export const DEFAULT_LAYOUT = CARDS.map((card) => ({
   wide: !!card.defaultWide,
 }));
 
-/** The saved layout, completed with the cards added since it was saved. */
+/**
+ * The saved layout, completed with the cards added since it was saved: those
+ * shown on a fresh dashboard appear (at the end), the others stay hidden.
+ */
 export const mergeLayout = (saved: CardLayout[]) => {
   const known = saved.filter((card) => CARDS.some((def) => def.id === card.id));
   const missing = DEFAULT_LAYOUT.filter(
     (card) => !known.some((item) => item.id === card.id),
-  ).map((card) => ({ ...card, hidden: known.length ? true : card.hidden }));
+  );
   return known.length ? [...known, ...missing] : DEFAULT_LAYOUT;
 };

@@ -23,6 +23,7 @@ import {
 import { useAuth } from '@/features/auth';
 import { Role } from '@/features/docs/doc-management';
 import { SearchUserRow } from '@/features/docs/doc-share/components/SearchUserRow';
+import { LabelEditor } from '@/features/labels/LabelEditor';
 import { PublishingSection } from '@/features/publishing/PublishingSection';
 
 import {
@@ -174,6 +175,12 @@ const GeneralSection = ({ workspace }: { workspace: Workspace }) => {
             {t('Save', { description: 'Button saving a change' })}
           </Button>
         )}
+      </Box>
+      <Box $gap="3xs">
+        <Text $size="sm" $weight="600">
+          {t('Labels', { description: 'Heading of a workspace’s labels' })}
+        </Text>
+        <LabelEditor path={`workspaces/${workspace.id}`} />
       </Box>
       <Box $gap="3xs">
         <Select

@@ -48,6 +48,10 @@ if [[ -n "${SMTP_HOST}" ]]; then
   echo "{\"smtpServer\": {\"host\": \"${SMTP_HOST}\", \"port\": \"${SMTP_PORT:-587}\", \"from\": \"${SMTP_FROM}\", \"fromDisplayName\": \"Collaborators\", \"auth\": \"true\", \"starttls\": \"true\", \"user\": \"${SMTP_USER}\", \"password\": \"${SMTP_PASSWORD}\"}}" \
     | kc update "realms/${REALM}" -f -
   echo "Sent Keycloak's emails through ${SMTP_HOST}"
+elif [[ -n "${PRODUCTION}" ]]; then
+  # No mail catcher in production: Microsoft sign-ins wait for the SMTP
+  # values in env/app.env (their emails must be confirmed by a link)
+  echo "No email service yet: fill in the SMTP values of env/app.env, then run this again"
 else
   kc update "realms/${REALM}" \
     -s smtpServer.host=mailcatcher \
@@ -72,14 +76,16 @@ kc update "clients/${APP_CLIENT_ID}" -r "${REALM}" \
 echo "Let signing out of the app end the Keycloak session"
 
 # The built-in dev and test accounts (docker/auth/realm.json) have known
-# emails: they never need to confirm them
-for username in impress user-e2e-chromium user-e2e-webkit user-e2e-firefox; do
-  user_id="$(kc get users -r "${REALM}" -q "username=${username}" -q exact=true --fields id --format csv --noquotes || true)"
-  if [[ -n "${user_id}" ]]; then
-    kc update "users/${user_id}" -r "${REALM}" -s emailVerified=true
-  fi
-done
-echo "Marked the dev and test accounts' emails as verified"
+# emails: they never need to confirm them (production has none)
+if [[ -z "${PRODUCTION}" ]]; then
+  for username in impress user-e2e-chromium user-e2e-webkit user-e2e-firefox; do
+    user_id="$(kc get users -r "${REALM}" -q "username=${username}" -q exact=true --fields id --format csv --noquotes || true)"
+    if [[ -n "${user_id}" ]]; then
+      kc update "users/${user_id}" -r "${REALM}" -s emailVerified=true
+    fi
+  done
+  echo "Marked the dev and test accounts' emails as verified"
+fi
 
 # The in-app "Sign-in methods" page: connecting a provider goes through
 # Keycloak's "idp_link" action, which the app starts at sign-in

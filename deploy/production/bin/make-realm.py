@@ -21,7 +21,6 @@ SECRET = os.environ["OIDC_CLIENT_SECRET"]
 realm = json.load(open(sys.argv[1], encoding="utf-8"))
 
 realm["realm"] = "collaborators"
-realm.pop("id", None)
 # No accounts: they are made by signing in with a provider
 realm.pop("users", None)
 realm.pop("identityProviders", None)
@@ -49,8 +48,20 @@ for role in realm.get("roles", {}).get("realm", []):
 if realm.get("defaultRole", {}).get("name") == old_default:
     realm["defaultRole"]["name"] = "default-roles-collaborators"
 
+# Its roles are filed under the client's name; ids are kept, roles refer to them
+client_roles = realm.get("roles", {}).get("client", {})
+if "impress" in client_roles:
+    client_roles["collaborators"] = client_roles.pop("impress")
+
 for client in realm.get("clients", []):
-    client.pop("id", None)
+    # Keycloak's own consoles, addressed by the realm's name
+    for key in ("baseUrl", "rootUrl", "adminUrl"):
+        if client.get(key):
+            client[key] = client[key].replace("/impress/", "/collaborators/")
+    client["redirectUris"] = [
+        uri.replace("/impress/", "/collaborators/")
+        for uri in client.get("redirectUris", [])
+    ]
     if client["clientId"] != "impress":
         continue
     client["clientId"] = "collaborators"

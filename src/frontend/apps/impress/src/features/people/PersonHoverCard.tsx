@@ -5,8 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import { APIError, errorCauses, fetchAPI } from '@/api';
-import { Box, Text } from '@/components';
+import { Box, StyledLink, Text } from '@/components';
 import { UserAvatar } from '@/features/auth';
+import { profileHref } from '@/features/profile/api';
 
 /** What one may see of a person, see the backend's people/<id>/. */
 export interface PersonCard {
@@ -93,6 +94,13 @@ const CardContent = ({
             names: card.groups.map((group) => group.name).join(', '),
           })}
         </Text>
+      )}
+      {card && (
+        <StyledLink href={profileHref(card.id)}>
+          <Text $size="xs" $theme="brand">
+            {t('View profile', { description: 'Link to a person’s profile' })}
+          </Text>
+        </StyledLink>
       )}
       {card && !card.known && (
         <Text $size="xs" $variation="secondary">

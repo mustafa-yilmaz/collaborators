@@ -2929,6 +2929,64 @@ class WorkspaceLabel(BaseModel):
         return f"{self.label!s} on {self.workspace!s}"
 
 
+class ProfileAudience(models.TextChoices):
+    """Who can see a piece of a profile."""
+
+    PUBLIC = "public", _("Public on the internet")
+    PLATFORM = "platform", _("Everyone on Collaborators")
+    COLLEAGUES = "colleagues", _("People I work with")
+    SELECTED = "selected", _("Chosen workspaces and spaces")
+
+
+# The pieces of a profile, and who sees each one unless the person changes it
+PROFILE_FIELDS = {
+    "name": ProfileAudience.PLATFORM,
+    "headline": ProfileAudience.PLATFORM,
+    "organization": ProfileAudience.PLATFORM,
+    "location": ProfileAudience.COLLEAGUES,
+    "bio": ProfileAudience.PLATFORM,
+    "website": ProfileAudience.PLATFORM,
+    "email": ProfileAudience.COLLEAGUES,
+    "interests": ProfileAudience.PLATFORM,
+    "workspaces": ProfileAudience.COLLEAGUES,
+}
+
+
+class UserProfile(BaseModel):
+    """
+    What a collaborator tells about themselves, each piece with its own
+    audience (`visibility`: {field: {"level", "workspaces", "spaces"}}). A
+    profile can't be fully hidden: the name stays visible at least to the
+    people one works with.
+    """
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    headline = models.CharField(max_length=120, blank=True, default="")
+    organization = models.CharField(max_length=120, blank=True, default="")
+    location = models.CharField(max_length=120, blank=True, default="")
+    bio = models.TextField(max_length=2000, blank=True, default="")
+    website = models.URLField(max_length=300, blank=True, default="")
+    interests = models.ManyToManyField(Label, blank=True, related_name="profiles")
+    visibility = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        db_table = "collaborators_user_profile"
+        verbose_name = _("Profile")
+        verbose_name_plural = _("Profiles")
+
+    def __str__(self):
+        return f"Profile of {self.user!s}"
+
+    def audience(self, field):
+        """{"level", "workspaces", "spaces"} of a field, with its default."""
+        setting = (self.visibility or {}).get(field) or {}
+        return {
+            "level": setting.get("level") or PROFILE_FIELDS[field],
+            "workspaces": list(setting.get("workspaces") or []),
+            "spaces": list(setting.get("spaces") or []),
+        }
+
+
 class PageSpaceLink(BaseModel):
     """
     Shows a page (with its subpages) in a space other than its home: the same

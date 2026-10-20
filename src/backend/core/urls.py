@@ -13,6 +13,7 @@ from core.api import (
     notifications,
     page_links,
     people,
+    profiles,
     publishing,
     signin_methods,
     viewsets,
@@ -120,6 +121,10 @@ urlpatterns = [
                 path(
                     "documents/<uuid:pk>/space-links/<uuid:link_id>/",
                     page_links.PageSpaceLinkView.as_view(),
+                ),
+                path("profiles/me/", profiles.MyProfileView.as_view()),
+                path(
+                    "profiles/<uuid:user_id>/", profiles.ProfileView.as_view()
                 ),
                 path("labels/", labels.LabelListView.as_view()),
                 path("labels/cloud/", labels.LabelCloudView.as_view()),

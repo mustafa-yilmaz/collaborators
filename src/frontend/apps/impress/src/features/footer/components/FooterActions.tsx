@@ -41,6 +41,18 @@ export const FooterActions = ({ withLogin }: FooterActionsProps) => {
         })}
       </Button>
     ) : undefined;
+  // Collaborators: one's profile, and who sees each piece of it
+  const myProfile = user ? (
+    <Button
+      size="small"
+      variant="tertiary"
+      color="neutral"
+      href="/account/profile/"
+      icon={<Icon iconName="badge" $size="18px" $color="inherit" />}
+    >
+      {t('My profile', { description: 'Link to the profile settings page' })}
+    </Button>
+  ) : undefined;
 
   const userMenu = user || {
     full_name: t('Guest', {
@@ -66,9 +78,13 @@ export const FooterActions = ({ withLogin }: FooterActionsProps) => {
             logout={user ? gotoLogout : undefined}
             actions={
               singleLanguage ? (
-                signInMethods
+                <>
+                  {myProfile}
+                  {signInMethods}
+                </>
               ) : (
                 <>
+                  {myProfile}
                   {signInMethods}
                   <LanguagePicker />
                 </>

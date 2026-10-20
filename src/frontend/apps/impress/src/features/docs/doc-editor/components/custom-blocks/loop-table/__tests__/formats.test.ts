@@ -3,10 +3,11 @@ import { describe, expect, it } from 'vitest';
 import * as Y from 'yjs';
 
 import { loopTableFormats } from '../export';
-import { layoutMenuItems } from '../formatMenu';
+import { formatMenuItems, formatStyle, layoutMenuItems } from '../formatMenu';
 import {
   CLEAR_FORMAT,
   applyFormatPatch,
+  cellLook,
   cloneTable,
   createTable,
   duplicateRow,
@@ -103,6 +104,7 @@ describe('Loop table formats', () => {
     expect(snapshot.layout).toEqual({
       showRowNumbers: false,
       expanded: false,
+      cells: {},
       header: { background: '#f1f1ef' },
       numbers: { align: 'right' },
     });
@@ -126,6 +128,7 @@ describe('Loop table formats', () => {
     expect(readTable(table).layout).toEqual({
       showRowNumbers: true,
       expanded: false,
+      cells: {},
       header: {},
       numbers: {},
     });
@@ -175,34 +178,27 @@ describe('Loop table formats', () => {
 
   it('aligns the row numbers like any column: left, in the middle', () => {
     const { table } = setup();
-    const menu = () => layoutMenuItems(t, table, readTable(table).layout);
+    const menu = () =>
+      entry(
+        layoutMenuItems(t, table, readTable(table).layout),
+        'Numbers column',
+      ).children!;
 
-    expect(ticked(menu(), 'Numbers column horizontal alignment')).toEqual([
-      'Left',
-    ]);
-    expect(ticked(menu(), 'Numbers column vertical alignment')).toEqual([
-      'Middle',
-    ]);
+    expect(ticked(menu(), 'Horizontal alignment')).toEqual(['Left']);
+    expect(ticked(menu(), 'Vertical alignment')).toEqual(['Middle']);
 
     // Horizontal and vertical alignments hold at once
     entry(
-      entry(menu(), 'Numbers column horizontal alignment').children!,
+      entry(menu(), 'Horizontal alignment').children!,
       'Right',
     ).callback?.();
-    entry(
-      entry(menu(), 'Numbers column vertical alignment').children!,
-      'Bottom',
-    ).callback?.();
+    entry(entry(menu(), 'Vertical alignment').children!, 'Bottom').callback?.();
     expect(readTable(table).layout.numbers).toEqual({
       align: 'right',
       valign: 'bottom',
     });
-    expect(ticked(menu(), 'Numbers column horizontal alignment')).toEqual([
-      'Right',
-    ]);
-    expect(ticked(menu(), 'Numbers column vertical alignment')).toEqual([
-      'Bottom',
-    ]);
+    expect(ticked(menu(), 'Horizontal alignment')).toEqual(['Right']);
+    expect(ticked(menu(), 'Vertical alignment')).toEqual(['Bottom']);
   });
 
   it('hides and shows the numbers column from its menu', () => {
@@ -226,5 +222,119 @@ describe('Loop table formats', () => {
 
     setLayout(table, { expanded: false });
     expect(readTable(table).layout.expanded).toBe(false);
+  });
+
+  it('styles text: a cell, then its row, its column, then all cells', () => {
+    const { table, columnId, rowId } = setup();
+    setLayoutFormat(table, 'cells', { textColor: 'blue', italic: true });
+    setColumnFormat(table, columnId, { bold: true, textColor: 'red' });
+    setRowFormat(table, rowId, { underline: true });
+    // A cell undoes what it inherits with false
+    setCellFormat(table, rowId, columnId, { bold: false });
+
+    const snapshot = readTable(table);
+    const [row, otherRow] = snapshot.rows;
+    const [column, otherColumn] = snapshot.columns;
+    expect(snapshot.layout.cells).toEqual({ textColor: 'blue', italic: true });
+    expect(cellLook(snapshot, row, column)).toMatchObject({
+      bold: false,
+      italic: true,
+      underline: true,
+      textColor: 'red',
+    });
+    expect(cellLook(snapshot, otherRow, column)).toMatchObject({
+      bold: true,
+      textColor: 'red',
+    });
+    expect(cellLook(snapshot, otherRow, otherColumn)).toMatchObject({
+      bold: undefined,
+      italic: true,
+      textColor: 'blue',
+    });
+    // Exports carry it too
+    expect(loopTableFormats(snapshot)[1][0]).toMatchObject({
+      bold: false,
+      underline: true,
+      textColor: 'red',
+    });
+  });
+
+  it('turns text styles of a cell on and off from its menu', () => {
+    const { table, columnId, rowId } = setup();
+    setColumnFormat(table, columnId, { bold: true });
+    const menu = () => {
+      const snapshot = readTable(table);
+      const row = snapshot.rows[0];
+      return formatMenuItems(
+        t,
+        row.cellFormats?.[columnId],
+        (patch) => setCellFormat(table, rowId, columnId, patch),
+        { shown: mergeFormats(row.format, snapshot.columns[0].format) },
+      );
+    };
+
+    // Bold comes from the column
+    expect(ticked(menu(), 'Text style')).toEqual(['Bold']);
+    entry(entry(menu(), 'Text style').children!, 'Bold').callback?.();
+    expect(readTable(table).rows[0].cellFormats?.[columnId]).toEqual({
+      bold: false,
+    });
+    expect(ticked(menu(), 'Text style')).toEqual([]);
+    // Ticked again: it only repeats the column, so nothing is kept
+    entry(entry(menu(), 'Text style').children!, 'Bold').callback?.();
+    expect(readTable(table).rows[0].cellFormats?.[columnId]).toBeUndefined();
+
+    entry(entry(menu(), 'Text style').children!, 'Italic').callback?.();
+    entry(entry(menu(), 'Text colour').children!, 'Green').callback?.();
+    expect(readTable(table).rows[0].cellFormats?.[columnId]).toEqual({
+      italic: true,
+      textColor: 'green',
+    });
+    expect(ticked(menu(), 'Text colour')).toEqual(['Green']);
+    entry(menu(), 'Clear formatting').callback?.();
+    expect(readTable(table).rows[0].cellFormats?.[columnId]).toBeUndefined();
+  });
+
+  it('formats all cells, and the header row is bold unless chosen', () => {
+    const { table } = setup();
+    const menu = () => layoutMenuItems(t, table, readTable(table).layout);
+    const allCells = () => entry(menu(), 'All cells').children!;
+    const header = () => entry(menu(), 'Header row').children!;
+
+    entry(entry(allCells(), 'Text colour').children!, 'Purple').callback?.();
+    entry(entry(allCells(), 'Text style').children!, 'Underline').callback?.();
+    expect(readTable(table).layout.cells).toEqual({
+      textColor: 'purple',
+      underline: true,
+    });
+
+    expect(ticked(header(), 'Text style')).toEqual(['Bold']);
+    entry(entry(header(), 'Text style').children!, 'Bold').callback?.();
+    expect(readTable(table).layout.header).toEqual({ bold: false });
+
+    entry(allCells(), 'Clear the formatting of all cells').callback?.();
+    expect(readTable(table).layout.cells).toEqual({});
+  });
+
+  it('turns a format into the styles of a cell', () => {
+    expect(
+      formatStyle({
+        bold: true,
+        italic: false,
+        underline: true,
+        strike: true,
+        textColor: 'red',
+      }),
+    ).toMatchObject({
+      fontWeight: 600,
+      fontStyle: 'normal',
+      textDecoration: 'underline line-through',
+      color: '#d44c47',
+    });
+    expect(formatStyle({ underline: false })).toMatchObject({
+      textDecoration: 'none',
+      fontWeight: undefined,
+      color: undefined,
+    });
   });
 });

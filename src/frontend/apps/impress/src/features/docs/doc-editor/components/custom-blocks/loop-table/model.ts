@@ -12,12 +12,15 @@
  *     rows:    Y.Array<Y.Map>   id, cells: Y.Map<columnId, value>
  *     labelGroups: Y.Map<groupId, Y.Map>   name, options (JSON)
  *     view:    Y.Map            sort, filters, summaries (JSON)
- *     layout:  Y.Map            showRowNumbers, expanded, header, numbers
+ *     layout:  Y.Map            showRowNumbers, expanded, cells, header,
+ *                               numbers
  *
- * Formats (background colour, horizontal and vertical alignment) are kept
- * on a column (`format`), a row (`format`), a cell (the row's `cellFormats`
- * Y.Map, by column id, so people formatting different cells don't clash),
- * and in `layout` for the header row and the numbers column.
+ * Formats (background colour, horizontal and vertical alignment, text style
+ * and colour) are kept on a column (`format`), a row (`format`), a cell (the
+ * row's `cellFormats` Y.Map, by column id, so people formatting different
+ * cells don't clash), and in `layout` for all the cells at once, the header
+ * row and the numbers column. A cell shows its own format, then its row's,
+ * its column's, then the one of all the cells.
  *
  * Cell values by column type:
  *   text    Y.Text
@@ -80,12 +83,42 @@ export interface LabelGroup {
 export type HorizontalAlign = 'left' | 'center' | 'right';
 export type VerticalAlign = 'top' | 'middle' | 'bottom';
 
-/** How a column, a row, a cell, the header row or the numbers column look. */
+/**
+ * How a column, a row, a cell, all the cells, the header row or the numbers
+ * column look. The text style holds for the whole cell, under the styles of
+ * parts of its text; false is kept, to undo what a cell inherits.
+ */
 export interface CellFormat {
   background?: string;
   align?: HorizontalAlign;
   valign?: VerticalAlign;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  strike?: boolean;
+  /** A colour name of TEXT_COLORS */
+  textColor?: string;
 }
+
+export const FORMAT_KEYS: (keyof CellFormat)[] = [
+  'background',
+  'align',
+  'valign',
+  'bold',
+  'italic',
+  'underline',
+  'strike',
+  'textColor',
+];
+
+/** The text styles a format turns on or off. */
+export type TextStyle = 'bold' | 'italic' | 'underline' | 'strike';
+export const TEXT_STYLES: TextStyle[] = [
+  'bold',
+  'italic',
+  'underline',
+  'strike',
+];
 
 /** A change of format: a value sets it, null takes it away. */
 export type FormatPatch = {
@@ -154,6 +187,8 @@ export interface TableLayout {
   showRowNumbers: boolean;
   /** Spread beyond the page's text column into the margins (T5) */
   expanded: boolean;
+  /** All the body cells, under their columns', rows' and own formats */
+  cells: CellFormat;
   header: CellFormat;
   numbers: CellFormat;
 }
@@ -439,6 +474,7 @@ export const readTable = (table: Y.Map<unknown>): TableSnapshot => {
     layout: {
       showRowNumbers: layout?.get('showRowNumbers') !== false,
       expanded: layout?.get('expanded') === true,
+      cells: (layout?.get('cells') as CellFormat) ?? {},
       header: (layout?.get('header') as CellFormat) ?? {},
       numbers: (layout?.get('numbers') as CellFormat) ?? {},
     },
@@ -855,23 +891,43 @@ export const applyFormatPatch = (
 };
 
 /** Take away every format property. */
-export const CLEAR_FORMAT: FormatPatch = {
-  background: null,
-  align: null,
-  valign: null,
-};
+export const CLEAR_FORMAT: FormatPatch = Object.fromEntries(
+  FORMAT_KEYS.map((key) => [key, null]),
+);
+
+/** Whether a format sets anything. */
+export const hasFormat = (format: CellFormat | undefined) =>
+  FORMAT_KEYS.some((key) => format?.[key] !== undefined);
 
 /**
  * The format shown, from the most specific to the least: each property
- * comes from the first format that sets it.
+ * comes from the first format that sets it (false included, for styles).
  */
 export const mergeFormats = (
   ...formats: (CellFormat | undefined)[]
-): CellFormat => ({
-  background: formats.find((format) => format?.background)?.background,
-  align: formats.find((format) => format?.align)?.align,
-  valign: formats.find((format) => format?.valign)?.valign,
-});
+): CellFormat =>
+  Object.fromEntries(
+    FORMAT_KEYS.map((key) => [
+      key,
+      formats.find((format) => format?.[key] !== undefined)?.[key],
+    ]),
+  );
+
+/**
+ * The look of a body cell: its own format, then its row's, its column's,
+ * and the one of all the cells.
+ */
+export const cellLook = (
+  snapshot: TableSnapshot,
+  row: Row,
+  column: Column,
+): CellFormat =>
+  mergeFormats(
+    row.cellFormats?.[column.id],
+    row.format,
+    column.format,
+    snapshot.layout.cells,
+  );
 
 export const setColumnFormat = (
   table: Y.Map<unknown>,
@@ -952,10 +1008,10 @@ export const setLayout = (
   });
 };
 
-/** Change the format of the header row or of the numbers column. */
+/** Change the format of all the cells, the header row or the numbers column. */
 export const setLayoutFormat = (
   table: Y.Map<unknown>,
-  part: 'header' | 'numbers',
+  part: 'cells' | 'header' | 'numbers',
   patch: FormatPatch,
 ) => {
   const current = readTable(table).layout[part];

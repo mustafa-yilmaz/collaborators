@@ -138,7 +138,13 @@ export const ColumnHeader = ({
               t,
               column.format,
               (patch) => setColumnFormat(table, column.id, patch),
-              { shown: columnDefaults(column) },
+              // What it inherits from all the cells, then the defaults
+              {
+                shown: mergeFormats(
+                  snapshot.layout.cells,
+                  columnDefaults(column),
+                ),
+              },
             ),
           ]
         : []),

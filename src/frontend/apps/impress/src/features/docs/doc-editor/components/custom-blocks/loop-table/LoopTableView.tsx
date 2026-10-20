@@ -38,15 +38,22 @@ import { ColumnDragPreview, RowDragPreview } from './DragPreview';
 import { SummaryRow } from './SummaryRow';
 import { Toolbar } from './Toolbar';
 import { labelOptionsOf } from './format';
-import { columnDefaults, formatMenuItems, formatStyle } from './formatMenu';
+import {
+  columnDefaults,
+  formatMenuItems,
+  formatStyle,
+  toggleStyle,
+} from './formatMenu';
 import {
   CellFormat,
   Column,
   ColumnType,
   Row,
   TableSnapshot,
+  TextStyle,
   addColumn,
   addRow,
+  cellLook,
   deleteRows,
   duplicateRow,
   mergeFormats,
@@ -533,8 +540,11 @@ export const LoopTableView = ({
       },
       { type: 'separator' },
       // The whole row: its cells and its number
-      ...formatMenuItems(t, row.format, (patch) =>
-        setRowFormat(table, row.id, patch),
+      ...formatMenuItems(
+        t,
+        row.format,
+        (patch) => setRowFormat(table, row.id, patch),
+        { shown: snapshot.layout.cells },
       ),
       { type: 'separator' },
       {
@@ -566,6 +576,32 @@ export const LoopTableView = ({
       return;
     }
     if (isEditing || !active) {
+      return;
+    }
+    // ⌘/Ctrl + B, I, U style the whole selected cell, as in a spreadsheet
+    const styleKeys: Record<string, TextStyle> = {
+      b: 'bold',
+      i: 'italic',
+      u: 'underline',
+    };
+    const style = modifier ? styleKeys[event.key.toLowerCase()] : undefined;
+    if (style && isEditable) {
+      event.preventDefault();
+      const row = snapshot.rows.find((item) => item.id === active.rowId);
+      const column = columns.find((col) => col.id === active.columnId);
+      if (row && column) {
+        const inherited = mergeFormats(
+          row.format,
+          column.format,
+          snapshot.layout.cells,
+        );
+        setCellFormat(
+          table,
+          row.id,
+          column.id,
+          toggleStyle(style, cellLook(snapshot, row, column), inherited),
+        );
+      }
       return;
     }
     const keys: Record<string, Direction> = {
@@ -841,12 +877,9 @@ export const LoopTableView = ({
                       const isActive =
                         active?.rowId === row.id &&
                         active?.columnId === column.id;
-                      // A cell's own format, then its row's, then its column's
-                      const look = mergeFormats(
-                        row.cellFormats?.[column.id],
-                        row.format,
-                        column.format,
-                      );
+                      // A cell's own format, then its row's, its column's,
+                      // and the one of all the cells
+                      const look = cellLook(snapshot, row, column);
                       return (
                         <td
                           key={column.id}
@@ -922,6 +955,7 @@ export const LoopTableView = ({
                                   shown: mergeFormats(
                                     row.format,
                                     column.format,
+                                    snapshot.layout.cells,
                                     columnDefaults(column),
                                   ),
                                   labels: {

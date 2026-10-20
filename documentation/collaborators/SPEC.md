@@ -350,7 +350,8 @@ The goal is Microsoft Loop's table with all its features, plus what Collaborator
 | T56 | Smooth with **1,000+ rows** (only visible rows are drawn) | C | v1 |
 | T57 | **Background colour** and **text alignment** (horizontal and vertical) for a whole column (its "⌄" menu) or row (its "⋮" menu) | Collaborators | ✅ built |
 | T58 | The same two for a **single cell** (format button on the selected cell, or right-click) | Collaborators | ✅ built |
-| T59 | **Corner cell menu**: show or hide the numbers column; colour and alignment of the header row and of the numbers column | Collaborators | ✅ built |
+| T59 | **Corner cell menu**: show or hide the numbers column; formatting of all the cells, of the header row and of the numbers column, each as a submenu (also in the block's "⋮⋮" menu) | Collaborators | ✅ built |
+| T60 | **Text style and colour of whole cells** (bold, italic, underline, strikethrough; text colour) for all the cells, a column, a row or the selected cell, in the same menus as colour and alignment (asked for 2026-10-20). The most specific wins: cell, row, column, all cells; a cell can turn off what it inherits. ⌘/Ctrl + B, I, U on a selected cell. Styles of parts of a text (T9) still apply on top. Exports (page PDF/DOCX) carry them | Collaborators | ✅ built |
 
 ### 3.7 To verify hands-on in Microsoft Loop
 

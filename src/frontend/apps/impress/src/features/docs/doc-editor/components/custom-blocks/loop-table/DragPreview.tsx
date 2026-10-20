@@ -5,7 +5,14 @@ import { Icon } from '@/components';
 import { columnTypeIcon } from './columnTypes';
 import { formatCell } from './format';
 import { formatStyle } from './formatMenu';
-import { Column, ColumnType, Row, TableSnapshot, mergeFormats } from './model';
+import {
+  Column,
+  ColumnType,
+  Row,
+  TableSnapshot,
+  cellLook,
+  mergeFormats,
+} from './model';
 
 /** How many cells a dragged column shows under its header. */
 const COLUMN_PREVIEW_ROWS = 6;
@@ -27,11 +34,7 @@ const PreviewCell = ({
   snapshot: TableSnapshot;
   width: number;
 }) => {
-  const look = mergeFormats(
-    row.cellFormats?.[column.id],
-    row.format,
-    column.format,
-  );
+  const look = cellLook(snapshot, row, column);
   return (
     <td
       data-align={look.align}

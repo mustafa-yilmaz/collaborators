@@ -9,7 +9,9 @@ import { formatCell } from './format';
 import { BACKGROUND_COLOURS } from './formatMenu';
 import {
   CellFormat,
+  TEXT_STYLES,
   TableSnapshot,
+  cellLook,
   getTable,
   mergeFormats,
   readTable,
@@ -21,8 +23,18 @@ interface LoopTableBlockLike {
   props: { tableId?: string };
 }
 
-const styledText = (text: string) => [
-  { type: 'text' as const, text, styles: {} },
+/** A cell's text, with the text style of its format. */
+const styledText = (text: string, format?: CellFormat) => [
+  {
+    type: 'text' as const,
+    text,
+    styles: Object.fromEntries(
+      TEXT_STYLES.filter((style) => format?.[style]).map((style) => [
+        style,
+        true,
+      ]),
+    ),
+  },
 ];
 
 /** The snapshot of a table of the page being edited, if available. */
@@ -61,9 +73,7 @@ export const loopTableFormats = (snapshot: TableSnapshot): CellFormat[][] => {
       mergeFormats(snapshot.layout.header, column.format),
     ),
     ...visibleRows(snapshot).map((row) =>
-      columns.map((column) =>
-        mergeFormats(row.cellFormats?.[column.id], row.format, column.format),
-      ),
+      columns.map((column) => cellLook(snapshot, row, column)),
     ),
   ];
 };
@@ -103,12 +113,12 @@ export const loopTableAsTableBlock = (block: LoopTableBlockLike) => {
             backgroundColor: blockNoteColour(
               formats[rowIndex]?.[columnIndex]?.background,
             ),
-            textColor: 'default',
+            textColor: formats[rowIndex]?.[columnIndex]?.textColor ?? 'default',
             textAlignment: formats[rowIndex]?.[columnIndex]?.align ?? 'left',
             colspan: 1,
             rowspan: 1,
           },
-          content: styledText(text),
+          content: styledText(text, formats[rowIndex]?.[columnIndex]),
         })),
       })),
     },

@@ -5,7 +5,7 @@ import { create } from 'zustand';
 
 import { Icon } from '@/components';
 
-import { flatFormatEntries } from './formatMenu';
+import { HEADER_DEFAULTS, flatFormatEntries } from './formatMenu';
 import {
   TableSnapshot,
   addColumn,
@@ -92,10 +92,20 @@ export const tableMenuItems = (
     { type: 'separator' },
     // Two levels at most: the block menu can't open a third
     {
+      label: t('All cells', { description: 'Loop table menu' }),
+      icon: <Icon iconName="grid_on" $size="18px" />,
+      children: flatFormatEntries(t, snapshot.layout.cells, (patch) =>
+        setLayoutFormat(table, 'cells', patch),
+      ),
+    },
+    {
       label: t('Header row', { description: 'Loop table menu' }),
       icon: <Icon iconName="table_rows" $size="18px" />,
-      children: flatFormatEntries(t, snapshot.layout.header, (patch) =>
-        setLayoutFormat(table, 'header', patch),
+      children: flatFormatEntries(
+        t,
+        snapshot.layout.header,
+        (patch) => setLayoutFormat(table, 'header', patch),
+        HEADER_DEFAULTS,
       ),
     },
     {

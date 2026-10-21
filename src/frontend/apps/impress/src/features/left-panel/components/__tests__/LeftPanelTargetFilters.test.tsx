@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import fetchMock from 'fetch-mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -31,9 +31,9 @@ describe('LeftPanelTargetFilters', () => {
       'Recent',
       'Notifications',
       'Search',
+      'Starred',
       'Owned by me',
       'Shared with me',
-      'Starred',
       'Trashbin',
     ]);
     expect(screen.getByRole('link', { name: 'Search' })).toHaveAttribute(
@@ -51,5 +51,55 @@ describe('LeftPanelTargetFilters', () => {
     expect(handle).not.toContainElement(link);
     // The trash stays last: it has no handle
     expect(screen.queryByRole('button', { name: 'Move Trashbin' })).toBeNull();
+  });
+
+  test('restores the default order when it was changed', async () => {
+    fetchMock.removeRoutes();
+    fetchMock.get(`${API}/dashboard/sidebar/`, [
+      'shared',
+      'recent',
+      'notifications',
+      'explore',
+      'starred',
+      'owned',
+    ]);
+    fetchMock.put(`${API}/dashboard/sidebar/`, []);
+    render(<LeftPanelTargetFilters />, { wrapper: AppWrapper });
+
+    const restore = await screen.findByRole('button', {
+      name: 'Restore the order',
+    });
+    expect(
+      screen
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('aria-label')),
+    ).toEqual([
+      'Shared with me',
+      'Recent',
+      'Notifications',
+      'Search',
+      'Starred',
+      'Owned by me',
+      'Trashbin',
+    ]);
+
+    fireEvent.click(restore);
+
+    await waitFor(() =>
+      expect(screen.getAllByRole('link')[0].getAttribute('aria-label')).toBe(
+        'Recent',
+      ),
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Restore the order' }),
+    ).toBeNull();
+  });
+
+  test('offers no restore while the order is the default one', () => {
+    render(<LeftPanelTargetFilters />, { wrapper: AppWrapper });
+
+    expect(
+      screen.queryByRole('button', { name: 'Restore the order' }),
+    ).toBeNull();
   });
 });

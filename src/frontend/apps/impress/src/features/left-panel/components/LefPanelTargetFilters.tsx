@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import SearchIcon from '@/assets/icons/ui-kit/zoom-rounded.svg';
-import { Box, Icon, StyledLink, Text } from '@/components';
+import { Box, BoxButton, Icon, StyledLink, Text } from '@/components';
 import { useCunninghamTheme } from '@/cunningham';
 import { DocDefaultFilter, useTrans } from '@/docs/doc-management';
 import { orderItems, useSidebarOrder } from '@/features/dashboard/api';
@@ -188,6 +188,18 @@ export const LeftPanelTargetFilters = () => {
     {
       icon: (
         <Icon
+          icon={<StarIcon width={20} height={20} aria-hidden="true" />}
+          $padding="4xs"
+          $variation="tertiary"
+        />
+      ),
+      id: 'starred',
+      label: transFilter(DocDefaultFilter.STARRED),
+      targetQuery: DocDefaultFilter.STARRED,
+    },
+    {
+      icon: (
+        <Icon
           icon={<UserIcon width={20} height={20} aria-hidden="true" />}
           $padding="4xs"
           $variation="tertiary"
@@ -212,18 +224,6 @@ export const LeftPanelTargetFilters = () => {
     {
       icon: (
         <Icon
-          icon={<StarIcon width={20} height={20} aria-hidden="true" />}
-          $padding="4xs"
-          $variation="tertiary"
-        />
-      ),
-      id: 'starred',
-      label: transFilter(DocDefaultFilter.STARRED),
-      targetQuery: DocDefaultFilter.STARRED,
-    },
-    {
-      icon: (
-        <Icon
           icon={<TrashIcon width={20} height={20} aria-hidden="true" />}
           $padding="4xs"
           $variation="tertiary"
@@ -241,6 +241,10 @@ export const LeftPanelTargetFilters = () => {
   const movable = defaultQueries.filter((query) => query.id !== 'trashbin');
   const trash = defaultQueries[defaultQueries.length - 1];
   const ordered = orderItems(movable, savedOrder.data ?? []);
+  // Moved from the default order: a quiet link puts it back
+  const isReordered = ordered.some(
+    (query, index) => query.id !== movable[index].id,
+  );
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor),
@@ -338,6 +342,36 @@ export const LeftPanelTargetFilters = () => {
           );
         })}
       </DndContext>
+      {isReordered && (
+        <BoxButton
+          onClick={() => save.mutate([])}
+          data-testid="sidebar-order-reset"
+          $direction="row"
+          $align="center"
+          $gap="3xs"
+          $padding={{ horizontal: '2xs', vertical: '4xs' }}
+          $css={css`
+            align-self: flex-start;
+            border-radius: var(--c--globals--spacings--3xs);
+            color: var(--c--contextuals--content--semantic--neutral--tertiary);
+            &:hover {
+              color: var(
+                --c--contextuals--content--semantic--neutral--secondary
+              );
+              background-color: var(
+                --c--contextuals--background--semantic--contextual--primary
+              );
+            }
+          `}
+        >
+          <Icon iconName="restart_alt" $size="16px" $color="inherit" />
+          <Text $size="xs" $color="inherit">
+            {t('Restore the order', {
+              description: 'Button putting the left panel items back in order',
+            })}
+          </Text>
+        </BoxButton>
+      )}
     </Box>
   );
 };

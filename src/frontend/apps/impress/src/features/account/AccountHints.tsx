@@ -257,19 +257,15 @@ export const AccountHints = () => {
             )}
           </Text>
           <Text $display="block" $size="sm">
-            {returning ? (
-              <Trans
-                i18nKey="If you have another <brand/> account under another email, it is a separate one: sign out and sign in with your usual account instead."
-                tOptions={{ description: 'Welcome note at a later visit' }}
-                components={{ brand: <Brand /> }}
-              />
-            ) : (
-              <Trans
-                i18nKey="If you already have a <brand/> account under another email, this is a separate one: sign out and sign in with your usual account instead."
-                tOptions={{ description: 'Welcome note of a new account' }}
-                components={{ brand: <Brand /> }}
-              />
-            )}
+            {returning
+              ? t(
+                  'If you have another account under another email, it is a separate one: sign out and sign in with your usual account instead.',
+                  { description: 'Welcome note at a later visit' },
+                )
+              : t(
+                  'If you already have another account under another email, this is a separate one: sign out and sign in with your usual account instead.',
+                  { description: 'Welcome note of a new account' },
+                )}
           </Text>
           {providers.length > 1 && (
             <Text $display="block" $size="sm">

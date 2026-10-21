@@ -15,12 +15,11 @@ const Level = ({ icon, name }: { icon: string; name: string }) => (
     $padding={{ horizontal: 'xs', vertical: '4xs' }}
     $css={css`
       border-radius: 999px;
-      background: var(
-        --c--contextuals--background--semantic--contextual--primary
-      );
+      border: 1px solid var(--c--contextuals--border--surface--primary);
+      background: var(--c--contextuals--background--surface--primary);
     `}
   >
-    <Icon iconName={icon} $size="18px" $variation="secondary" />
+    <Icon iconName={icon} $size="18px" $theme="brand" />
     <Text $size="sm" $weight="600">
       {name}
     </Text>
@@ -28,9 +27,9 @@ const Level = ({ icon, name }: { icon: string; name: string }) => (
 );
 
 /**
- * At the very bottom of the dashboard, centred: a quiet reminder of how
- * workspaces, spaces and pages fit together, with a link to the guide. Not a
- * card: nothing to move, hide or close.
+ * At the very bottom of the dashboard, centred in a framed box: a quiet
+ * reminder of how workspaces, spaces and pages fit together, with a link to
+ * the guide. Not a card: nothing to move, hide or close.
  */
 export const HierarchyNote = () => {
   const { t } = useTranslation();
@@ -40,13 +39,22 @@ export const HierarchyNote = () => {
   return (
     <Box
       as="aside"
+      role="note"
       $align="center"
       $gap="xs"
-      $margin={{ top: 'lg' }}
-      $padding={{ top: 'md', bottom: 'xs' }}
+      $width="100%"
+      $maxWidth="680px"
+      $margin={{ top: 'lg', horizontal: 'auto' }}
+      $padding={{ horizontal: 'md', vertical: 'sm' }}
       data-testid="hierarchy-note"
+      // Framed like the dashboard's notes, without being a card: nothing
+      // to move, hide or close
       $css={css`
-        border-top: 1px solid var(--c--contextuals--border--surface--primary);
+        border: 1px solid var(--c--contextuals--border--surface--primary);
+        border-radius: var(--c--globals--spacings--xs);
+        background: var(
+          --c--contextuals--background--semantic--contextual--primary
+        );
         text-align: center;
       `}
     >

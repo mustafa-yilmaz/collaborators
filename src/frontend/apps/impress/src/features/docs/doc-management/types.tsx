@@ -121,6 +121,9 @@ export enum DocDefaultFilter {
   SHARED_WITH_ME = 'shared_with_me',
   STARRED = 'starred',
   TRASHBIN = 'trashbin',
+  // Collaborators: the full screens of the dashboard's cards
+  NOTIFICATIONS = 'notifications',
+  LABELS = 'labels',
 }
 
 export type DocsOrdering =

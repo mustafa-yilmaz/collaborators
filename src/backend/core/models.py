@@ -2664,6 +2664,30 @@ class Workspace(BaseModel):
         }
 
 
+class WorkspaceFavorite(BaseModel):
+    """A workspace a collaborator starred, listed under "Starred"."""
+
+    workspace = models.ForeignKey(
+        "Workspace", on_delete=models.CASCADE, related_name="favorited_by"
+    )
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="favorite_workspaces"
+    )
+
+    class Meta:
+        db_table = "collaborators_workspace_favorite"
+        verbose_name = _("Workspace favorite")
+        verbose_name_plural = _("Workspace favorites")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "workspace"], name="unique_workspace_favorite_user"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.user!s} starred {self.workspace!s}"
+
+
 class WorkspaceAccess(BaseModel):
     """The membership of a collaborator in a workspace, with a role."""
 

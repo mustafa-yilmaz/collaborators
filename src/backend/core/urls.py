@@ -8,6 +8,7 @@ from lasuite.oidc_resource_server.urls import urlpatterns as oidc_resource_serve
 from rest_framework.routers import DefaultRouter
 
 from core.api import (
+    collaborations,
     dashboard,
     labels,
     notifications,
@@ -167,6 +168,11 @@ urlpatterns = [
                 path(
                     "registrations/<uuid:user_id>/decline/",
                     registrations.RegistrationDecisionView.as_view(decision="decline"),
+                ),
+                path("collaborations/", collaborations.CollaborationsView.as_view()),
+                path(
+                    "workspaces/<uuid:workspace_id>/favorite/",
+                    collaborations.WorkspaceFavoriteView.as_view(),
                 ),
                 path("people/", people.KnownPeopleView.as_view()),
                 path("people/<uuid:user_id>/", people.PersonCardView.as_view()),

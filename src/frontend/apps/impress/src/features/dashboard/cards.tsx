@@ -4,7 +4,7 @@ import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
-import { Box, Icon, StyledLink, Text } from '@/components';
+import { Box, BoxButton, Icon, StyledLink, Text } from '@/components';
 import { getEmojiAndTitle, useTrans } from '@/features/docs/doc-management';
 import { labelHref } from '@/features/labels/LabelEditor';
 import { useLabelCloud } from '@/features/labels/api';
@@ -233,64 +233,6 @@ const RecentBody = ({ wide }: BodyProps) => {
   );
 };
 
-/** One step of the hierarchy: an icon and its name. */
-const Level = ({ icon, name }: { icon: string; name: string }) => (
-  <Box
-    $direction="row"
-    $align="center"
-    $gap="4xs"
-    $padding={{ horizontal: 'xs', vertical: '4xs' }}
-    $css={css`
-      border-radius: 999px;
-      background: var(
-        --c--contextuals--background--semantic--contextual--primary
-      );
-    `}
-  >
-    <Icon iconName={icon} $size="18px" $variation="secondary" />
-    <Text $size="sm" $weight="600">
-      {name}
-    </Text>
-  </Box>
-);
-
-/**
- * A lean reminder of how things fit together: workspaces hold spaces,
- * spaces hold pages; pages can also sit directly in a workspace, or alone.
- */
-const HierarchyBody = () => {
-  const { t } = useTranslation();
-  const arrow = (
-    <Icon iconName="arrow_forward" $size="16px" $variation="tertiary" />
-  );
-  return (
-    <Box $gap="xs" $padding={{ horizontal: 'xs' }} data-testid="hierarchy">
-      <Box $direction="row" $align="center" $gap="2xs" $css="flex-wrap: wrap;">
-        <Level
-          icon="workspaces"
-          name={t('Workspace', { description: 'Level of the hierarchy' })}
-        />
-        {arrow}
-        <Level
-          icon="folder"
-          name={t('Space', { description: 'Level of the hierarchy' })}
-        />
-        {arrow}
-        <Level
-          icon="description"
-          name={t('Page', { description: 'Level of the hierarchy' })}
-        />
-      </Box>
-      <Text $size="sm" $variation="secondary">
-        {t(
-          'A workspace holds spaces, and a space holds pages. A page can also sit directly in a workspace, or stay on its own.',
-          { description: 'Explanation of the hierarchy' },
-        )}
-      </Text>
-    </Box>
-  );
-};
-
 /** How many entries the "for me" card shows. */
 const FOR_ME_SIZE = 8;
 
@@ -300,7 +242,30 @@ const FOR_ME_SIZE = 8;
  * from the current list, not from their notifications, so that one done or
  * taken back leaves the card.
  */
-const ForMeBody = () => {
+/** Where the full lists of the cards are, in "My collaborations". */
+export const NOTIFICATIONS_HREF = '/?target=notifications';
+export const LABELS_HREF = '/?target=labels';
+
+const SeeAll = ({ href }: { href: string }) => {
+  const { t } = useTranslation();
+  return (
+    <Box $direction="row" $justify="flex-end" $padding={{ horizontal: 'xs' }}>
+      <StyledLink href={href}>
+        <Text $size="sm" $theme="brand">
+          {t('See all', { description: 'Link from a card to its full list' })}
+        </Text>
+      </StyledLink>
+    </Box>
+  );
+};
+
+const ForMeBody = () => <ForMeList />;
+
+/**
+ * Mentions, notifications and assignments: a summary on the dashboard's
+ * card, everything on its own screen.
+ */
+export const ForMeList = ({ full = false }: { full?: boolean }) => {
   const { t } = useTranslation();
   const { relativeDate } = useDate();
   const { untitledDocument } = useTrans();
@@ -309,7 +274,7 @@ const ForMeBody = () => {
   const { data: notifications = [], isLoading } = useNotifications(true);
   const { data: assigned = [], isLoading: isAssignedLoading } =
     useAssignedRows(true);
-  const { markRead } = useNotificationMutations();
+  const { markRead, markAllRead } = useNotificationMutations();
 
   const entries = [
     ...notifications
@@ -326,9 +291,9 @@ const ForMeBody = () => {
       notification: undefined,
       row,
     })),
-  ]
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, FOR_ME_SIZE);
+  ].sort((a, b) => b.date.localeCompare(a.date));
+  const shown = full ? entries : entries.slice(0, FOR_ME_SIZE);
+  const unreadCount = notifications.filter((item) => !item.read_at).length;
 
   if (!isLoading && !isAssignedLoading && !entries.length) {
     return (
@@ -342,7 +307,21 @@ const ForMeBody = () => {
 
   return (
     <>
-      {entries.map(({ key, notification, row }) => {
+      {full && unreadCount > 0 && (
+        <Box $direction="row" $justify="flex-end">
+          <BoxButton
+            onClick={() => markAllRead.mutate()}
+            $padding={{ horizontal: 'xs', vertical: '4xs' }}
+          >
+            <Text $size="sm" $theme="brand">
+              {t('Mark all as read', {
+                description: 'Button reading every notification',
+              })}
+            </Text>
+          </BoxButton>
+        </Box>
+      )}
+      {shown.map(({ key, notification, row }) => {
         if (row) {
           const doc = row.document.title || untitledDocument;
           // Opening it also reads the notification it came with
@@ -412,6 +391,7 @@ const ForMeBody = () => {
           />
         );
       })}
+      {!full && <SeeAll href={NOTIFICATIONS_HREF} />}
     </>
   );
 };
@@ -520,7 +500,10 @@ const WorkspacesBody = () => {
  * right, and Recent pages across, under them.
  */
 /** A cloud of the labels of what one can see: the more used, the bigger. */
-const LabelsBody = () => {
+const LabelsBody = () => <LabelsOverview />;
+
+/** The labels of what one can see: a cloud, and on its screen a full list. */
+export const LabelsOverview = ({ full = false }: { full?: boolean }) => {
   const { t } = useTranslation();
   const { data = [], isLoading } = useLabelCloud();
   if (!isLoading && !data.length) {
@@ -535,41 +518,64 @@ const LabelsBody = () => {
   }
   const max = Math.max(1, ...data.map((item) => item.count));
   const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name));
+  const byUse = [...data].sort(
+    (a, b) => b.count - a.count || a.name.localeCompare(b.name),
+  );
   return (
-    <Box
-      $direction="row"
-      $align="baseline"
-      $gap="xs"
-      $padding="xs"
-      $css="flex-wrap: wrap; row-gap: 4px;"
-      data-testid="label-cloud"
-    >
-      {sorted.map((item) => {
-        const weight = item.count / max;
-        return (
-          <StyledLink
-            key={item.name}
-            href={labelHref(item.name)}
-            title={t('{{count}} uses', {
-              description: 'How many items carry a label',
-              count: item.count,
-            })}
-            $css={css`
-              font-size: ${0.8 + weight * 0.9}rem;
-              font-weight: ${weight > 0.6 ? 700 : weight > 0.3 ? 600 : 400};
-              color: var(--c--contextuals--content--semantic--brand--primary);
-              opacity: ${0.6 + weight * 0.4};
-              text-decoration: none;
-              &:hover {
-                text-decoration: underline;
-              }
-            `}
-          >
-            #{item.name}
-          </StyledLink>
-        );
-      })}
-    </Box>
+    <>
+      <Box
+        $direction="row"
+        $align="baseline"
+        $gap="xs"
+        $padding="xs"
+        $css="flex-wrap: wrap; row-gap: 4px;"
+        data-testid="label-cloud"
+      >
+        {sorted.map((item) => {
+          const weight = item.count / max;
+          return (
+            <StyledLink
+              key={item.name}
+              href={labelHref(item.name)}
+              title={t('{{count}} uses', {
+                description: 'How many items carry a label',
+                count: item.count,
+              })}
+              $css={css`
+                font-size: ${0.8 + weight * 0.9}rem;
+                font-weight: ${weight > 0.6 ? 700 : weight > 0.3 ? 600 : 400};
+                color: var(--c--contextuals--content--semantic--brand--primary);
+                opacity: ${0.6 + weight * 0.4};
+                text-decoration: none;
+                &:hover {
+                  text-decoration: underline;
+                }
+              `}
+            >
+              #{item.name}
+            </StyledLink>
+          );
+        })}
+      </Box>
+      {full ? (
+        <Box $gap="4xs" data-testid="label-list">
+          {byUse.map((item) => (
+            <Row
+              key={item.name}
+              href={labelHref(item.name)}
+              icon="sell"
+              title={`#${item.name}`}
+              detail={t('{{count}} uses', {
+                description: 'How many items carry a label',
+                count: item.count,
+              })}
+            />
+          ))}
+        </Box>
+      ) : (
+        <SeeAll href={LABELS_HREF} />
+      )}
+    </>
   );
 };
 
@@ -600,14 +606,6 @@ export const CARDS: CardDefinition[] = [
     defaultVisible: true,
     defaultWide: true,
     Body: RecentBody,
-  },
-  // A reminder of how workspaces, spaces and pages fit together
-  {
-    id: 'hierarchy',
-    icon: 'account_tree',
-    title: (t) => t('How it fits together', { description: 'Dashboard card' }),
-    defaultVisible: true,
-    Body: HierarchyBody,
   },
   {
     id: 'favorites',

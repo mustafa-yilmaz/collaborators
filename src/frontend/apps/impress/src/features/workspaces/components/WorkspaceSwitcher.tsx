@@ -34,7 +34,7 @@ export const WorkspaceSwitcher = () => {
     setCurrentWorkspaceId,
   ]);
 
-  const personalLabel = t('My spaces & pages', {
+  const personalLabel = t('My collaborations', {
     description: 'Left panel entry for content outside workspaces',
   });
 

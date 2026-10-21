@@ -22,6 +22,7 @@ import { AccountHints } from '@/features/account/AccountHints';
 import { useAuth } from '@/features/auth';
 import { useResponsiveStore } from '@/stores';
 
+import { HierarchyNote } from './HierarchyNote';
 import { CardLayout, useDashboardLayout } from './api';
 import { CARDS, DEFAULT_LAYOUT, mergeLayout } from './cards';
 
@@ -664,6 +665,8 @@ export const Dashboard = () => {
           )}
         </Box>
       </DndContext>
+
+      <HierarchyNote />
     </Box>
   );
 };

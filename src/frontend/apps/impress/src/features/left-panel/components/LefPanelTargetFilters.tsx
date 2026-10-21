@@ -1,10 +1,9 @@
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import { Box, Icon, StyledLink, Text } from '@/components';
 import { useCunninghamTheme } from '@/cunningham';
-import { DocDefaultFilter } from '@/docs/doc-management';
+import { DocDefaultFilter, useTrans } from '@/docs/doc-management';
 import { useLeftPanelStore } from '@/features/left-panel';
 import ClockIcon from '@/icons/clock.svg';
 import SharedIcon from '@/icons/shared.svg';
@@ -14,7 +13,7 @@ import UserIcon from '@/icons/user.svg';
 import { useResponsiveStore } from '@/stores/useResponsiveStore';
 
 export const LeftPanelTargetFilters = () => {
-  const { t } = useTranslation();
+  const { transFilter } = useTrans();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { isMobile } = useResponsiveStore();
@@ -24,6 +23,7 @@ export const LeftPanelTargetFilters = () => {
   // No list is highlighted on the dashboard (no target)
   const target = searchParams.get('target') as DocDefaultFilter | null;
 
+  // "My collaborations": what one is involved in, then the trash
   const defaultQueries = [
     {
       icon: (
@@ -33,10 +33,32 @@ export const LeftPanelTargetFilters = () => {
           $variation="tertiary"
         />
       ),
-      label: t('Recent', {
-        description: 'Name of the filter listing recently opened docs',
-      }),
+      label: transFilter(DocDefaultFilter.ALL_DOCS),
       targetQuery: DocDefaultFilter.ALL_DOCS,
+    },
+    {
+      icon: (
+        <Icon
+          iconName="notifications"
+          $size="20px"
+          $padding="4xs"
+          $variation="tertiary"
+        />
+      ),
+      label: transFilter(DocDefaultFilter.NOTIFICATIONS),
+      targetQuery: DocDefaultFilter.NOTIFICATIONS,
+    },
+    {
+      icon: (
+        <Icon
+          iconName="sell"
+          $size="20px"
+          $padding="4xs"
+          $variation="tertiary"
+        />
+      ),
+      label: transFilter(DocDefaultFilter.LABELS),
+      targetQuery: DocDefaultFilter.LABELS,
     },
     {
       icon: (
@@ -46,9 +68,7 @@ export const LeftPanelTargetFilters = () => {
           $variation="tertiary"
         />
       ),
-      label: t('My pages', {
-        description: 'Name of the filter listing docs owned by the user',
-      }),
+      label: transFilter(DocDefaultFilter.MY_DOCS),
       targetQuery: DocDefaultFilter.MY_DOCS,
     },
     {
@@ -59,9 +79,7 @@ export const LeftPanelTargetFilters = () => {
           $variation="tertiary"
         />
       ),
-      label: t('Shared with me', {
-        description: 'Name of the filter listing docs shared with the user',
-      }),
+      label: transFilter(DocDefaultFilter.SHARED_WITH_ME),
       targetQuery: DocDefaultFilter.SHARED_WITH_ME,
     },
     {
@@ -72,9 +90,7 @@ export const LeftPanelTargetFilters = () => {
           $variation="tertiary"
         />
       ),
-      label: t('Starred', {
-        description: "Name of the filter listing the user's favorite docs",
-      }),
+      label: transFilter(DocDefaultFilter.STARRED),
       targetQuery: DocDefaultFilter.STARRED,
     },
     {
@@ -85,9 +101,7 @@ export const LeftPanelTargetFilters = () => {
           $variation="tertiary"
         />
       ),
-      label: t('Trashbin', {
-        description: 'Name of the filter listing deleted docs',
-      }),
+      label: transFilter(DocDefaultFilter.TRASHBIN),
       targetQuery: DocDefaultFilter.TRASHBIN,
     },
   ];

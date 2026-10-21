@@ -22,8 +22,9 @@ export const useTrans = () => {
     [DocDefaultFilter.ALL_DOCS]: t('Recent', {
       description: 'Name of the filter listing recently opened docs',
     }),
-    [DocDefaultFilter.MY_DOCS]: t('My pages', {
-      description: 'Name of the filter listing docs owned by the user',
+    [DocDefaultFilter.MY_DOCS]: t('Owned by me', {
+      description:
+        'Name of the list of the workspaces, spaces and pages the user owns',
     }),
     [DocDefaultFilter.SHARED_WITH_ME]: t('Shared with me', {
       description: 'Name of the filter listing docs shared with the user',
@@ -33,6 +34,12 @@ export const useTrans = () => {
     }),
     [DocDefaultFilter.TRASHBIN]: t('Trashbin', {
       description: 'Name of the filter listing deleted docs',
+    }),
+    [DocDefaultFilter.NOTIFICATIONS]: t('Notifications', {
+      description: 'Name of the list of mentions, notifications, assignments',
+    }),
+    [DocDefaultFilter.LABELS]: t('Labels', {
+      description: 'Name of the list of labels',
     }),
   };
 

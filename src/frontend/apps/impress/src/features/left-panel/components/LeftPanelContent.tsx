@@ -2,7 +2,7 @@ import { useTreeContext } from '@gouvfr-lasuite/ui-components';
 import { useRouter } from 'next/router';
 import { css } from 'styled-components';
 
-import { Box, SeparatedSection } from '@/components';
+import { Box } from '@/components';
 import { Doc } from '@/features/docs/doc-management';
 import { useDocStore } from '@/features/docs/doc-management/stores/useDocStore';
 import { DocTree } from '@/features/docs/doc-tree/components/DocTree';
@@ -38,18 +38,15 @@ export const LeftPanelContent = () => {
           className="--docs--home-left-panel-content"
         >
           <WorkspaceSwitcher />
-          <SpaceList />
-          {/* In a workspace, the pages placed directly in it */}
-          {currentWorkspaceId && <PageList workspaceId={currentWorkspaceId} />}
-          {/* Independent pages live outside workspaces */}
-          {!currentWorkspaceId && (
+          {/* In a workspace: its spaces, and the pages placed directly in it */}
+          {currentWorkspaceId && (
             <>
-              <PageList />
-              <SeparatedSection showSeparator={true}>
-                <LeftPanelTargetFilters />
-              </SeparatedSection>
+              <SpaceList />
+              <PageList workspaceId={currentWorkspaceId} />
             </>
           )}
+          {/* "My collaborations": lists of what one is involved in */}
+          {!currentWorkspaceId && <LeftPanelTargetFilters />}
         </Box>
       </>
     );

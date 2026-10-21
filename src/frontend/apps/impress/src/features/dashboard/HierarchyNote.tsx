@@ -1,0 +1,104 @@
+import { useTranslation } from 'react-i18next';
+import { css } from 'styled-components';
+
+import { Box, Icon, StyledLink, Text } from '@/components';
+import { Title } from '@/components/Title';
+
+export const GUIDE_PATH = '/guide/';
+
+/** One level of the hierarchy: an icon and its name. */
+const Level = ({ icon, name }: { icon: string; name: string }) => (
+  <Box
+    $direction="row"
+    $align="center"
+    $gap="4xs"
+    $padding={{ horizontal: 'xs', vertical: '4xs' }}
+    $css={css`
+      border-radius: 999px;
+      background: var(
+        --c--contextuals--background--semantic--contextual--primary
+      );
+    `}
+  >
+    <Icon iconName={icon} $size="18px" $variation="secondary" />
+    <Text $size="sm" $weight="600">
+      {name}
+    </Text>
+  </Box>
+);
+
+/**
+ * At the very bottom of the dashboard, centred: a quiet reminder of how
+ * workspaces, spaces and pages fit together, with a link to the guide. Not a
+ * card: nothing to move, hide or close.
+ */
+export const HierarchyNote = () => {
+  const { t } = useTranslation();
+  const arrow = (
+    <Icon iconName="arrow_forward" $size="16px" $variation="tertiary" />
+  );
+  return (
+    <Box
+      as="aside"
+      $align="center"
+      $gap="xs"
+      $margin={{ top: 'lg' }}
+      $padding={{ top: 'md', bottom: 'xs' }}
+      data-testid="hierarchy-note"
+      $css={css`
+        border-top: 1px solid var(--c--contextuals--border--surface--primary);
+        text-align: center;
+      `}
+    >
+      <Text
+        as="h2"
+        $size="sm"
+        $weight="600"
+        $variation="secondary"
+        $margin="none"
+        $direction="row"
+        $align="center"
+        $gap="0.35em"
+        $css="flex-wrap: wrap; justify-content: center;"
+      >
+        {t('The hierarchical structure in', {
+          description: 'Title of the hierarchy note, before the logo',
+        })}
+        <Title as="span" $size="0.95rem" />
+      </Text>
+      <Box
+        $direction="row"
+        $align="center"
+        $justify="center"
+        $gap="2xs"
+        $css="flex-wrap: wrap;"
+      >
+        <Level
+          icon="workspaces"
+          name={t('Workspace', { description: 'Level of the hierarchy' })}
+        />
+        {arrow}
+        <Level
+          icon="folder"
+          name={t('Space', { description: 'Level of the hierarchy' })}
+        />
+        {arrow}
+        <Level
+          icon="description"
+          name={t('Page', { description: 'Level of the hierarchy' })}
+        />
+      </Box>
+      <Text $size="sm" $variation="secondary" $maxWidth="560px">
+        {t(
+          'A workspace holds spaces, and a space holds pages. A page can also sit directly in a workspace and/or space, or stay on its own.',
+          { description: 'Explanation of the hierarchy' },
+        )}{' '}
+        <StyledLink href={GUIDE_PATH} $css="display: inline;">
+          <Text as="span" $size="sm" $theme="brand">
+            {t('Learn more', { description: 'Link to the guide' })}
+          </Text>
+        </StyledLink>
+      </Text>
+    </Box>
+  );
+};

@@ -2,124 +2,109 @@ import {
   Button,
   DropdownMenu,
   DropdownMenuItem,
-  Loader,
 } from '@gouvfr-lasuite/ui-components';
 import { useRouter } from 'next/router';
-import { useCallback, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { ButtonLink, Text } from '@/components';
-import { useConfig } from '@/core/config/api/useConfig';
+import { Icon, Text } from '@/components';
 import { useLeftPanelStore } from '@/features/left-panel/stores/useLeftPanelStore';
+import { usePageMoves, useWorkspaces } from '@/features/workspaces/api';
+import { CreateSpaceModal } from '@/features/workspaces/components/CreateSpaceModal';
+import { CreateWorkspaceModal } from '@/features/workspaces/components/CreateWorkspaceModal';
 import { useWorkspaceStore } from '@/features/workspaces/stores/useWorkspaceStore';
 import ArrowDownIcon from '@/icons/arrow-drop-down.svg';
 import SubDocIcon from '@/icons/doc-new-subdoc.svg';
 import PlusIcon from '@/icons/doc-plus.svg';
-import UploadIcon from '@/icons/upload-arrow.svg';
 import { useResponsiveStore } from '@/stores/useResponsiveStore';
 
 import { useCreateChildDoc } from '../api/useCreateChildDoc';
-import { useImport } from '../hooks/useImport';
+import { useCreateDoc } from '../api/useCreateDoc';
 import { useDocStore } from '../stores/useDocStore';
 
 interface NewDocButtonProps {
   onClose?: () => void;
 }
 
-export const NewDocButton = ({ onClose }: NewDocButtonProps) => {
-  const { t } = useTranslation();
-  const { currentDoc } = useDocStore();
-  const { data: config } = useConfig();
-  const isDropdownEnabled = config?.CONVERSION_UPLOAD_ENABLED || currentDoc;
-  const { setCurrentWorkspaceId } = useWorkspaceStore();
-
-  return (
-    <>
-      <ButtonLink
-        href="/docs/new"
-        data-testid="new-doc-button"
-        color="brand"
-        onClick={() => {
-          // A new page belongs to no space: show it among "My spaces & pages"
-          setCurrentWorkspaceId(null);
-          onClose?.();
-        }}
-        icon={<PlusIcon aria-hidden="true" width={24} height={24} />}
-        style={{
-          borderRadius: isDropdownEnabled ? '4px 0 0 4px' : '4px',
-          borderRight:
-            '1px solid var(--c--contextuals--background--palette--brand--primary)',
-        }}
-      >
-        <Text $withThemeInherited $size="md" $weight="500">
-          {t('New', { description: 'Button to create a new document' })}
-        </Text>
-      </ButtonLink>
-      {isDropdownEnabled && <DropdownArrow />}
-    </>
-  );
+/** Places a page just created directly in the workspace, then opens it. */
+const PlaceInWorkspace = ({
+  pageId,
+  workspaceId,
+  onDone,
+}: {
+  pageId: string;
+  workspaceId: string;
+  onDone: () => void;
+}) => {
+  const { moveToWorkspace } = usePageMoves(pageId);
+  if (moveToWorkspace.isIdle) {
+    moveToWorkspace.mutate({ workspaceId }, { onSettled: onDone });
+  }
+  return null;
 };
 
-export function DropdownArrow() {
+/**
+ * "New": a workspace, a space or a page (in the workspace shown in the left
+ * panel, if any), and, on a page, a sub-page of it.
+ */
+export const NewDocButton = ({ onClose }: NewDocButtonProps) => {
+  const { t } = useTranslation();
+  const router = useRouter();
   const { isMobile } = useResponsiveStore();
   const { closePanel } = useLeftPanelStore();
-  const router = useRouter();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { currentDoc } = useDocStore();
-  const { t } = useTranslation();
-  const {
-    getInputProps,
-    open: openImport,
-    isPending: isImportPending,
-    isEnabled: isImportEnabled,
-  } = useImport({
-    onImportSuccess: (doc) => {
-      void router.push(`/docs/${doc.id}/`);
-      if (isMobile) {
-        closePanel();
-      }
-    },
+  const { currentWorkspaceId } = useWorkspaceStore();
+  const { data: workspaces = [] } = useWorkspaces();
+  const workspace = workspaces.find((item) => item.id === currentWorkspaceId);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [creating, setCreating] = useState<'workspace' | 'space'>();
+  const [placing, setPlacing] = useState<string>();
+
+  const open = (docId: string) => {
+    void router.push(`/docs/${docId}/`);
+    if (isMobile) {
+      closePanel();
+    }
+    onClose?.();
+  };
+  const { mutate: createPage } = useCreateDoc({
+    onSuccess: (doc) => (workspace ? setPlacing(doc.id) : open(doc.id)),
   });
   const { mutate: createChildDoc } = useCreateChildDoc({
-    onSuccess: (newDoc) => {
-      void router.push(`/docs/${newDoc.id}`);
-      if (isMobile) {
-        closePanel();
-      }
-    },
+    onSuccess: (doc) => open(doc.id),
   });
 
-  const toggleMenu = useCallback(() => {
-    setIsMenuOpen((open) => !open);
-  }, []);
-
-  const options = useMemo<DropdownMenuItem[]>(
-    () => [
-      {
-        label: t('New sub-page', {
-          description: 'Action to create a doc nested under the current doc',
-        }),
-        icon: <SubDocIcon aria-hidden="true" width="24" height="24" />,
-        callback: () => {
-          if (currentDoc) {
-            createChildDoc({
-              parentId: currentDoc.id,
-            });
-          }
-        },
-        isHidden: !currentDoc,
-      },
-      {
-        label: t('Import a document', {
-          description: 'Menu action to create a document from a file',
-        }),
-        icon: <UploadIcon aria-hidden="true" width="24" height="24" />,
-        callback: openImport,
-        isHidden: !isImportEnabled || !!currentDoc,
-      },
-    ],
-    [t, openImport, currentDoc, createChildDoc, isImportEnabled],
-  );
+  const options: DropdownMenuItem[] = [
+    {
+      label: t('Create a new workspace', {
+        description: 'New menu: create a workspace',
+      }),
+      icon: <Icon iconName="workspaces" $size="22px" />,
+      callback: () => setCreating('workspace'),
+    },
+    {
+      label: t('Create a new space', {
+        description: 'New menu: create a space',
+      }),
+      icon: <Icon iconName="create_new_folder" $size="22px" />,
+      callback: () => setCreating('space'),
+    },
+    {
+      label: t('Create a new page', {
+        description: 'New menu: create a page',
+      }),
+      icon: <PlusIcon aria-hidden="true" width="22" height="22" />,
+      callback: () => createPage({}),
+    },
+    {
+      label: t('New sub-page', {
+        description: 'Action to create a doc nested under the current doc',
+      }),
+      icon: <SubDocIcon aria-hidden="true" width="22" height="22" />,
+      callback: () => currentDoc && createChildDoc({ parentId: currentDoc.id }),
+      isHidden: !currentDoc,
+    },
+  ];
 
   return (
     <>
@@ -129,26 +114,41 @@ export function DropdownArrow() {
         onOpenChange={setIsMenuOpen}
       >
         <Button
+          data-testid="new-doc-button"
+          color="brand"
+          aria-expanded={isMenuOpen}
           aria-label={t('Open new page options', {
             description:
               'Accessible name of the button opening the new document menu',
           })}
-          color="brand"
-          variant="primary"
-          iconPosition="left"
-          icon={
-            isImportPending ? (
-              <Loader size="small" />
-            ) : (
-              <ArrowDownIcon aria-hidden="true" width="24" height="24" />
-            )
-          }
-          onClick={!isImportPending ? toggleMenu : undefined}
-          aria-disabled={isImportPending}
-          style={{ borderRadius: '0 4px 4px 0', width: '30px' }}
-        />
+          icon={<PlusIcon aria-hidden="true" width={24} height={24} />}
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+        >
+          <Text $withThemeInherited $size="md" $weight="500">
+            {t('New', { description: 'Button to create a new document' })}
+          </Text>
+          <ArrowDownIcon aria-hidden="true" width="20" height="20" />
+        </Button>
       </DropdownMenu>
-      <input {...getInputProps()} />
+      {creating === 'workspace' && (
+        <CreateWorkspaceModal onClose={() => setCreating(undefined)} />
+      )}
+      {creating === 'space' && (
+        <CreateSpaceModal
+          workspace={workspace}
+          onClose={() => setCreating(undefined)}
+        />
+      )}
+      {placing && workspace && (
+        <PlaceInWorkspace
+          pageId={placing}
+          workspaceId={workspace.id}
+          onDone={() => {
+            setPlacing(undefined);
+            open(placing);
+          }}
+        />
+      )}
     </>
   );
-}
+};

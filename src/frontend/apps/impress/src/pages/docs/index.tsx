@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import { DocDefaultFilter, useTrans } from '@/docs/doc-management';
-import { DocsGrid } from '@/docs/docs-grid';
+import { CollaborationsScreen } from '@/features/collaborations/CollaborationsScreen';
 import { Dashboard } from '@/features/dashboard/Dashboard';
 import { HeaderFloatingBar } from '@/features/header/components/HeaderFloatingBar';
 import { MainLayout } from '@/layouts';
@@ -48,7 +48,7 @@ const Page: NextPageWithLayout = () => {
             : undefined
         }
       />
-      {isDashboard ? <Dashboard /> : <DocsGrid target={target} />}
+      {isDashboard ? <Dashboard /> : <CollaborationsScreen target={target} />}
     </>
   );
 };

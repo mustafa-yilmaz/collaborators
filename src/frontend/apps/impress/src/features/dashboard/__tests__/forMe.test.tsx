@@ -72,7 +72,10 @@ describe('Mentions, notifications and assignments card', () => {
 
     const assignment = await screen.findByText('Book the room');
     const rows = screen.getAllByRole('link');
-    expect(rows).toHaveLength(2);
+    // Two entries, then the link to the full list
+    expect(rows).toHaveLength(3);
+    expect(rows[2]).toHaveTextContent('See all');
+    expect(rows[2]).toHaveAttribute('href', '/?target=notifications');
     expect(rows[0]).toContainElement(assignment);
     expect(rows[0]).toHaveTextContent('Assigned by Ada in Plan');
     expect(rows[0]).toHaveAttribute('href', '/docs/d-1#b-1');

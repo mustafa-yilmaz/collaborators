@@ -1,7 +1,7 @@
 import { Button, Input } from '@gouvfr-lasuite/ui-components';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { PropsWithChildren, ReactElement, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
@@ -15,6 +15,7 @@ import {
 } from '@/components';
 import { Title } from '@/components/Title';
 import { gotoLogin, useAuth } from '@/features/auth';
+import { HeaderFloatingBar } from '@/features/header/components/HeaderFloatingBar';
 import { LabelsOverview } from '@/features/labels/LabelsOverview';
 import { SearchResults } from '@/features/search/SearchResults';
 import { SEARCH_MIN_LENGTH, useSearch } from '@/features/search/api';
@@ -24,6 +25,7 @@ import {
   useWorkspaceDirectory,
 } from '@/features/workspaces/api';
 import { useWorkspaceStore } from '@/features/workspaces/stores/useWorkspaceStore';
+import { MainLayout } from '@/layouts';
 import { NextPageWithLayout } from '@/types/next';
 
 const WorkspaceCard = ({ workspace }: { workspace: DirectoryWorkspace }) => {
@@ -178,8 +180,8 @@ const SearchScreen = () => {
       <Head>
         <title>{`${title} - Collaborators`}</title>
       </Head>
+      <HeaderFloatingBar />
       <Box
-        as="main"
         $width="100%"
         $maxWidth={SCREEN_MAX_WIDTH}
         $margin={{ horizontal: 'auto' }}
@@ -317,6 +319,16 @@ const Directory = () => {
       </Box>
     </>
   );
+};
+
+/** Signed in, the Search screen sits in the app, with the left panel. */
+const DiscoverLayout = ({ children }: PropsWithChildren) => {
+  const { authenticated } = useAuth();
+  return authenticated ? <MainLayout>{children}</MainLayout> : <>{children}</>;
+};
+
+Page.getLayout = function getLayout(page: ReactElement) {
+  return <DiscoverLayout>{page}</DiscoverLayout>;
 };
 
 export default Page;

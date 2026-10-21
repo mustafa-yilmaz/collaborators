@@ -3,7 +3,7 @@ import { Fragment, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
-import { Box, Icon, Text } from '@/components';
+import { Box, BoxButton, Icon, Text } from '@/components';
 import { labelHref } from '@/features/labels/LabelEditor';
 import { useWorkspaceStore } from '@/features/workspaces/stores/useWorkspaceStore';
 
@@ -45,7 +45,13 @@ const ResultRow = ({
   onClick: () => void;
 }) => (
   <Box as="li" $css="list-style: none;">
-    <Box as="button" type="button" onClick={onClick} $css={rowCss}>
+    <BoxButton
+      onClick={onClick}
+      $direction="row"
+      $align="center"
+      $width="100%"
+      $css={rowCss}
+    >
       <Icon iconName={icon} $size="22px" $variation="secondary" />
       <Box $flex={1} $css="min-width: 0;">
         <Text $size="sm" $weight="500" $ellipsis>
@@ -57,7 +63,7 @@ const ResultRow = ({
           </Text>
         )}
       </Box>
-    </Box>
+    </BoxButton>
   </Box>
 );
 

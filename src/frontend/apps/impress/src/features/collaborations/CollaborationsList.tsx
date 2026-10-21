@@ -6,6 +6,11 @@ import { css } from 'styled-components';
 
 import { Box, BoxButton, Icon, Loading, StyledLink, Text } from '@/components';
 import {
+  CARD_ICON_GAP,
+  CARD_ICON_SIZE,
+  TEXT_INDENT,
+} from '@/features/dashboard/CardParts';
+import {
   useCreateDoc,
   useCreateFavoriteDoc,
   useDeleteFavoriteDoc,
@@ -24,10 +29,11 @@ import {
   useStarWorkspace,
 } from './api';
 
+// The icon column of the dashboard's cards, here too
 const rowCss = css`
   display: flex;
   align-items: center;
-  gap: var(--c--globals--spacings--xs);
+  gap: ${CARD_ICON_GAP};
   padding: var(--c--globals--spacings--2xs) var(--c--globals--spacings--xs);
   border-radius: var(--c--globals--spacings--3xs);
   color: inherit;
@@ -95,11 +101,18 @@ const Group = ({
         $align="center"
         $justify="space-between"
         $gap="sm"
-        $css={css`
-          border-bottom: 1px solid
-            var(--c--contextuals--border--surface--primary);
-          padding-bottom: var(--c--globals--spacings--3xs);
-        `}
+        $css={
+          compact
+            ? css`
+                /* In a card: over the titles of its rows */
+                padding-inline-start: ${TEXT_INDENT};
+              `
+            : css`
+                border-bottom: 1px solid
+                  var(--c--contextuals--border--surface--primary);
+                padding-bottom: var(--c--globals--spacings--3xs);
+              `
+        }
       >
         <Text
           as={compact ? 'h3' : 'h2'}
@@ -136,7 +149,7 @@ const DocumentRow = ({ doc }: { doc: CollaborationDocument }) => {
       <StyledLink href={`/docs/${doc.id}/`} $css={rowCss}>
         <Icon
           iconName={doc.kind === 'space' ? 'folder' : 'description'}
-          $size="20px"
+          $size={CARD_ICON_SIZE}
           $variation="secondary"
         />
         <Box $css="min-width: 0;">
@@ -204,7 +217,9 @@ export const CollaborationsList = ({
       <Text
         $size="sm"
         $variation="secondary"
-        $padding={{ horizontal: 'xs' }}
+        $css={css`
+          padding-inline: ${TEXT_INDENT} var(--c--globals--spacings--xs);
+        `}
         data-testid={`collaborations-${view}`}
       >
         {t('Nothing here yet.', {
@@ -264,7 +279,11 @@ export const CollaborationsList = ({
               $css={rowCss}
               onClick={() => setCurrentWorkspaceId(workspace.id)}
             >
-              <Icon iconName="workspaces" $size="20px" $variation="secondary" />
+              <Icon
+                iconName="workspaces"
+                $size={CARD_ICON_SIZE}
+                $variation="secondary"
+              />
               <Box $css="min-width: 0;">
                 <Text $size="sm" $weight="500" $ellipsis>
                   {workspace.name}

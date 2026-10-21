@@ -13,7 +13,7 @@ export const useTranslatedShareSettings = () => {
       description: 'Link sharing level: any logged-in user',
     }),
     [LinkReach.PUBLIC]: t('Public', {
-      description: 'Document visibility: anyone with the link can access',
+      description: 'Page visibility: anyone with the link can access',
     }),
   };
 
@@ -43,11 +43,11 @@ export const useTranslatedShareSettings = () => {
       icon: 'vpn_lock',
       value: LinkReach.AUTHENTICATED,
       descriptionReadOnly: t(
-        'Anyone with the link can view the document if they are logged in',
+        'Anyone with the link can view the page if they are logged in',
         { description: 'Description of the connected level, read only' },
       ),
       descriptionEdit: t(
-        'Anyone with the link can edit the document if they are logged in',
+        'Anyone with the link can edit the page if they are logged in',
         { description: 'Description of the connected level, can edit' },
       ),
     },
@@ -55,10 +55,10 @@ export const useTranslatedShareSettings = () => {
       label: linkReachTranslations[LinkReach.PUBLIC],
       icon: 'public',
       value: LinkReach.PUBLIC,
-      descriptionReadOnly: t('Anyone with the link can see the document', {
+      descriptionReadOnly: t('Anyone with the link can see the page', {
         description: 'Description of the public level, read only',
       }),
-      descriptionEdit: t('Anyone with the link can edit the document', {
+      descriptionEdit: t('Anyone with the link can edit the page', {
         description: 'Description of the public level, can edit',
       }),
     },

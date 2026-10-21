@@ -422,7 +422,7 @@ export const BlockNoteEditor = ({ doc, provider }: BlockNoteEditorProps) => {
           sideMenu={false}
           theme="light"
           comments={false}
-          aria-label={t('Document editor', {
+          aria-label={t('Page editor', {
             description: 'Accessible name of the editor area',
           })}
           // To not clipped the floating part in the editor area

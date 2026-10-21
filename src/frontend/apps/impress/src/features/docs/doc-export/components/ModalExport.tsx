@@ -299,7 +299,7 @@ export const ModalExport = ({ onClose, doc }: ModalExportProps) => {
           as="p"
           id="modal-export-description"
         >
-          {t('Export your document to download in {{format}} format.', {
+          {t('Export your page to download in {{format}} format.', {
             description: 'Explanation in the export dialog',
             format: formatSelect.allFormatsLabel,
           })}

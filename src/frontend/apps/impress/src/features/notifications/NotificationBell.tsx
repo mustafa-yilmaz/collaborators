@@ -95,7 +95,7 @@ export const useNotificationText = () => {
     }
     const doc =
       notification.document?.title ||
-      t('Untitled document', { description: 'Name of a doc without title' });
+      t('Untitled page', { description: 'Name of a doc without title' });
     const group = notification.team_label;
 
     if (notification.kind === 'assignment') {

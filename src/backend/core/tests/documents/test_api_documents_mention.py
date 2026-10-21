@@ -153,7 +153,7 @@ def test_api_documents_mention_authenticated_success(role):
     assert email.to == [mentioned_user.email]
     assert email.subject.lower() == 'mentioning user mentioned you in "my doc"'
     email_content = " ".join(email.body.split())
-    assert "Mentioning User mentioned you in the following document: My doc" in (
+    assert "Mentioning User mentioned you in the following page: My doc" in (
         email_content
     )
     assert f"docs/{document.id!s}/#{anchor_id}" in email_content
@@ -461,7 +461,7 @@ def test_api_documents_mention_thread_other_document():
 
     assert response.status_code == 400
     assert response.json() == {
-        "thread_id": ["The thread does not belong to this document."]
+        "thread_id": ["The thread does not belong to this page."]
     }
     assert models.Mention.objects.exists() is False
 

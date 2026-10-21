@@ -36,7 +36,7 @@ def test_models_mentions_thread_other_document():
     with pytest.raises(ValidationError) as excinfo:
         factories.MentionFactory(thread=thread)
 
-    assert "The thread does not belong to this document." in str(excinfo.value)
+    assert "The thread does not belong to this page." in str(excinfo.value)
 
 
 def test_models_mentions_document_deletion_cascades():

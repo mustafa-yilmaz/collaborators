@@ -67,7 +67,7 @@ export const DocsGridItem = ({
         ${$css}
       `}
       className="--docs--doc-grid-item"
-      aria-label={t('Open document: {{title}}', {
+      aria-label={t('Open page: {{title}}', {
         description: 'Accessible name of a document row, an action to open it',
         title: doc.title || untitledDocument,
       })}
@@ -183,7 +183,7 @@ export const DocsGridItemTitle = ({
               icon={<StarIcon aria-hidden="true" width={16} height={16} />}
             />
             <span className="sr-only">
-              {t('This document is starred', {
+              {t('This page is starred', {
                 description:
                   "Screen reader text indicating the document is in the user's favorites",
               })}

@@ -10,7 +10,7 @@ export const AlertOffline = () => {
   return (
     <Card
       className="--docs--alert-offline"
-      aria-label={t('Alert offline document', {
+      aria-label={t('Alert offline page', {
         description:
           'Accessible name of the banner telling the user is offline',
       })}

@@ -101,7 +101,7 @@ test.describe('Doc Collaboration', () => {
     await page.getByTestId('doc-access-mode').click();
     await page.getByRole('menuitemradio', { name: 'Editing' }).click();
     await expect(
-      page.getByText('The document visibility has been updated').first(),
+      page.getByText('The page visibility has been updated').first(),
     ).toBeVisible();
 
     // the re-check reaches the reader and their socket goes down

@@ -54,7 +54,7 @@ export const updateShareLink = async (
   await page.getByRole('menuitemradio', { name: linkReach }).click();
 
   const visibilityUpdatedText = page
-    .getByText('The document visibility has been updated')
+    .getByText('The page visibility has been updated')
     .first();
 
   await expect(visibilityUpdatedText).toBeVisible();

@@ -72,7 +72,7 @@ describe('LinkSelected', () => {
       wrapper: AppWrapper,
     });
 
-    expect(screen.getByText(`Untitled document`)).toBeInTheDocument();
+    expect(screen.getByText(`Untitled page`)).toBeInTheDocument();
   });
 
   it('names a page the reader cannot open "Private page", unclickable', () => {

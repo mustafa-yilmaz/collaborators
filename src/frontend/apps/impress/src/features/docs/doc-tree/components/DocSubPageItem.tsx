@@ -91,7 +91,7 @@ const DocSubPageLoadMore = (props: TreeViewNodeProps<Doc>) => {
       $justify="center"
       $padding={{ vertical: 'xs' }}
       role="status"
-      aria-label={t('Loading more documents', {
+      aria-label={t('Loading more pages', {
         description: 'Screen reader status while more tree items load',
       })}
     >
@@ -195,7 +195,7 @@ const DocSubPageItemContent = (props: TreeViewNodeProps<Doc>) => {
               description: 'Accessible name of a deleted doc in the tree',
               title: displayTitle,
             })
-          : t('Open document {{title}}', {
+          : t('Open page {{title}}', {
               description:
                 'Accessible name of a document link, an action to open it',
               title: displayTitle,

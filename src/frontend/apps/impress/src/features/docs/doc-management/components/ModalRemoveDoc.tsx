@@ -57,7 +57,7 @@ export const ModalRemoveDoc = ({
         onClose();
 
         toast(
-          t('The document has been deleted.', {
+          t('The page has been deleted.', {
             description: 'Toast shown after deleting a document',
           }),
           VariantType.SUCCESS,
@@ -88,7 +88,7 @@ export const ModalRemoveDoc = ({
       closeOnClickOutside
       hideCloseButton
       onClose={onClose}
-      aria-label={t('Delete a doc', {
+      aria-label={t('Delete a page', {
         description: 'Title and accessible name of the delete document dialog',
       })}
       rightActions={
@@ -109,7 +109,7 @@ export const ModalRemoveDoc = ({
             })}
           </Button>
           <Button
-            aria-label={t('Delete document', {
+            aria-label={t('Delete page', {
               description:
                 'Accessible name of the button confirming the deletion',
             })}
@@ -133,7 +133,7 @@ export const ModalRemoveDoc = ({
             $margin="0"
             $align="flex-start"
           >
-            {t('Delete a doc', {
+            {t('Delete a page', {
               description:
                 'Title and accessible name of the delete document dialog',
             })}
@@ -166,7 +166,7 @@ export const ModalRemoveDoc = ({
               </Trans>
             ) : (
               t(
-                'This document will be placed in the trashbin. You can restore it within {{days}} days.',
+                'This page will be placed in the trashbin. You can restore it within {{days}} days.',
                 {
                   description: 'Explanation in the delete dialog',
                   days: trashBinCutoffDays,

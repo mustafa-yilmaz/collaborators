@@ -18,13 +18,13 @@ test.describe('Doc Import', () => {
 
     await page.goto('/');
 
-    await expect(page.getByLabel('Open new document options')).toBeHidden();
+    await expect(page.getByLabel('Open new page options')).toBeHidden();
   });
 
   test('it imports 2 docs with the import icon', async ({ page }) => {
     const fileChooserPromise = page.waitForEvent('filechooser');
 
-    await page.getByLabel('Open new document options').click();
+    await page.getByLabel('Open new page options').click();
     await page.getByRole('menuitem', { name: 'Import a document' }).click();
 
     const fileChooser = await fileChooserPromise;
@@ -35,12 +35,12 @@ test.describe('Doc Import', () => {
 
     await expect(
       page.getByText(
-        'The document "test_import.docx" has been successfully imported',
+        'The page "test_import.docx" has been successfully imported',
       ),
     ).toBeVisible();
     await expect(
       page.getByText(
-        'The document "test_import.md" has been successfully imported',
+        'The page "test_import.md" has been successfully imported',
       ),
     ).toBeVisible();
 
@@ -155,12 +155,12 @@ test.describe('Doc Import', () => {
     // Wait for success messages
     await expect(
       page.getByText(
-        `The document "${randomImport}.docx" has been successfully imported`,
+        `The page "${randomImport}.docx" has been successfully imported`,
       ),
     ).toBeVisible();
     await expect(
       page.getByText(
-        `The document "${randomImport}.md" has been successfully imported`,
+        `The page "${randomImport}.md" has been successfully imported`,
       ),
     ).toBeVisible();
 

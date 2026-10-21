@@ -22,12 +22,12 @@ test.describe('Document create member', () => {
 
     await page.getByRole('button', { name: 'Share' }).click();
 
-    const shareModal = page.getByLabel('Share the document');
-    await expect(shareModal.getByText('Document owner')).toBeVisible();
+    const shareModal = page.getByLabel('Share the page');
+    await expect(shareModal.getByText('Page owner')).toBeVisible();
 
     const inputSearch = page.getByTestId('quick-search-input');
     await inputSearch.fill('u');
-    await expect(shareModal.getByText('Document owner')).toBeHidden();
+    await expect(shareModal.getByText('Page owner')).toBeHidden();
     await expect(
       shareModal.getByText('Type at least 3 characters to display user names'),
     ).toBeVisible();
@@ -198,7 +198,7 @@ test.describe('Document create member', () => {
 
     await page.getByTestId('doc-share-invite-button').click();
     await expect(
-      page.getByText(`"${email}" is already invited to the document.`),
+      page.getByText(`"${email}" is already invited to the page.`),
     ).toBeVisible();
     const responseCreateInvitationFail =
       await responsePromiseCreateInvitationFail;
@@ -286,7 +286,7 @@ test.describe('Document create member', () => {
       await connectOtherUserToDoc({ browserName, docUrl });
 
     await expect(
-      otherPage.getByText('Insufficient access rights to view the document.'),
+      otherPage.getByText('Insufficient access rights to view the page.'),
     ).toBeVisible({
       timeout: 10000,
     });
@@ -294,7 +294,7 @@ test.describe('Document create member', () => {
     await otherPage.getByRole('button', { name: 'Request access' }).click();
 
     await expect(
-      otherPage.getByText('Your access request for this document is pending.'),
+      otherPage.getByText('Your access request for this page is pending.'),
     ).toBeVisible();
 
     // First user approves the request
@@ -332,7 +332,7 @@ test.describe('Document create member', () => {
     // Revoke access
     await updateRoleUser(page, 'Remove access', emailRequest);
     await expect(
-      otherPage.getByText('Insufficient access rights to view the document.'),
+      otherPage.getByText('Insufficient access rights to view the page.'),
     ).toBeVisible({
       timeout: 10000,
     });
@@ -385,7 +385,7 @@ test.describe('Document create member: Multiple login', () => {
 
     await expect(
       page.getByText(
-        "You're currently viewing a sub-document. To gain access, please request permission from the main document.",
+        "You're currently viewing a sub-page. To gain access, please request permission from the main page.",
       ),
     ).toBeVisible({
       timeout: 10000,

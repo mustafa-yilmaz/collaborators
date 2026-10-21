@@ -207,7 +207,7 @@ def test_api_document_accesses_create_authenticated_administrator_share_to_user(
     email = mail.outbox[0]
     assert email.to == [other_user["email"]]
     email_content = " ".join(email.body.split())
-    assert f"{user.full_name} shared a document with you!" in email_content
+    assert f"{user.full_name} shared a page with you!" in email_content
     assert (
         f"{user.full_name} ({user.email}) invited you with the role &quot;{role}&quot; "
         f"on the following document: {document.title}"
@@ -403,7 +403,7 @@ def test_api_document_accesses_create_authenticated_owner_share_to_user(
     email = mail.outbox[0]
     assert email.to == [other_user["email"]]
     email_content = " ".join(email.body.split())
-    assert f"{user.full_name} shared a document with you!" in email_content
+    assert f"{user.full_name} shared a page with you!" in email_content
     assert (
         f"{user.full_name} ({user.email}) invited you with the role &quot;{role}&quot; "
         f"on the following document: {document.title}"
@@ -585,7 +585,7 @@ def test_api_document_accesses_create_email_in_receivers_language(via, mock_user
         email_subject = " ".join(email.subject.split())
         if expected_language == "en-us":
             assert (
-                f"{user.full_name} shared a document with you: {document.title}".lower()
+                f"{user.full_name} shared a page with you: {document.title}".lower()
                 in email_subject.lower()
             )
         elif expected_language == "fr-fr":

@@ -156,7 +156,7 @@ test.describe('Document list members', () => {
     await expect(currentUserRole).toBeVisible();
     await currentUserRole.click();
     const soloOwner = page.getByText(
-      `You are the sole owner of this group, make another member the group owner before you can change your own role or be removed from your document.`,
+      `You are the sole owner of this group, make another member the group owner before you can change your own role or be removed from your page.`,
     );
     await expect(soloOwner).toBeVisible();
     await expect(
@@ -244,7 +244,7 @@ test.describe('Document list members', () => {
     await mySelfRole.click();
     await page.getByRole('menuitemradio', { name: 'Remove access' }).click();
     await expect(
-      page.getByText('Insufficient access rights to view the document.'),
+      page.getByText('Insufficient access rights to view the page.'),
     ).toBeVisible();
   });
 });

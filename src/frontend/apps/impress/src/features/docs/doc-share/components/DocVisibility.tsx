@@ -54,7 +54,7 @@ export const DocVisibility = ({ doc }: DocVisibilityProps) => {
     listInvalidQueries: [KEY_LIST_DOC, KEY_DOC],
     onSuccess: () => {
       toast(
-        t('The document visibility has been updated.', {
+        t('The page visibility has been updated.', {
           description: 'Toast shown after changing the link sharing settings',
         }),
         VariantType.SUCCESS,
@@ -133,7 +133,7 @@ export const DocVisibility = ({ doc }: DocVisibilityProps) => {
   return (
     <Box
       $padding={{ horizontal: 'base' }}
-      aria-label={t('Doc visibility card', {
+      aria-label={t('Page visibility card', {
         description: 'Accessible name of the link sharing settings block',
       })}
       $gap={spacingsTokens['base']}
@@ -161,7 +161,7 @@ export const DocVisibility = ({ doc }: DocVisibilityProps) => {
         >
           <DropdownMenu
             testId="doc-visibility"
-            label={t('Document visibility', {
+            label={t('Page visibility', {
               description:
                 'Label of the selector of who can access with the link',
             })}
@@ -242,7 +242,7 @@ export const DocVisibility = ({ doc }: DocVisibilityProps) => {
                     )
                   : undefined
               }
-              label={t('Document access mode', {
+              label={t('Page access mode', {
                 description:
                   'Label of the selector of what link users can do: read or edit',
               })}

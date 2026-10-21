@@ -94,11 +94,11 @@ export const DocPage403 = ({ id }: DocProps) => {
             $size="xs"
           >
             {hasRequested
-              ? t('Your access request for this document is pending.', {
+              ? t('Your access request for this page is pending.', {
                   description:
                     'Message on the access denied page after requesting access',
                 })
-              : t('Insufficient access rights to view the document.', {
+              : t('Insufficient access rights to view the page.', {
                   description: 'Message on the access denied page',
                 })}
           </Text>
@@ -113,7 +113,7 @@ export const DocPage403 = ({ id }: DocProps) => {
               $size="xs"
             >
               {t(
-                "You're currently viewing a sub-document. To gain access, please request permission from the main document.",
+                "You're currently viewing a sub-page. To gain access, please request permission from the main page.",
                 {
                   description:
                     'Message on the access denied page of a sub-document',

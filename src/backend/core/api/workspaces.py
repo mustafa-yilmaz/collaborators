@@ -811,6 +811,8 @@ class SpaceViewSet(
     Spaces: root documents of kind "space" holding pages.
 
     GET /api/v1.0/spaces/?workspace=<id> — spaces placed in a workspace
+    GET /api/v1.0/spaces/?workspace=<id>&kind=page — pages placed directly in
+        a workspace, in none of its spaces
     GET /api/v1.0/spaces/?independent=true — my independent spaces
     GET /api/v1.0/spaces/?mine=true — every space I was given a role on
     POST /api/v1.0/spaces/ — create a space (see SpaceCreateSerializer)
@@ -832,9 +834,15 @@ class SpaceViewSet(
     def get_queryset(self):
         """Spaces readable by the user, through an access or their link."""
         user = self.request.user
+        kind = (
+            choices.DocumentKindChoices.PAGE
+            if self.request.query_params.get("kind") == "page"
+            else choices.DocumentKindChoices.SPACE
+        )
         return (
             models.Document.objects.filter(
-                kind=choices.DocumentKindChoices.SPACE,
+                kind=kind,
+                depth=1,
                 ancestors_deleted_at__isnull=True,
             )
             .filter(

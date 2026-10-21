@@ -120,7 +120,7 @@ export const DocRoleDropdown = ({
     return (
       <Text
         $variation="tertiary"
-        aria-label={t('Document role text', {
+        aria-label={t('Page role text', {
           description: 'Accessible name of the role of a member',
         })}
         $weight={500}

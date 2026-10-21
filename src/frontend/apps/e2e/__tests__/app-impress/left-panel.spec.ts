@@ -193,13 +193,13 @@ test.describe('Left panel desktop', () => {
   }) => {
     await page.goto('/');
 
-    const myDocsLink = page.getByRole('link', { name: 'My docs' });
+    const myDocsLink = page.getByRole('link', { name: 'My pages' });
     await myDocsLink.focus();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/target=my_docs/);
 
     const pageHeading = page.getByRole('heading', {
-      name: 'My docs',
+      name: 'My pages',
       level: 2,
     });
     await expect(pageHeading).toBeFocused();

@@ -46,7 +46,7 @@ export const DocHeader = ({ doc }: DocHeaderProps) => {
     <>
       <Box
         $width="100%"
-        aria-label={t('It is the card information about the document.', {
+        aria-label={t('It is the card information about the page.', {
           description:
             'Accessible name of the document header information block',
         })}

@@ -123,7 +123,7 @@ export function useImportDoc(props?: UseImportDocOptions) {
       updateDocsListCache(true);
 
       toast(
-        t('The document "{{documentName}}" has been successfully imported', {
+        t('The page "{{documentName}}" has been successfully imported', {
           documentName: importedDoc.title || '',
           description:
             'Toast message when the document has been successfully imported',
@@ -143,7 +143,7 @@ export function useImportDoc(props?: UseImportDocOptions) {
         toast(
           allowedExtensions
             ? t(
-                `The document "{{documentName}}" import has failed (only {{allowedExtensions}} files are allowed)`,
+                `The page "{{documentName}}" import has failed (only {{allowedExtensions}} files are allowed)`,
                 {
                   documentName,
                   allowedExtensions,
@@ -151,7 +151,7 @@ export function useImportDoc(props?: UseImportDocOptions) {
                     'Toast message when the document import has failed due to unsupported media type',
                 },
               )
-            : t(`The document "{{documentName}}" import has failed`, {
+            : t(`The page "{{documentName}}" import has failed`, {
                 documentName,
                 description:
                   'Toast message when the document import has failed due to unsupported media type',
@@ -184,7 +184,7 @@ export function useImportDoc(props?: UseImportDocOptions) {
         );
       } else {
         toast(
-          t(`The document "{{documentName}}" import has failed`, {
+          t(`The page "{{documentName}}" import has failed`, {
             documentName,
             description:
               'Toast message when the document import has failed due to an unknown error',

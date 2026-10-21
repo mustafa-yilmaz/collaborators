@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { Box, Text } from '@/components';
 import { Doc } from '@/features/docs/doc-management';
 
-import { useSpaceMutations, useWorkspaces } from '../api';
+import { usePageMoves, useSpaceMutations, useWorkspaces } from '../api';
 import { useWorkspaceStore } from '../stores/useWorkspaceStore';
 
 interface MoveSpaceModalProps {
@@ -20,12 +20,23 @@ interface MoveSpaceModalProps {
   onClose: () => void;
 }
 
-/** Give an independent space a home workspace. */
+/**
+ * Give an independent space a home workspace, or place a page directly in a
+ * workspace (in none of its spaces).
+ */
 export const MoveSpaceModal = ({ space, onClose }: MoveSpaceModalProps) => {
   const { t } = useTranslation();
   const { toast } = useToastProvider();
-  const { data: workspaces = [] } = useWorkspaces();
-  const { moveToWorkspace } = useSpaceMutations(space.id);
+  const { data: allWorkspaces = [] } = useWorkspaces();
+  const isPage = space.kind !== 'space';
+  const spaceMoves = useSpaceMutations(space.id);
+  const pageMoves = usePageMoves(space.id);
+  const moveToWorkspace = isPage
+    ? pageMoves.moveToWorkspace
+    : spaceMoves.moveToWorkspace;
+  const workspaces = allWorkspaces.filter(
+    (workspace) => workspace.id !== space.home_workspace?.id,
+  );
   const { setCurrentWorkspaceId } = useWorkspaceStore();
   const [workspaceId, setWorkspaceId] = useState('');
   const title = t('Move to a workspace', {
@@ -64,9 +75,15 @@ export const MoveSpaceModal = ({ space, onClose }: MoveSpaceModalProps) => {
                   },
                   onError: () =>
                     toast(
-                      t('The space could not be moved.', {
-                        description: 'Toast shown when moving a space failed',
-                      }),
+                      isPage
+                        ? t('The page could not be moved.', {
+                            description:
+                              'Toast shown when moving a page into a workspace failed',
+                          })
+                        : t('The space could not be moved.', {
+                            description:
+                              'Toast shown when moving a space failed',
+                          }),
                       VariantType.ERROR,
                     ),
                 },
@@ -80,10 +97,15 @@ export const MoveSpaceModal = ({ space, onClose }: MoveSpaceModalProps) => {
     >
       <Box $gap="sm" $padding={{ top: 'xs' }}>
         <Text $variation="secondary" as="p" $margin="none">
-          {t(
-            'The workspace becomes the home of this space: its administrators can manage it, and you can open it to the workspace members from the share dialog.',
-            { description: 'Explanation in the dialog moving a space' },
-          )}
+          {isPage
+            ? t(
+                'The page goes directly into the workspace, in none of its spaces, with its sub-pages: the workspace members can read it and its administrators manage it. You can still share it with others.',
+                { description: 'Explanation in the dialog moving a page' },
+              )
+            : t(
+                'The workspace becomes the home of this space: its administrators can manage it, and you can open it to the workspace members from the share dialog.',
+                { description: 'Explanation in the dialog moving a space' },
+              )}
         </Text>
         {workspaces.length ? (
           <Select

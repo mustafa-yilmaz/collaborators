@@ -197,7 +197,7 @@ export const FindReplace = () => {
           placeholder={t('Find, replace...', {
             description: 'Placeholder of the find input',
           })}
-          aria-label={t('Find in document', {
+          aria-label={t('Find in page', {
             description: 'Accessible name of the find input',
           })}
           aria-describedby="find-replace-status"

@@ -42,7 +42,7 @@ export const DocInheritedShareContent = ({
       >
         <Box $direction="row" $align="center" $gap={spacingsTokens['4xs']}>
           <Text $weight="bold" $size="sm">
-            {t('People with access via the parent document', {
+            {t('People with access via the parent page', {
               description:
                 'Heading of the list of members inherited from the parent doc',
             })}

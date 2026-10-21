@@ -59,7 +59,7 @@ export const DocSearchContent = ({
     groupName: '',
     groupKey: 'docs',
     elements: [],
-    emptyString: t('Loading documents...', {
+    emptyString: t('Loading pages...', {
       description:
         'Placeholder and screen reader announcement while search results load',
     }),
@@ -70,7 +70,7 @@ export const DocSearchContent = ({
     if (loading) {
       if (search || isSearchNotMandatory) {
         announce(
-          t('Loading documents...', {
+          t('Loading pages...', {
             description:
               'Placeholder and screen reader announcement while search results load',
           }),
@@ -110,10 +110,10 @@ export const DocSearchContent = ({
     if (search && !loading) {
       announce(
         elements.length === 0
-          ? t('No documents found', {
+          ? t('No pages found', {
               description: 'Message when a search has no result',
             })
-          : t('{{count}} document found', {
+          : t('{{count}} page found', {
               description:
                 'Screen reader announcement of the number of search results, plural form',
               count: elements.length,

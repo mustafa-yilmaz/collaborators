@@ -22,7 +22,7 @@ test.describe('Doc Version', () => {
     await createDoc(page, 'doc-version', browserName, 1);
 
     // Initially, there is no version
-    await page.getByLabel('Open the document options').click();
+    await page.getByLabel('Open the page options').click();
     await page.getByRole('menuitem', { name: 'History' }).click();
     await expect(page.getByText('History', { exact: true })).toBeVisible();
 
@@ -54,7 +54,7 @@ test.describe('Doc Version', () => {
 
     await page.waitForTimeout(COLLABORATION_VERSION_GRANULARITY_MS + 10);
 
-    await page.getByLabel('Open the document options').click();
+    await page.getByLabel('Open the page options').click();
     await page.getByRole('menuitem', { name: 'History' }).click();
 
     await expect(panel).toBeVisible();
@@ -109,7 +109,7 @@ test.describe('Doc Version', () => {
 
     await verifyDocName(page, 'Mocked document');
 
-    await page.getByLabel('Open the document options').click();
+    await page.getByLabel('Open the page options').click();
     await expect(page.getByRole('menuitem', { name: 'History' })).toBeHidden();
   });
 
@@ -144,7 +144,7 @@ test.describe('Doc Version', () => {
     await thread.locator('[data-test="resolve"]').click();
     await expect(thread).toBeHidden();
 
-    await page.getByLabel('Open the document options').click();
+    await page.getByLabel('Open the page options').click();
     await page.getByRole('menuitem', { name: 'History' }).click();
 
     const modal = page.getByRole('dialog', { name: 'Version history' });
@@ -161,13 +161,13 @@ test.describe('Doc Version', () => {
     await page.getByRole('button', { name: 'Restore', exact: true }).click();
     await expect(
       page.getByText(
-        "The current document will be replaced, but you'll still find it in the version history.",
+        "The current page will be replaced, but you'll still find it in the version history.",
       ),
     ).toBeVisible();
 
     await page.getByLabel('Restore', { exact: true }).click();
 
-    const mainEditor = page.getByLabel('Document editor');
+    const mainEditor = page.getByLabel('Page editor');
 
     await expect(mainEditor.getByText('Hello')).toBeVisible();
     await expect(mainEditor.getByText('World')).toBeHidden();

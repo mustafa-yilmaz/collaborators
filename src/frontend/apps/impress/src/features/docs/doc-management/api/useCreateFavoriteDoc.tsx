@@ -51,7 +51,7 @@ export function useCreateFavoriteDoc({
         { keepFocus: true },
       );
 
-      const message = t('Document starred successfully!', {
+      const message = t('Page starred successfully!', {
         description: 'Toast shown after adding a document to favorites',
       });
       announce(message, 'polite');
@@ -59,7 +59,7 @@ export function useCreateFavoriteDoc({
       onSuccess?.();
     },
     onError: () => {
-      const message = t('Failed to star the document.', {
+      const message = t('Failed to star the page.', {
         description: 'Toast shown when adding a document to favorites failed',
       });
       announce(message, 'assertive');

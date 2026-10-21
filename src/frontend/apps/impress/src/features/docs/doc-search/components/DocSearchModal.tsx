@@ -93,7 +93,7 @@ const DocSearchModalGlobal = ({
       closeOnClickOutside
       size={isLargeScreen ? ModalSize.LARGE : ModalSize.FULL}
       hideCloseButton
-      aria-label={t('Search for a document', {
+      aria-label={t('Search for a page', {
         description:
           'Accessible name or placeholder of a document search field',
       })}
@@ -108,14 +108,14 @@ const DocSearchModalGlobal = ({
             $align="flex-start"
             id="doc-search-modal-title"
           >
-            {t('Search for a document', {
+            {t('Search for a page', {
               description:
                 'Accessible name or placeholder of a document search field',
             })}
           </Text>
           <Text id="doc-search-modal-description" className="sr-only">
             {t(
-              'Search documents by name, navigate using arrows, and select a result with Enter.',
+              'Search pages by name, navigate using arrows, and select a result with Enter.',
               {
                 description: 'Screen reader instructions of the search dialog',
               },
@@ -141,10 +141,10 @@ const DocSearchModalGlobal = ({
         $padding={{ bottom: 'base' }}
       >
         <QuickSearch
-          label={t('Type the name of a document', {
+          label={t('Type the name of a page', {
             description: 'Label and placeholder of the search input',
           })}
-          placeholder={t('Type the name of a document', {
+          placeholder={t('Type the name of a page', {
             description: 'Label and placeholder of the search input',
           })}
           loading={loading}
@@ -253,20 +253,20 @@ const DocSearchStateText = ({
   const { t } = useTranslation();
 
   if (hasResults && filter === 'all') {
-    return t('Select a document', {
+    return t('Select a page', {
       description: 'Screen reader hint to pick one of the search results',
     });
   }
 
   if (hasResults && filter === 'current') {
-    return t('Select a sub-document', {
+    return t('Select a sub-page', {
       description:
         'Screen reader hint to pick one of the sub-doc search results',
     });
   }
 
   if (isSearching && !hasResults) {
-    return t('No documents found', {
+    return t('No pages found', {
       description: 'Message when a search has no result',
     });
   }

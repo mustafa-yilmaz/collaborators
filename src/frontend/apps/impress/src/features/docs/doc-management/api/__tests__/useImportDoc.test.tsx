@@ -53,7 +53,7 @@ describe('useImportDoc', () => {
     });
 
     expect(mockToast).toHaveBeenCalledWith(
-      'The document "my-document.docx" import has failed (only .docx, .md files are allowed)',
+      'The page "my-document.docx" import has failed (only .docx, .md files are allowed)',
       'error',
     );
   });
@@ -101,7 +101,7 @@ describe('useImportDoc', () => {
     });
 
     expect(mockToast).toHaveBeenCalledWith(
-      'The document "my-document.docx" import has failed',
+      'The page "my-document.docx" import has failed',
       'error',
     );
   });

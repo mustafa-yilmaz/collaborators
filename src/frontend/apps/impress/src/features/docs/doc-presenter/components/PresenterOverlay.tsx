@@ -83,7 +83,7 @@ export const PresenterOverlay = ({
     return [
       emoji,
       titleWithoutEmoji.trim() ||
-        t('Untitled document', {
+        t('Untitled page', {
           description: 'Name displayed for a document without a title',
         }),
     ]

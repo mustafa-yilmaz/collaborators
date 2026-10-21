@@ -96,7 +96,7 @@ export function DropdownArrow() {
   const options = useMemo<DropdownMenuItem[]>(
     () => [
       {
-        label: t('New sub-doc', {
+        label: t('New sub-page', {
           description: 'Action to create a doc nested under the current doc',
         }),
         icon: <SubDocIcon aria-hidden="true" width="24" height="24" />,
@@ -129,7 +129,7 @@ export function DropdownArrow() {
         onOpenChange={setIsMenuOpen}
       >
         <Button
-          aria-label={t('Open new document options', {
+          aria-label={t('Open new page options', {
             description:
               'Accessible name of the button opening the new document menu',
           })}

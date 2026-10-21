@@ -33,7 +33,7 @@ export const DocShareMemberItem = ({
 
   const message = isLastOwner
     ? t(
-        'You are the sole owner of this group, make another member the group owner before you can change your own role or be removed from your document.',
+        'You are the sole owner of this group, make another member the group owner before you can change your own role or be removed from your page.',
         {
           description:
             'Tooltip shown when the last owner cannot change their role',
@@ -130,7 +130,7 @@ export const QuickSearchGroupMember = ({
     return {
       groupName:
         count === 1
-          ? t('Document owner', {
+          ? t('Page owner', {
               description: 'Label of the single owner of a document',
             })
           : t('Share with {{count}} users', {

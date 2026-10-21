@@ -886,7 +886,7 @@ class UserReconciliation(BaseModel):
                 "message": message,
                 "link": f"{domain}/",
                 "link_label": str(_("Click here to see")),
-                "button_label": str(_("See my documents")),
+                "button_label": str(_("See my pages")),
             }
 
         self.active_user.send_email(subject, context, language)
@@ -1219,7 +1219,7 @@ class Document(MP_Node, BaseModel):
         ]
 
     def __str__(self):
-        return str(self.title) if self.title else str(_("Untitled Document"))
+        return str(self.title) if self.title else str(_("Untitled page"))
 
     def __init__(self, *args, **kwargs):
         """Initialize cache property."""
@@ -1231,7 +1231,7 @@ class Document(MP_Node, BaseModel):
         """A space is always the root of its tree of pages."""
         super().clean()
         if self.kind == DocumentKindChoices.SPACE and self.depth and self.depth > 1:
-            raise ValidationError({"kind": _("A space must be a root document.")})
+            raise ValidationError({"kind": _("A space must be a top-level page.")})
 
     @property
     def is_space(self):
@@ -1640,7 +1640,7 @@ class Document(MP_Node, BaseModel):
             "document": self,
             "domain": domain,
             "link": f"{domain}/docs/{self.id}/?utm_source=docssharelink&utm_campaign={self.id}",
-            "link_label": self.title or str(_("Untitled Document")),
+            "link_label": self.title or str(_("Untitled page")),
             "button_label": _("Open"),
             "logo_img": settings.EMAIL_LOGO_IMG,
             **(context or {}),
@@ -1676,9 +1676,7 @@ class Document(MP_Node, BaseModel):
 
         with override(language):
             context = {
-                "title": _("{name} shared a document with you!").format(
-                    name=sender_name
-                ),
+                "title": _("{name} shared a page with you!").format(name=sender_name),
                 "message": _(
                     '{name} invited you with the role "{role}" on the following document:'
                 ).format(name=sender_name_email, role=role.lower()),
@@ -1686,7 +1684,7 @@ class Document(MP_Node, BaseModel):
             subject = (
                 context["title"]
                 if not self.title
-                else _("{name} shared a document with you: {title}").format(
+                else _("{name} shared a page with you: {title}").format(
                     name=sender_name, title=self.title
                 )
             )
@@ -2079,7 +2077,7 @@ class DocumentAskForAccess(BaseModel):
 
         with override(language):
             context = {
-                "title": _("{name} would like access to a document!").format(
+                "title": _("{name} would like access to a page!").format(
                     name=sender_name
                 ),
                 "message": _(
@@ -2089,7 +2087,7 @@ class DocumentAskForAccess(BaseModel):
             subject = (
                 context["title"]
                 if not self.document.title
-                else _("{name} is asking for access to the document: {title}").format(
+                else _("{name} is asking for access to the page: {title}").format(
                     name=sender_name, title=self.document.title
                 )
             )
@@ -2322,7 +2320,7 @@ class Mention(BaseModel):
         super().clean()
         if self.thread_id and self.thread.document_id != self.document_id:
             raise ValidationError(
-                {"thread_id": [_("The thread does not belong to this document.")]}
+                {"thread_id": [_("The thread does not belong to this page.")]}
             )
 
     def is_notification_in_cooldown(self):
@@ -2389,12 +2387,12 @@ class Mention(BaseModel):
         domain = settings.EMAIL_URL_APP or Site.objects.get_current().domain
 
         with override(language):
-            title = self.document.title or str(_("Untitled Document"))
+            title = self.document.title or str(_("Untitled page"))
             if self.reason == "assignment":
                 subject = _('{name} assigned you in "{title}"').format(
                     name=sender_name, title=title
                 )
-                message = _("{name} assigned you in a table of this document:").format(
+                message = _("{name} assigned you something in this page:").format(
                     name=sender_name
                 )
             elif self.mentioned_team:
@@ -2417,7 +2415,7 @@ class Mention(BaseModel):
                 subject = _('{name} mentioned you in "{title}"').format(
                     name=sender_name, title=title
                 )
-                message = _("{name} mentioned you in the following document:").format(
+                message = _("{name} mentioned you in the following page:").format(
                     name=sender_name
                 )
             context = {
@@ -2838,10 +2836,15 @@ class SpaceWorkspaceLink(BaseModel):
         return f"{self.space!s} in workspace {self.workspace!s}"
 
     def clean(self):
-        """Only spaces can be placed in workspaces."""
+        """
+        Spaces are placed in workspaces, and so are top-level pages, directly
+        (in none of the workspace's spaces).
+        """
         super().clean()
-        if self.space_id and not self.space.is_space:
-            raise ValidationError({"space": _("Only a space can join a workspace.")})
+        if self.space_id and not (self.space.is_space or self.space.is_root()):
+            raise ValidationError(
+                {"space": _("Only a space or a top-level page can join a workspace.")}
+            )
 
 
 class Label(BaseModel):

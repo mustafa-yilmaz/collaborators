@@ -129,7 +129,7 @@ export const DraggableDocGridContentList = ({
       },
       announcements: {
         onDragStart({ active }: { active: { id: UniqueIdentifier } }) {
-          return t('Picked up document {{id}}.', {
+          return t('Picked up page {{id}}.', {
             description: 'Screen reader announcement when dragging starts',
             id: active.id,
           });
@@ -142,13 +142,13 @@ export const DraggableDocGridContentList = ({
           over: { id: UniqueIdentifier } | null;
         }) {
           if (over) {
-            return t('Document {{activeId}} is over document {{overId}}.', {
+            return t('Page {{activeId}} is over page {{overId}}.', {
               description: 'Screen reader announcement while dragging',
               activeId: active.id,
               overId: over.id,
             });
           }
-          return t('Document {{id}} is no longer over a droppable area.', {
+          return t('Page {{id}} is no longer over a droppable area.', {
             description: 'Screen reader announcement while dragging',
             id: active.id,
           });
@@ -161,23 +161,20 @@ export const DraggableDocGridContentList = ({
           over: { id: UniqueIdentifier } | null;
         }) {
           if (over) {
-            return t(
-              'Document {{activeId}} was dropped over document {{overId}}.',
-              {
-                description:
-                  'Screen reader announcement when a doc is dropped on another',
-                activeId: active.id,
-                overId: over.id,
-              },
-            );
+            return t('Page {{activeId}} was dropped over page {{overId}}.', {
+              description:
+                'Screen reader announcement when a doc is dropped on another',
+              activeId: active.id,
+              overId: over.id,
+            });
           }
-          return t('Document {{id}} was dropped.', {
+          return t('Page {{id}} was dropped.', {
             description: 'Screen reader announcement when a doc is dropped',
             id: active.id,
           });
         },
         onDragCancel({ active }: { active: { id: UniqueIdentifier } }) {
-          return t('Dragging was cancelled. Document {{id}} was dropped.', {
+          return t('Dragging was cancelled. Page {{id}} was dropped.', {
             description:
               'Screen reader announcement when dragging is cancelled',
             id: active.id,
@@ -190,15 +187,14 @@ export const DraggableDocGridContentList = ({
 
   const overlayText = useMemo(() => {
     if (!canDrag) {
-      return t('You must be the owner to move the document', {
+      return t('You must be the owner to move the page', {
         description: 'Tooltip on a doc that cannot be dragged',
       });
     }
     if (!canDrop) {
-      return t(
-        'You must be at least the administrator of the target document',
-        { description: 'Tooltip on a drop target the user cannot move into' },
-      );
+      return t('You must be at least the administrator of the target page', {
+        description: 'Tooltip on a drop target the user cannot move into',
+      });
     }
 
     return selectedDoc?.title || untitledDocument;

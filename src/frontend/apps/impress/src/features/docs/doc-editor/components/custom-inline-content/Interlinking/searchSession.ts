@@ -1,5 +1,5 @@
 /**
- * An open "@" or "Link a doc" search is a node of the page while it is open,
+ * An open "@" or "Link a page" search is a node of the page while it is open,
  * so it is saved and shared like the rest of the page. It is shown only in
  * the browser tab that opened it: elsewhere (another person, or the same
  * person after a reload) it shows nothing, and once left behind for a while

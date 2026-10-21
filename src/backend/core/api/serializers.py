@@ -194,6 +194,11 @@ class ListDocumentSerializer(serializers.ModelSerializer):
         """For a space, the workspace that owns it, if any."""
         if not instance.is_space:
             return None
+        return self.home_workspace_of(instance)
+
+    @staticmethod
+    def home_workspace_of(instance):
+        """The workspace a top-level document was placed in, if any."""
         link = (
             instance.workspace_links.filter(is_home=True)
             .select_related("workspace")
@@ -223,6 +228,16 @@ class DocumentLightSerializer(serializers.ModelSerializer):
 
 class DocumentSerializer(ListDocumentSerializer):
     """Serialize documents with all fields for display in detail views."""
+
+    def get_home_workspace(self, instance):
+        """
+        For a space, or a page placed directly in a workspace (its menu
+        offers to take it out), the workspace that owns it. Only here, one
+        document at a time: lists don't look it up for every page.
+        """
+        if not instance.is_space and instance.depth != 1:
+            return None
+        return self.home_workspace_of(instance)
 
     file = serializers.FileField(
         required=False, write_only=True, allow_null=True, max_length=255
@@ -589,7 +604,7 @@ class ServerCreateDocumentSerializer(serializers.Serializer):
         )
         context = {
             "message": validated_data.get("message")
-            or _("You have been granted ownership of a new document:"),
+            or _("You have been granted ownership of a new page:"),
             "title": subject,
         }
         document.send_email(subject, [email], context, language)
@@ -1173,7 +1188,7 @@ class MentionSerializer(serializers.ModelSerializer):
         document = self.context["document"]
         if thread is not None and thread.document_id != document.id:
             raise serializers.ValidationError(
-                "The thread does not belong to this document."
+                "The thread does not belong to this page."
             )
         return thread
 

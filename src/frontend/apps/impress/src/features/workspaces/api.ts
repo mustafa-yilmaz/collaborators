@@ -332,9 +332,15 @@ export function useGroupMemberMutations(groupId: string) {
 // -- Spaces
 
 export type SpacesParams =
-  | { workspaceId: string; independent?: never; mine?: never }
-  | { independent: true; workspaceId?: never; mine?: never }
-  | { mine: true; workspaceId?: never; independent?: never };
+  | {
+      workspaceId: string;
+      /** The pages placed directly in the workspace, not its spaces */
+      pages?: boolean;
+      independent?: never;
+      mine?: never;
+    }
+  | { independent: true; workspaceId?: never; mine?: never; pages?: never }
+  | { mine: true; workspaceId?: never; independent?: never; pages?: never };
 
 export function useSpaces(params: SpacesParams, enabled = true) {
   return useQuery<Space[], APIError>({
@@ -346,7 +352,9 @@ export function useSpaces(params: SpacesParams, enabled = true) {
             ? 'mine=true'
             : params.independent
               ? 'independent=true'
-              : `workspace=${params.workspaceId}`
+              : `workspace=${params.workspaceId}${
+                  params.pages ? '&kind=page' : ''
+                }`
         }`,
         'Failed to get the spaces',
       ),
@@ -704,6 +712,16 @@ export function usePageMoves(pageId: string) {
             target_document_id: spaceId,
             position: 'last-child',
           }),
+        ),
+      onSuccess,
+    }),
+    // Directly in a workspace, in none of its spaces
+    moveToWorkspace: useMutation<unknown, APIError, { workspaceId: string }>({
+      mutationFn: ({ workspaceId }) =>
+        request(
+          `documents/${pageId}/move-to-workspace/`,
+          'Failed to move the page',
+          jsonInit('POST', { workspace_id: workspaceId }),
         ),
       onSuccess,
     }),

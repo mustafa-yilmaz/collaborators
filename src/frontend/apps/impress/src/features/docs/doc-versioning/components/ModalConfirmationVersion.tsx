@@ -113,7 +113,7 @@ export const ModalConfirmationVersion = ({
         <Box>
           <Text $variation="secondary" as="p" $margin="none">
             {t(
-              "The current document will be replaced, but you'll still find it in the version history.",
+              "The current page will be replaced, but you'll still find it in the version history.",
               { description: 'Explanation in the restore version dialog' },
             )}
           </Text>

@@ -1016,10 +1016,10 @@ def test_models_documents__email_invitation__success_empty_title():
     assert email.to == ["guest@example.com"]
     email_content = " ".join(email.body.split())
 
-    assert "Test sender shared a document with you!" in email.subject
+    assert "Test sender shared a page with you!" in email.subject
     assert (
         "Test Sender (sender@example.com) invited you with the role &quot;editor&quot; "
-        "on the following document: Untitled Document" in email_content
+        "on the following document: Untitled page" in email_content
     )
     assert (
         f"docs/{document.id}/?utm_source=docssharelink&amp;utm_campaign={document.id}"

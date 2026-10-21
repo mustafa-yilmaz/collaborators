@@ -40,7 +40,7 @@ vi.mock('@/docs/doc-editor/stores/useEditorStore', () => ({
 }));
 
 vi.mock('@/docs/doc-management', () => ({
-  useTrans: () => ({ untitledDocument: 'Untitled document' }),
+  useTrans: () => ({ untitledDocument: 'Untitled page' }),
 }));
 
 vi.mock('../hooks/', () => ({

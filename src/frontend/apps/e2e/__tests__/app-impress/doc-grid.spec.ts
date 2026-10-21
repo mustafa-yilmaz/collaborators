@@ -105,7 +105,7 @@ test.describe('Document grid item options', () => {
     await clickInDocOptionMenu(page, row, 'Share');
 
     await expect(
-      page.getByRole('dialog').getByText('Share the document'),
+      page.getByRole('dialog').getByText('Share the page'),
     ).toBeVisible();
   });
 
@@ -121,11 +121,11 @@ test.describe('Document grid item options', () => {
     await clickInDocOptionMenu(page, row, 'Star');
 
     // Check is starred
-    await expect(row.getByText(/This document is starred/)).toBeVisible();
+    await expect(row.getByText(/This page is starred/)).toBeVisible();
     await expect(page.getByText(docTitle2)).toBeVisible();
 
     await page.getByRole('link', { name: 'Starred', exact: true }).click();
-    await expect(row.getByText(/This document is starred/)).toBeVisible();
+    await expect(row.getByText(/This page is starred/)).toBeVisible();
     await expect(page.getByText(docTitle2)).toBeHidden();
 
     // Unstar
@@ -135,7 +135,7 @@ test.describe('Document grid item options', () => {
     // Check is unstarred
     await page.getByRole('link', { name: 'Recent', exact: true }).click();
     await expect(row).toBeVisible();
-    await expect(row.getByText(/This document is starred/)).toBeHidden();
+    await expect(row.getByText(/This page is starred/)).toBeHidden();
   });
 
   test('it deletes the document', async ({ page, browserName }) => {
@@ -151,21 +151,21 @@ test.describe('Document grid item options', () => {
     await clickInDocOptionMenu(page, row, 'Delete');
 
     await expect(
-      page.getByRole('heading', { name: 'Delete a doc' }),
+      page.getByRole('heading', { name: 'Delete a page' }),
     ).toBeVisible();
 
     await page
       .getByRole('button', {
-        name: 'Delete document',
+        name: 'Delete page',
       })
       .click();
 
     await expect(
-      page.getByText('The document has been deleted.'),
+      page.getByText('The page has been deleted.'),
     ).toBeVisible();
 
     await expect(
-      page.getByLabel('Documents grid').getByText(docTitle),
+      page.getByLabel('Pages grid').getByText(docTitle),
     ).toBeHidden();
   });
 
@@ -176,18 +176,18 @@ test.describe('Document grid item options', () => {
 
     // Assert the document is visible in the grid results
     await expect(
-      page.getByLabel('Documents grid').getByText(docTitle),
+      page.getByLabel('Pages grid').getByText(docTitle),
     ).toBeVisible();
 
     const row = await getGridRow(page, docTitle);
     await clickInDocOptionMenu(page, row, 'Leave');
 
     const modal = page.getByRole('dialog', {
-      name: 'Confirmation to leave the document',
+      name: 'Confirmation to leave the page',
     });
 
     await expect(
-      modal.getByRole('heading', { name: 'Leave a doc' }),
+      modal.getByRole('heading', { name: 'Leave a page' }),
     ).toBeVisible();
 
     // Check the message when the user is the unique owner
@@ -199,15 +199,15 @@ test.describe('Document grid item options', () => {
 
     await expect(
       modal.getByRole('button', {
-        name: 'Confirm leaving the document',
+        name: 'Confirm leaving the page',
       }),
     ).toBeHidden();
 
     await modal.getByRole('button', { name: 'Close the leave modal' }).click();
 
     // Assert the document is visible in the search results
-    await page.getByRole('button', { name: 'Search docs' }).click();
-    await page.getByPlaceholder('Type the name of a document').fill(docTitle);
+    await page.getByRole('button', { name: 'Search pages' }).click();
+    await page.getByPlaceholder('Type the name of a page').fill(docTitle);
     await page.getByRole('option').getByText(docTitle).click();
 
     // We share the doc with another user with owner role
@@ -223,7 +223,7 @@ test.describe('Document grid item options', () => {
 
     // Leave the document
     await page
-      .getByRole('button', { name: /Open the document options/ })
+      .getByRole('button', { name: /Open the page options/ })
       .click();
     await page.getByRole('menuitem', { name: 'Leave' }).click();
     // Check the message
@@ -233,18 +233,18 @@ test.describe('Document grid item options', () => {
       ),
     ).toBeVisible();
     await page
-      .getByRole('button', { name: 'Confirm leaving the document' })
+      .getByRole('button', { name: 'Confirm leaving the page' })
       .click();
 
     // We are on the grid page and the document is not visible in the grid results
-    await expect(page.getByLabel('Documents grid')).toBeVisible();
+    await expect(page.getByLabel('Pages grid')).toBeVisible();
     await expect(
-      page.getByLabel('Documents grid').getByText(docTitle),
+      page.getByLabel('Pages grid').getByText(docTitle),
     ).toBeHidden();
 
     // We search the document and it's not visible in the search results either
-    await page.getByRole('button', { name: 'Search docs' }).click();
-    await page.getByPlaceholder('Type the name of a document').fill(docTitle);
+    await page.getByRole('button', { name: 'Search pages' }).click();
+    await page.getByPlaceholder('Type the name of a page').fill(docTitle);
     await expect(page.getByRole('option').getByText(docTitle)).toBeHidden();
   });
 });
@@ -284,7 +284,7 @@ test.describe('Documents filters', () => {
     await expect(rowShare).toBeVisible();
 
     // My Docs
-    await page.getByRole('link', { name: 'My docs' }).click();
+    await page.getByRole('link', { name: 'My pages' }).click();
     await expect(row).toBeVisible();
     await expect(rowShare).toBeHidden();
 
@@ -386,19 +386,19 @@ test.describe('Documents Grid', () => {
 
     // Sort by ascending order - should be empty
     await page
-      .getByRole('button', { name: 'Sorted documents by Last modified' })
+      .getByRole('button', { name: 'Sorted pages by Last modified' })
       .click();
     await expect(row).toHaveCount(0);
 
     // Sort by title ascending
-    await page.getByRole('button', { name: 'Sort documents by Name' }).click();
+    await page.getByRole('button', { name: 'Sort pages by Name' }).click();
     await expect(rowFilter(docA)).toHaveCount(1);
     await expect(rowFilter(docB)).toHaveCount(1);
     await expect(rowFilter(docZ)).toHaveCount(0);
 
     // Sort by title descending
     await page
-      .getByRole('button', { name: 'Sorted documents by Name' })
+      .getByRole('button', { name: 'Sorted pages by Name' })
       .click();
     await expect(rowFilter(docZ)).toHaveCount(1);
     await expect(rowFilter(docA)).toHaveCount(0);

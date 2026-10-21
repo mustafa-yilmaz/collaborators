@@ -124,7 +124,7 @@ test.describe('Doc grid move', () => {
 
     await expect(dragOverlay).toBeVisible();
     await expect(dragOverlay).toHaveText(
-      'You must be at least the administrator of the target document',
+      'You must be at least the administrator of the target page',
     );
 
     await page.mouse.up();
@@ -174,7 +174,7 @@ test.describe('Doc grid move', () => {
 
     await expect(dragOverlay).toBeVisible();
     await expect(dragOverlay).toHaveText(
-      'You must be the owner to move the document',
+      'You must be the owner to move the page',
     );
 
     await page.mouse.up();
@@ -206,15 +206,15 @@ test.describe('Doc grid move', () => {
     await expect(docsGrid.getByText(titleDoc2)).toBeVisible();
 
     const row = await getGridRow(page, titleDoc1);
-    await clickInDocOptionMenu(page, row, 'Move into a doc');
+    await clickInDocOptionMenu(page, row, 'Move into a page');
 
     await expect(
       page
         .getByRole('dialog')
-        .getByRole('heading', { name: 'Choose a new parent doc' }),
+        .getByRole('heading', { name: 'Choose a new parent page' }),
     ).toBeVisible();
 
-    const input = page.getByRole('combobox', { name: 'Search for a doc...' });
+    const input = page.getByRole('combobox', { name: 'Search for a page...' });
     await input.click();
     await input.fill(titleDoc2);
 
@@ -243,7 +243,7 @@ test.describe('Doc grid move', () => {
 
     await expect(docsGrid.getByText(titleDoc1)).toBeHidden();
     await docsGrid
-      .getByRole('link', { name: `Open document ${titleDoc2}` })
+      .getByRole('link', { name: `Open page ${titleDoc2}` })
       .click();
 
     await verifyDocName(page, titleDoc2);
@@ -294,15 +294,15 @@ test.describe('Doc grid move', () => {
     await expect(docsGrid.getByText(titleDoc2)).toBeVisible();
 
     const row = await getGridRow(page, titleDoc1);
-    await clickInDocOptionMenu(page, row, 'Move into a doc');
+    await clickInDocOptionMenu(page, row, 'Move into a page');
 
     await expect(
       page
         .getByRole('dialog')
-        .getByRole('heading', { name: 'Choose a new parent doc' }),
+        .getByRole('heading', { name: 'Choose a new parent page' }),
     ).toBeVisible();
 
-    const input = page.getByRole('combobox', { name: 'Search for a doc...' });
+    const input = page.getByRole('combobox', { name: 'Search for a page...' });
     await input.click();
     await input.fill(titleDoc2);
 
@@ -363,12 +363,12 @@ test.describe('Doc grid move', () => {
 
     // The first user should now be able to move the doc
     await page.reload();
-    await clickInDocOptionMenu(page, row, 'Move into a doc');
+    await clickInDocOptionMenu(page, row, 'Move into a page');
 
     await expect(
       page
         .getByRole('dialog')
-        .getByRole('heading', { name: 'Choose a new parent doc' }),
+        .getByRole('heading', { name: 'Choose a new parent page' }),
     ).toBeVisible();
 
     await input.click();
@@ -387,7 +387,7 @@ test.describe('Doc grid move', () => {
 
     await expect(docsGrid.getByText(titleDoc1)).toBeHidden();
     await docsGrid
-      .getByRole('link', { name: `Open document ${titleDoc2}` })
+      .getByRole('link', { name: `Open page ${titleDoc2}` })
       .click();
 
     await verifyDocName(page, titleDoc2);

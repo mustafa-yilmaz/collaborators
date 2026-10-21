@@ -155,6 +155,16 @@ class MakePageIndependentView(APIView):
         page = readable_page(user, pk)
         if not can_manage_page(user, page):
             raise drf.exceptions.PermissionDenied()
+        # A page placed directly in a workspace leaves it
+        if page.is_root() and page.workspace_links.exists():
+            with transaction.atomic():
+                take_page_out_of_workspaces(page)
+                models.DocumentAccess.objects.update_or_create(
+                    document=page,
+                    user=user,
+                    defaults={"role": choices.RoleChoices.OWNER},
+                )
+            return drf.response.Response({"id": str(page.id)})
         if page.is_root():
             raise drf.exceptions.ValidationError(
                 {"document": _("This page is already independent.")}
@@ -168,3 +178,79 @@ class MakePageIndependentView(APIView):
                 document=page, user=user, role=choices.RoleChoices.OWNER
             )
         return drf.response.Response({"id": str(page.id)})
+
+
+def take_page_out_of_workspaces(page):
+    """A top-level page leaves the workspaces it was placed in, and their roles."""
+    workspace_ids = list(page.workspace_links.values_list("workspace_id", flat=True))
+    page.workspace_links.all().delete()
+    page.accesses.filter(
+        team__in=[
+            models.make_team(kind, workspace_id)
+            for workspace_id in workspace_ids
+            for kind in (models.TEAM_WORKSPACE, models.TEAM_WORKSPACE_ADMINS)
+        ]
+    ).delete()
+
+
+class MovePageToWorkspaceView(APIView):
+    """
+    POST /api/v1.0/documents/<id>/move-to-workspace/ {workspace_id}
+
+    Place a page directly in a workspace, in none of its spaces: it becomes a
+    top-level page (with its subpages) whose home is the workspace. Its
+    members can read it and its administrators manage it, as for a space;
+    the page can be shared further as usual.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        """Move the page into the workspace."""
+        user = request.user
+        page = readable_page(user, pk)
+        if not can_manage_page(user, page):
+            raise drf.exceptions.PermissionDenied()
+        workspace = models.Workspace.objects.filter(
+            id=request.data.get("workspace_id")
+        ).first()
+        if workspace is None or workspace.get_role(user) is None:
+            raise drf.exceptions.ValidationError(
+                {"workspace_id": _("You are not a member of this workspace.")}
+            )
+        if page.is_root() and page.workspace_links.filter(workspace=workspace).exists():
+            raise drf.exceptions.ValidationError(
+                {"workspace_id": _("This page is already in this workspace.")}
+            )
+        with transaction.atomic():
+            if not page.is_root():
+                # Out of its space or parent page first: its accesses came
+                # from there and don't follow
+                page.move(page.get_root(), pos="last-sibling")
+                page.refresh_from_db()
+                page.accesses.all().delete()
+                page.invitations.all().delete()
+                models.DocumentAccess.objects.create(
+                    document=page, user=user, role=choices.RoleChoices.OWNER
+                )
+            else:
+                take_page_out_of_workspaces(page)
+            models.SpaceWorkspaceLink.objects.create(
+                space=page, workspace=workspace, is_home=True
+            )
+            models.DocumentAccess.objects.update_or_create(
+                document=page,
+                team=models.make_team(models.TEAM_WORKSPACE_ADMINS, workspace.id),
+                defaults={"role": choices.RoleChoices.OWNER},
+            )
+            models.DocumentAccess.objects.get_or_create(
+                document=page,
+                team=models.make_team(models.TEAM_WORKSPACE, workspace.id),
+                defaults={"role": choices.RoleChoices.READER},
+            )
+        return drf.response.Response(
+            {
+                "id": str(page.id),
+                "workspace": {"id": str(workspace.id), "name": workspace.name},
+            }
+        )

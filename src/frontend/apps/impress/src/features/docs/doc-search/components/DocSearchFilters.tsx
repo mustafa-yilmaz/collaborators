@@ -21,7 +21,7 @@ export const DocSearchFilters = () => {
     <Box
       role="switch"
       aria-checked={isAll}
-      aria-label={t('Search in all documents', {
+      aria-label={t('Search in all pages', {
         description:
           'Accessible name of the filter searching the whole workspace',
       })}
@@ -55,15 +55,14 @@ export const DocSearchFilters = () => {
     >
       <Switch
         labelSide="right"
-        label={t('All docs', {
+        label={t('All pages', {
           description: 'Group title listing every doc the user can access',
         })}
         checked={isAll}
         onChange={toggle}
-        aria-label={t(
-          'Toggle to search in all documents or only in current document',
-          { description: 'Accessible name of the switch scoping the search' },
-        )}
+        aria-label={t('Toggle to search in all pages or only in current page', {
+          description: 'Accessible name of the switch scoping the search',
+        })}
         tabIndex={-1}
       />
     </Box>

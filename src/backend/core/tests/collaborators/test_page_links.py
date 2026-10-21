@@ -213,3 +213,104 @@ def test_making_a_space_independent():
     assert not space.workspace_links.exists()
     assert space.get_role(fresh(admin)) == "owner"
     assert space.get_role(fresh(member)) is None
+
+
+# -- Pages placed directly in a workspace
+
+
+def test_a_page_moves_into_a_workspace_without_a_space():
+    """Its members read it, its admins manage it; it leaves the independent list."""
+    owner, member, admin = factories.UserFactory.create_batch(3)
+    acme = models.Workspace.objects.create(name="Acme")
+    models.WorkspaceAccess.objects.create(workspace=acme, user=owner)
+    models.WorkspaceAccess.objects.create(workspace=acme, user=member)
+    models.WorkspaceAccess.objects.create(
+        workspace=acme, user=admin, role=WorkspaceRoleChoices.ADMIN
+    )
+    page = factories.DocumentFactory(
+        title="Notes", link_reach="restricted", users=[(owner, "owner")]
+    )
+    url = f"/api/v1.0/documents/{page.id}/move-to-workspace/"
+
+    response = client_for(owner).post(
+        url, {"workspace_id": str(acme.id)}, format="json"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["workspace"] == {"id": str(acme.id), "name": "Acme"}
+    assert (
+        client_for(fresh(member)).get(f"/api/v1.0/documents/{page.id}/").status_code
+        == 200
+    )
+    assert page.get_role(fresh(admin)) == "owner"
+    listed = (
+        client_for(fresh(member))
+        .get(f"/api/v1.0/spaces/?workspace={acme.id}&kind=page")
+        .json()
+    )
+    assert [item["title"] for item in listed] == ["Notes"]
+    # Spaces of the workspace stay spaces only
+    assert (
+        client_for(fresh(member)).get(f"/api/v1.0/spaces/?workspace={acme.id}").json()
+        == []
+    )
+    independent = client_for(owner).get("/api/v1.0/documents/?independent=true").json()
+    assert [item["id"] for item in independent["results"]] == []
+    detail = client_for(owner).get(f"/api/v1.0/documents/{page.id}/").json()
+    assert detail["home_workspace"]["name"] == "Acme"
+
+    # Already there
+    again = client_for(owner).post(url, {"workspace_id": str(acme.id)}, format="json")
+    assert again.status_code == 400
+
+
+def test_a_subpage_moves_into_a_workspace_and_back_out():
+    """Out of its space first; made independent, it leaves the workspace."""
+    owner, member = factories.UserFactory.create_batch(2)
+    acme = models.Workspace.objects.create(name="Acme")
+    for user in (owner, member):
+        models.WorkspaceAccess.objects.create(workspace=acme, user=user)
+    space = factories.DocumentFactory(
+        kind="space", title="Engineering", users=[(owner, "owner")]
+    )
+    page = factories.DocumentFactory(parent=space, title="Roadmap")
+
+    client_for(owner).post(
+        f"/api/v1.0/documents/{page.id}/move-to-workspace/",
+        {"workspace_id": str(acme.id)},
+        format="json",
+    )
+    page.refresh_from_db()
+    assert page.is_root()
+    assert page.workspace_links.get().workspace == acme
+
+    response = client_for(owner).post(
+        f"/api/v1.0/documents/{page.id}/make-independent/"
+    )
+
+    assert response.status_code == 200
+    assert not page.workspace_links.exists()
+    assert page.get_role(fresh(member)) is None
+    assert page.get_role(owner) == "owner"
+
+
+def test_only_members_and_managers_move_a_page_into_a_workspace():
+    """Not a member of the workspace, or not managing the page: refused."""
+    owner, reader = factories.UserFactory.create_batch(2)
+    acme = models.Workspace.objects.create(name="Acme")
+    models.WorkspaceAccess.objects.create(workspace=acme, user=reader)
+    page = factories.DocumentFactory(users=[(owner, "owner"), (reader, "reader")])
+    url = f"/api/v1.0/documents/{page.id}/move-to-workspace/"
+
+    assert (
+        client_for(owner)
+        .post(url, {"workspace_id": str(acme.id)}, format="json")
+        .status_code
+        == 400
+    )
+    assert (
+        client_for(reader)
+        .post(url, {"workspace_id": str(acme.id)}, format="json")
+        .status_code
+        == 403
+    )

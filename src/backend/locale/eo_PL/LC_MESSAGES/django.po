@@ -66,7 +66,7 @@ msgid "A new document was created on your behalf!"
 msgstr "Nova dokumento estis kreita en via nomo!"
 
 #: core/api/serializers.py:533
-msgid "You have been granted ownership of a new document:"
+msgid "You have been granted ownership of a new page:"
 msgstr "Vi ricevis proprieton de nova dokumento:"
 
 #: core/api/serializers.py:569
@@ -323,7 +323,7 @@ msgid "Click here to see"
 msgstr "Alklaku ĉi tie por vidi"
 
 #: core/models.py:738
-msgid "See my documents"
+msgid "See my pages"
 msgstr "Vidi miajn dokumentojn"
 
 #: core/models.py:748
@@ -380,7 +380,7 @@ msgid "Documents"
 msgstr "Dokumentoj"
 
 #: core/models.py:1000 core/models.py:1426
-msgid "Untitled Document"
+msgid "Untitled page"
 msgstr "Dokumento sen titolo"
 
 #: core/models.py:1427
@@ -389,7 +389,7 @@ msgstr "Malfermi"
 
 #: core/models.py:1462
 #, python-brace-format
-msgid "{name} shared a document with you!"
+msgid "{name} shared a page with you!"
 msgstr "{name} kunhavigis dokumenton kun vi!"
 
 #: core/models.py:1466
@@ -399,7 +399,7 @@ msgstr "{name} invitis vin kun la rolo \"{role}\" en la sekva dokumento:"
 
 #: core/models.py:1472
 #, python-brace-format
-msgid "{name} shared a document with you: {title}"
+msgid "{name} shared a page with you: {title}"
 msgstr "{name} kunhavigis dokumenton kun vi: {title}"
 
 #: core/models.py:1572
@@ -460,7 +460,7 @@ msgstr "Ĉi tiu uzanto jam petis aliron al ĉi tiu dokumento."
 
 #: core/models.py:1865
 #, python-brace-format
-msgid "{name} would like access to a document!"
+msgid "{name} would like access to a page!"
 msgstr "{name} ŝatus aliri dokumenton!"
 
 #: core/models.py:1869
@@ -470,7 +470,7 @@ msgstr "{name} ŝatus aliri la sekvan dokumenton:"
 
 #: core/models.py:1875
 #, python-brace-format
-msgid "{name} is asking for access to the document: {title}"
+msgid "{name} is asking for access to the page: {title}"
 msgstr "{name} petas aliron al la dokumento: {title}"
 
 #: core/models.py:1917

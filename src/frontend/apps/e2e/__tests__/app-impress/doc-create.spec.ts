@@ -36,13 +36,13 @@ test.describe('Doc Create', () => {
   }) => {
     await createDoc(page, 'my-new-button-sub-doc', browserName, 1);
 
-    await page.getByLabel('Open new document options').click();
-    await page.getByRole('menuitem', { name: 'New sub-doc' }).click();
+    await page.getByLabel('Open new page options').click();
+    await page.getByRole('menuitem', { name: 'New sub-page' }).click();
 
-    const input = page.getByRole('textbox', { name: 'Document title' });
+    const input = page.getByRole('textbox', { name: 'Page title' });
     await expect(input).toHaveText('', { timeout: 10000 });
     await expect(
-      page.locator('.c__tree-view--row-content').getByText('Untitled document'),
+      page.locator('.c__tree-view--row-content').getByText('Untitled page'),
     ).toBeVisible();
   });
 
@@ -56,13 +56,13 @@ test.describe('Doc Create', () => {
 
     await openSuggestionMenu({
       page,
-      suggestion: 'New sub-doc',
+      suggestion: 'New sub-page',
     });
 
-    const input = page.getByRole('textbox', { name: 'Document title' });
+    const input = page.getByRole('textbox', { name: 'Page title' });
     await expect(input).toHaveText('', { timeout: 10000 });
     await expect(
-      page.locator('.c__tree-view--row-content').getByText('Untitled document'),
+      page.locator('.c__tree-view--row-content').getByText('Untitled page'),
     ).toBeVisible();
   });
 

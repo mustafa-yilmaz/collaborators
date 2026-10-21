@@ -359,7 +359,7 @@ const DocToolBoxComponent = ({
       isHidden: !doc.abilities.duplicate,
     },
     {
-      label: t('Move into a doc', {
+      label: t('Move into a page', {
         description: 'Menu action to move a document under another doc',
       }),
       icon: <DocMoveInIcon width={18} height={18} aria-hidden="true" />,
@@ -391,9 +391,10 @@ const DocToolBoxComponent = ({
       }),
       icon: <DocMoveOutIcon width={18} height={18} aria-hidden="true" />,
       callback: () => setIsModalIndependentOpen(true),
+      // A top-level page placed in a workspace can leave it too
       isHidden: isSpace
         ? !doc.home_workspace || doc.user_role !== Role.OWNER
-        : isTopParent || !managesDoc,
+        : (isTopParent && !doc.home_workspace) || !managesDoc,
     },
     {
       label: t('Move to a workspace', {
@@ -403,8 +404,10 @@ const DocToolBoxComponent = ({
       callback: () => {
         setIsModalMoveSpaceOpen(true);
       },
-      isHidden:
-        !isSpace || !!doc.home_workspace || doc.user_role !== Role.OWNER,
+      // A page goes directly in a workspace (in none of its spaces)
+      isHidden: isSpace
+        ? !!doc.home_workspace || doc.user_role !== Role.OWNER
+        : !managesDoc,
     },
     { type: 'separator' },
     {
@@ -463,7 +466,7 @@ const DocToolBoxComponent = ({
         }
       >
         <Button
-          aria-label={t('Open the document options: {{title}}', {
+          aria-label={t('Open the page options: {{title}}', {
             description: 'Accessible name of the document actions menu button',
             title: doc.title || untitledDocument,
           })}

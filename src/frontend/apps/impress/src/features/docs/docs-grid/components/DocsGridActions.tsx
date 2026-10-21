@@ -61,7 +61,7 @@ export const DocsGridTrashbinActions = ({
     options: {
       onSuccess: (_data) => {
         toast(
-          t('The document has been restored.', {
+          t('The page has been restored.', {
             description: 'Toast shown after a deleted document is restored',
           }),
           VariantType.SUCCESS,
@@ -72,7 +72,7 @@ export const DocsGridTrashbinActions = ({
       },
       onError: (error) => {
         toast(
-          t('An error occurred while restoring the document: {{error}}', {
+          t('An error occurred while restoring the page: {{error}}', {
             description: 'Toast shown when restoring a deleted document fails',
             error: error?.message,
           }),

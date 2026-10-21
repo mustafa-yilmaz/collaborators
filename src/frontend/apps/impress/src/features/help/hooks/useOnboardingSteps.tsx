@@ -38,7 +38,7 @@ export const useOnboardingSteps = () => {
             <DragIndicatorIcon aria-hidden="true" />
           </OnboardingStepIcon>
         ),
-        title: t('Compose your doc easily', {
+        title: t('Compose your page easily', {
           description: 'Product tour step title',
         }),
         description: t(
@@ -51,7 +51,7 @@ export const useOnboardingSteps = () => {
               description: 'URL of onboarding step 1 preview image',
               defaultValue: '/assets/on-boarding/step_1_EN.webm',
             })}
-            aria-label={t('Compose your doc easily', {
+            aria-label={t('Compose your page easily', {
               description: 'Product tour step title',
             })}
             width={350}
@@ -78,7 +78,7 @@ export const useOnboardingSteps = () => {
           description: 'Product tour step title',
         }),
         description: t(
-          'Apply styles, structure, and emphasis in one click—keep documents clean, consistent, and easy to scan.',
+          'Apply styles, structure, and emphasis in one click—keep pages clean, consistent, and easy to scan.',
           { description: 'Product tour step description' },
         ),
         content: (

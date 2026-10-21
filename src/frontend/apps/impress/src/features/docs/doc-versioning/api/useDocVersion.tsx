@@ -16,7 +16,7 @@ export type DocVersionParam = {
 };
 
 /**
- * The document as it stood at the end of a version.
+ * The page as it stood at the end of a version.
  *
  * `changeset` renders it from a time-zero baseline, so this is the whole
  * document at that moment and not a diff — which is what the preview needs, and

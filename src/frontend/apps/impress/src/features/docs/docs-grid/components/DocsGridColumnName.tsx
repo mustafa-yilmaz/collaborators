@@ -187,7 +187,7 @@ const DocGridSortButton = ({
         aria-label={
           isActive
             ? t(
-                'Sorted documents by {{label}}, {{direction}}. Activate to reverse.',
+                'Sorted pages by {{label}}, {{direction}}. Activate to reverse.',
                 {
                   description: 'Accessible name of a sort button, current sort',
                   label: ariaLabel,
@@ -200,7 +200,7 @@ const DocGridSortButton = ({
                       }),
                 },
               )
-            : t('Sort documents by {{label}}', {
+            : t('Sort pages by {{label}}', {
                 description: 'Accessible name of a sort button',
                 label: ariaLabel,
               })

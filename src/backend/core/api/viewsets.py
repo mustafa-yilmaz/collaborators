@@ -675,9 +675,10 @@ class DocumentViewSet(
         # inside them are reached through their space.
         queryset = queryset.exclude(kind=choices.DocumentKindChoices.SPACE)
 
-        # Independent pages: in no space, nor under another page
+        # Independent pages: in no space, nor under another page, nor placed
+        # directly in a workspace
         if request.GET.get("independent") in ("true", "1"):
-            queryset = queryset.filter(depth=1)
+            queryset = queryset.filter(depth=1, workspace_links__isnull=True)
 
         # Annotate favorite status and filter if applicable as late as possible
         queryset = queryset.annotate_is_favorite(user)

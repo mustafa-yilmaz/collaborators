@@ -26,7 +26,7 @@ export const useScrollToBlockAnchor = () => {
     }
 
     /**
-     * Document editor can be a bit slow to render the block elements.
+     * Page editor can be a bit slow to render the block elements.
      * If the block element doesn't exist yet, we observe the DOM
      * during the next OBSERVER_TIMEOUT milliseconds to see if it appears,
      * and scroll to it when it does.

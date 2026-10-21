@@ -39,6 +39,8 @@ export const LeftPanelContent = () => {
         >
           <WorkspaceSwitcher />
           <SpaceList />
+          {/* In a workspace, the pages placed directly in it */}
+          {currentWorkspaceId && <PageList workspaceId={currentWorkspaceId} />}
           {/* Independent pages live outside workspaces */}
           {!currentWorkspaceId && (
             <>

@@ -94,7 +94,7 @@ export function useDuplicateDoc(options?: DuplicateDocOptions) {
       void options?.onSuccess?.(data, variables, onMutateResult, context);
     },
     onError: (error, variables, onMutateResult, context) => {
-      const message = t('Failed to duplicate the document...', {
+      const message = t('Failed to duplicate the page...', {
         description: 'Toast shown when duplicating a document failed',
       });
       toast(message, VariantType.ERROR, {

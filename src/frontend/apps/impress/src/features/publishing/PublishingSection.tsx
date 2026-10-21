@@ -156,7 +156,7 @@ export const PublishingSection = ({
                 >
                   <Text as="span" $size="sm" $weight="600">
                     {entry.document.title ||
-                      t('Untitled document', {
+                      t('Untitled page', {
                         description: 'Name of a document without title',
                       })}
                   </Text>

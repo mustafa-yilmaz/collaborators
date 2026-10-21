@@ -152,6 +152,10 @@ urlpatterns = [
                     "documents/<uuid:pk>/make-independent/",
                     page_links.MakePageIndependentView.as_view(),
                 ),
+                path(
+                    "documents/<uuid:pk>/move-to-workspace/",
+                    page_links.MovePageToWorkspaceView.as_view(),
+                ),
                 *router.urls,
                 *oidc_urls,
                 path("groups/", workspaces.GrantableTeamsView.as_view()),

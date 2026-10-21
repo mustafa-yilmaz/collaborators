@@ -121,7 +121,7 @@ export const DocsGrid = ({
         >
           <FadeComponent isVisible={!!hasDocs}>
             <Box
-              aria-label={t('Documents grid', {
+              aria-label={t('Pages grid', {
                 description: 'Accessible name of the list of documents',
               })}
               $display="grid"
@@ -160,7 +160,7 @@ export const DocsGrid = ({
                 variant="tertiary"
                 className="sr-only"
               >
-                {t('More docs', {
+                {t('More pages', {
                   description: 'Button loading more documents',
                 })}
               </Button>
@@ -188,7 +188,7 @@ const DocGridTitleBar = ({
   let icon = <ClockIcon width={24} height={24} aria-hidden="true" />;
   if (target === DocDefaultFilter.MY_DOCS) {
     icon = <UserIcon width={24} height={24} aria-hidden="true" />;
-    title = t('My docs', {
+    title = t('My pages', {
       description: 'Name of the filter listing docs owned by the user',
     });
   } else if (target === DocDefaultFilter.SHARED_WITH_ME) {
@@ -243,7 +243,7 @@ const DocGridNoDocs = ({ target }: { target: DocDefaultFilter }) => {
         <>
           <DocsIcon width={56} height={56} aria-hidden="true" />
           <Text $size="sm" $weight="700">
-            {t('No doc yet', {
+            {t('No page yet', {
               description: 'Empty state heading when the user has no doc',
             })}
           </Text>
@@ -251,14 +251,14 @@ const DocGridNoDocs = ({ target }: { target: DocDefaultFilter }) => {
             target,
           ) && (
             <Text $size="sm" $weight="400" $variation="secondary">
-              {t('Your docs will appear here.', {
+              {t('Your pages will appear here.', {
                 description: 'Empty state text of the docs list',
               })}
             </Text>
           )}
           {target === DocDefaultFilter.SHARED_WITH_ME && (
             <Text $size="sm" $weight="400" $variation="secondary">
-              {t('Your shared docs will appear here.', {
+              {t('Your shared pages will appear here.', {
                 description: 'Empty state text of the shared docs list',
               })}
             </Text>
@@ -269,12 +269,12 @@ const DocGridNoDocs = ({ target }: { target: DocDefaultFilter }) => {
         <>
           <BinIcon width={56} height={56} aria-hidden="true" />
           <Text $size="sm" $weight="700">
-            {t('No doc deleted', {
+            {t('No page deleted', {
               description: 'Empty state heading of the trashbin',
             })}
           </Text>
           <Text $size="sm" $weight="400" $variation="secondary">
-            {t('Deleted docs will appear here.', {
+            {t('Deleted pages will appear here.', {
               description: 'Empty state text of the trashbin',
             })}
           </Text>

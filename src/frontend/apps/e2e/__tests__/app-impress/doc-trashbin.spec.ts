@@ -33,14 +33,14 @@ test.describe('Doc Trashbin', () => {
     await page.getByRole('link', { name: 'Back to homepage' }).click();
 
     // Delete the first document - Is not displayed
-    await page.getByRole('link', { name: 'My docs' }).click();
+    await page.getByRole('link', { name: 'My pages' }).click();
     const row1 = await getGridRow(page, title1);
     await clickInDocOptionMenu(page, row1, 'Delete');
-    await page.getByRole('button', { name: 'Delete document' }).click();
+    await page.getByRole('button', { name: 'Delete page' }).click();
     await expect(row1.getByText(title1)).toBeHidden();
     await expect(
       page.getByRole('heading', {
-        name: 'My docs',
+        name: 'My pages',
         level: 2,
       }),
     ).toBeVisible();
@@ -53,7 +53,7 @@ test.describe('Doc Trashbin', () => {
 
     // Delete the second document - It is not displayed in the starred list anymore
     await clickInDocOptionMenu(page, row2, 'Delete');
-    await page.getByRole('button', { name: 'Delete document' }).click();
+    await page.getByRole('button', { name: 'Delete page' }).click();
     await expect(row2.getByText(title2)).toBeHidden();
 
     // It is displayed in the trashbin list
@@ -84,12 +84,12 @@ test.describe('Doc Trashbin', () => {
 
     await expect(
       row2.getByRole('button', {
-        name: 'Open the sharing settings for the document',
+        name: 'Open the sharing settings for the page',
       }),
     ).toBeVisible();
     await expect(
       row2.getByRole('button', {
-        name: 'Open the sharing settings for the document',
+        name: 'Open the sharing settings for the page',
       }),
     ).toBeDisabled();
 
@@ -105,14 +105,14 @@ test.describe('Doc Trashbin', () => {
     await page.getByRole('link', { name: 'Recent' }).click();
     const row2Restored = await getGridRow(page, title2);
     await expect(row2Restored.getByText(title2)).toBeVisible();
-    await row2Restored.getByRole('link', { name: /Open document/ }).click();
+    await row2Restored.getByRole('link', { name: /Open page/ }).click();
 
     await verifyDocName(page, title2);
     await page.getByRole('link', { name: 'Back to homepage' }).click();
     await expect(row2.getByText(title2)).toBeVisible();
     await expect(
       row2.getByRole('button', {
-        name: 'Open the sharing settings for the document',
+        name: 'Open the sharing settings for the page',
       }),
     ).toBeEnabled();
 
@@ -156,7 +156,7 @@ test.describe('Doc Trashbin', () => {
     await verifyDocName(page, subDocName);
 
     await clickInEditorMenu(page, 'Delete');
-    await page.getByRole('button', { name: 'Delete document' }).click();
+    await page.getByRole('button', { name: 'Delete page' }).click();
     await verifyDocName(page, topParent);
 
     await page.getByRole('link', { name: 'Back to homepage' }).click();
@@ -180,7 +180,7 @@ test.describe('Doc Trashbin', () => {
       page.locator('.--docs--editor-container.--docs--doc-deleted'),
     ).toBeVisible();
 
-    await expect(page.getByLabel('Alert deleted document')).toBeVisible();
+    await expect(page.getByLabel('Alert deleted page')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Share' })).toBeHidden();
     await expect(page.locator('.bn-editor')).toHaveAttribute(
       'contenteditable',
@@ -201,7 +201,7 @@ test.describe('Doc Trashbin', () => {
     ).toBeVisible();
 
     await page.getByRole('button', { name: 'Restore' }).click();
-    await expect(page.getByLabel('Alert deleted document')).toBeHidden();
+    await expect(page.getByLabel('Alert deleted page')).toBeHidden();
     await expect(page.locator('.bn-editor')).toHaveAttribute(
       'contenteditable',
       'true',

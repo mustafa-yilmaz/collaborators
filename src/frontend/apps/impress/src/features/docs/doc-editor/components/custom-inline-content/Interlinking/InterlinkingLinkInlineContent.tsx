@@ -146,7 +146,7 @@ export const getInterlinkinghMenuItems = (
 ) => [
   {
     key: 'link-doc',
-    title: t('Link a doc', {
+    title: t('Link a page', {
       description: 'Editor menu entry to insert a link to another doc',
     }),
     onItemClick: () => {
@@ -163,21 +163,21 @@ export const getInterlinkinghMenuItems = (
     aliases: ['interlinking', 'link', 'anchor', 'a'],
     group,
     icon: <LinkPageIcon />,
-    subtext: t('Link this doc to another doc', {
-      description: 'Description of the "Link a doc" editor menu entry',
+    subtext: t('Link this page to another page', {
+      description: 'Description of the "Link a page" editor menu entry',
     }),
   },
   {
     key: 'new-sub-doc',
-    title: t('New sub-doc', {
+    title: t('New sub-page', {
       description: 'Action to create a doc nested under the current doc',
     }),
     onItemClick: createPage,
     aliases: ['new sub-doc'],
     group,
     icon: <AddPageIcon />,
-    subtext: t('Create a new sub-doc', {
-      description: 'Description of the "New sub-doc" editor menu entry',
+    subtext: t('Create a new sub-page', {
+      description: 'Description of the "New sub-page" editor menu entry',
     }),
   },
 ];

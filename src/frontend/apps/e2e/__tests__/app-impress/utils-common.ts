@@ -180,7 +180,7 @@ export const createDoc = async (
         response.request().method() === 'PATCH',
     );
 
-    const input = page.getByLabel('Document title');
+    const input = page.getByLabel('Page title');
     await expect(input).toBeVisible({
       timeout: 10000,
     });
@@ -200,7 +200,7 @@ export const createDoc = async (
 
 export const verifyDocName = async (page: Page, docName: string) => {
   const card = page.getByLabel(
-    'It is the card information about the document.',
+    'It is the card information about the page.',
   );
   await expect(card).toBeVisible({
     timeout: 10000,
@@ -264,7 +264,7 @@ export const goToGridDoc = async (
 };
 
 export const updateDocTitle = async (page: Page, title: string) => {
-  const input = page.getByRole('textbox', { name: 'Document title' });
+  const input = page.getByRole('textbox', { name: 'Page title' });
   await expect(input).toBeEmpty({ timeout: 10000 });
   await input.fill(title, {
     force: true,
@@ -459,7 +459,7 @@ export const clickInDocOptionMenu = async (
   textButton: string | RegExp,
 ) => {
   await selector
-    .getByRole('button', { name: /Open the document options/ })
+    .getByRole('button', { name: /Open the page options/ })
     .click();
   await page.getByRole('menuitem', { name: textButton }).click();
 };

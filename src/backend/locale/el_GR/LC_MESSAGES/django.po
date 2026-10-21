@@ -66,7 +66,7 @@ msgid "A new document was created on your behalf!"
 msgstr "Ένα νέο έγγραφο δημιουργήθηκε εκ μέρους σας!"
 
 #: core/api/serializers.py:536
-msgid "You have been granted ownership of a new document:"
+msgid "You have been granted ownership of a new page:"
 msgstr "Σας παραχωρήθηκε η ιδιοκτησία ενός νέου εγγράφου:"
 
 #: core/api/serializers.py:572
@@ -323,7 +323,7 @@ msgid "Click here to see"
 msgstr "Κάντε κλικ εδώ για να δείτε"
 
 #: core/models.py:798
-msgid "See my documents"
+msgid "See my pages"
 msgstr "Δείτε τα έγγραφά μου"
 
 #: core/models.py:808
@@ -380,7 +380,7 @@ msgid "Documents"
 msgstr "Έγγραφα"
 
 #: core/models.py:1063 core/models.py:1442 core/models.py:2178
-msgid "Untitled Document"
+msgid "Untitled page"
 msgstr "Έγγραφο χωρίς τίτλο"
 
 #: core/models.py:1443
@@ -389,7 +389,7 @@ msgstr "Άνοιγμα"
 
 #: core/models.py:1478
 #, python-brace-format
-msgid "{name} shared a document with you!"
+msgid "{name} shared a page with you!"
 msgstr "Ο/Η {name} μοιράστηκε ένα έγγραφο μαζί σας!"
 
 #: core/models.py:1482
@@ -399,7 +399,7 @@ msgstr "Ο/Η {name} σας προσκάλεσε με τον ρόλο \"{role}\"
 
 #: core/models.py:1488
 #, python-brace-format
-msgid "{name} shared a document with you: {title}"
+msgid "{name} shared a page with you: {title}"
 msgstr "Ο/Η {name} μοιράστηκε ένα έγγραφο μαζί σας: {title}"
 
 #: core/models.py:1588
@@ -460,7 +460,7 @@ msgstr "Αυτός ο χρήστης έχει ήδη ζητήσει πρόσβα
 
 #: core/models.py:1881
 #, python-brace-format
-msgid "{name} would like access to a document!"
+msgid "{name} would like access to a page!"
 msgstr "Ο/Η {name} θα ήθελε πρόσβαση σε ένα έγγραφο!"
 
 #: core/models.py:1885
@@ -470,7 +470,7 @@ msgstr "Ο/Η {name} θα ήθελε πρόσβαση στο ακόλουθο έ
 
 #: core/models.py:1891
 #, python-brace-format
-msgid "{name} is asking for access to the document: {title}"
+msgid "{name} is asking for access to the page: {title}"
 msgstr "Ο/Η {name} ζητά πρόσβαση στο έγγραφο: {title}"
 
 #: core/models.py:1933
@@ -518,7 +518,7 @@ msgid "a deleted user"
 msgstr ""
 
 #: core/models.py:2116
-msgid "The thread does not belong to this document."
+msgid "The thread does not belong to this page."
 msgstr ""
 
 #: core/models.py:2180
@@ -538,7 +538,7 @@ msgstr ""
 
 #: core/models.py:2190
 #, python-brace-format
-msgid "{name} mentioned you in the following document:"
+msgid "{name} mentioned you in the following page:"
 msgstr ""
 
 #: core/models.py:2216

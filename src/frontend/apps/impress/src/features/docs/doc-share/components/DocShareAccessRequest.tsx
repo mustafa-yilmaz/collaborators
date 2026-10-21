@@ -248,7 +248,7 @@ export const ButtonAccessRequest = ({
     return (
       <Text $maxWidth="320px" $textAlign="center" $size="sm">
         {t(
-          'As this is a sub-document, please request access to the parent document to enable these features.',
+          'As this is a sub-page, please request access to the parent page to enable these features.',
           {
             description:
               'Message in the share dialog when the user lacks rights on a sub-doc',

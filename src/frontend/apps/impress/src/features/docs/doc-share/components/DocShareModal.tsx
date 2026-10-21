@@ -196,7 +196,7 @@ export const DocShareModal = ({ doc, onClose, isRootDoc = true }: Props) => {
         isOpen
         closeOnClickOutside
         data-testid="doc-share-modal"
-        aria-label={t('Share the document', {
+        aria-label={t('Share the page', {
           description: 'Title and accessible name of the share dialog',
         })}
         size={isLargeScreen ? ModalSize.LARGE : ModalSize.FULL}
@@ -212,7 +212,7 @@ export const DocShareModal = ({ doc, onClose, isRootDoc = true }: Props) => {
               $weight="600"
               $margin="0"
             >
-              {t('Share the document', {
+              {t('Share the page', {
                 description: 'Title and accessible name of the share dialog',
               })}
             </Text>
@@ -280,7 +280,7 @@ export const DocShareModal = ({ doc, onClose, isRootDoc = true }: Props) => {
                     as="p"
                   >
                     {t(
-                      'You can view this document but need additional access to see its members or modify settings.',
+                      'You can view this page but need additional access to see its members or modify settings.',
                       {
                         description:
                           'Message in the share dialog for users with read-only access',

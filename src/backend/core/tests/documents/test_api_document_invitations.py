@@ -410,7 +410,7 @@ def test_api_document_invitations_create_privileged_members(
         email = mail.outbox[0]
         assert email.to == ["guest@example.com"]
         email_content = " ".join(email.body.split())
-        assert f"{user.full_name} shared a document with you!" in email_content
+        assert f"{user.full_name} shared a page with you!" in email_content
         assert (
             f"{user.full_name} ({user.email}) invited you with the role &quot;{invited}&quot; "
             f"on the following document: {document.title}"
@@ -506,7 +506,7 @@ def test_api_document_invitations_create_email_full_name_empty():
     assert email.to == ["guest@example.com"]
 
     email_content = " ".join(email.body.split())
-    assert f"{user.email} shared a document with you!" in email_content
+    assert f"{user.email} shared a page with you!" in email_content
     assert (
         f"{user.email.capitalize()} invited you with the role &quot;reader&quot; on the "
         f"following document: {document.title}" in email_content

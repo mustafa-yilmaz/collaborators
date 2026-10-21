@@ -132,7 +132,7 @@ export const DocTreeRoot = ({
       ref={rootItemRef}
       data-testid="doc-tree-root-item"
       role="treeitem"
-      aria-label={t('Root document {{title}}', {
+      aria-label={t('Root page {{title}}', {
         description: 'Accessible name of the root doc in the tree',
         title,
       })}
@@ -184,7 +184,7 @@ export const DocTreeRoot = ({
           selectRoot();
           void router.push(`/docs/${root.id}`);
         }}
-        aria-label={`${t('Open root document', { description: 'Accessible name of the link opening the root doc' })}: ${title}`}
+        aria-label={`${t('Open root page', { description: 'Accessible name of the link opening the root doc' })}: ${title}`}
         tabIndex={-1} // the item itself is the tab stop
       >
         <Box $direction="row" $align="center" $width="100%">

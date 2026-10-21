@@ -24,7 +24,7 @@ export const DocDesynchronized = ({ doc }: DocDesynchronizedProps) => {
     listInvalidQueries: [KEY_LIST_DOC, KEY_DOC],
     onSuccess: () => {
       toast(
-        t('The document visibility restored.', {
+        t('The page visibility restored.', {
           description:
             "Toast shown after resetting link sharing to the parent's settings",
         }),
@@ -53,7 +53,7 @@ export const DocDesynchronized = ({ doc }: DocDesynchronizedProps) => {
       >
         <Desync />
         <Text $size="xs" $withThemeInherited $weight="400">
-          {t('The link sharing rules differ from the parent document', {
+          {t('The link sharing rules differ from the parent page', {
             description:
               'Banner shown on a sub-doc whose link settings differ from its parent',
           })}

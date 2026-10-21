@@ -149,7 +149,7 @@ test.describe('Doc Tree', () => {
     await docTree.getByText('keyboard_arrow_right').click();
     await docTree
       .getByRole('link', {
-        name: `Open document ${titleChild}`,
+        name: `Open page ${titleChild}`,
       })
       .click();
 
@@ -318,7 +318,7 @@ test.describe('Doc Tree', () => {
 
     await child.hover();
     const menu = child.getByRole('button', {
-      name: /Open the document options/,
+      name: /Open the page options/,
     });
     await menu.click();
 
@@ -347,7 +347,7 @@ test.describe('Doc Tree', () => {
 
     await expect(
       page
-        .getByLabel('It is the card information about the document.')
+        .getByLabel('It is the card information about the page.')
         .getByText('Administrator ·'),
     ).toBeVisible();
 
@@ -383,7 +383,7 @@ test.describe('Doc Tree', () => {
     );
 
     const docTree = page.getByTestId('doc-tree');
-    const rootItem = docTree.getByLabel('Root document').first();
+    const rootItem = docTree.getByLabel('Root page').first();
     const treeRow1 = await getTreeRow(page, docChild1);
     const treeRow2 = await getTreeRow(page, docChild2);
 
@@ -402,7 +402,7 @@ test.describe('Doc Tree', () => {
     await page.keyboard.press('ArrowRight');
     await expect(
       treeRow1.getByRole('button', {
-        name: /Open the document options/i,
+        name: /Open the page options/i,
       }),
     ).toBeFocused();
     await page.keyboard.press('Escape');
@@ -415,7 +415,7 @@ test.describe('Doc Tree', () => {
     await page.keyboard.press('F2');
     const rootActions = rootItem.locator('.doc-tree-root-item-actions');
     const rootMoreOptionsButton = rootActions.getByRole('button', {
-      name: /Open the document options/i,
+      name: /Open the page options/i,
     });
     const rootAddDocButton = rootItem.getByTestId(
       'doc-tree-item-actions-add-child',
@@ -464,7 +464,7 @@ test.describe('Doc Tree', () => {
     await expect(page.getByLabel('User menu')).toBeFocused();
 
     await page.keyboard.press('Shift+Tab');
-    await expect(docTree.getByLabel('Root document').first()).toBeFocused();
+    await expect(docTree.getByLabel('Root page').first()).toBeFocused();
 
     await page.keyboard.press('Enter');
     await verifyDocName(page, docParent);
@@ -480,7 +480,7 @@ test.describe('Doc Tree', () => {
 
     await treeRow1.hover();
     const optionsButton = treeRow1.getByRole('button', {
-      name: /Open the document options/i,
+      name: /Open the page options/i,
     });
     await expect(optionsButton).toHaveAttribute('aria-haspopup', 'menu');
     await expect(optionsButton).toHaveAttribute('aria-expanded', 'false');
@@ -571,7 +571,7 @@ test.describe('Doc Tree', () => {
     await page.getByRole('menuitemradio', { name: 'Public' }).click();
 
     await expect(
-      page.getByText('The document visibility has been updated.'),
+      page.getByText('The page visibility has been updated.'),
     ).toBeVisible();
 
     await page.getByRole('button', { name: 'close' }).click();

@@ -59,7 +59,7 @@ export const useImport = ({ onDragOver, onImportSuccess }: UseImportProps) => {
       toast(
         allowedExtensions
           ? t(
-              `The document "{{documentName}}" import has failed (only {{allowedExtensions}} files are allowed)`,
+              `The page "{{documentName}}" import has failed (only {{allowedExtensions}} files are allowed)`,
               {
                 description:
                   'Toast shown when a file to import has an unsupported type',
@@ -67,7 +67,7 @@ export const useImport = ({ onDragOver, onImportSuccess }: UseImportProps) => {
                 allowedExtensions,
               },
             )
-          : t(`The document "{{documentName}}" import has failed`, {
+          : t(`The page "{{documentName}}" import has failed`, {
               description:
                 'Toast shown when importing a file as a document failed',
               documentName: fileName,
@@ -112,7 +112,7 @@ export const useImport = ({ onDragOver, onImportSuccess }: UseImportProps) => {
         if (isFileTooLarge) {
           toast(
             t(
-              'The document "{{documentName}}" is too large. Maximum file size is {{maxFileSize}}.',
+              'The file "{{documentName}}" is too large. Maximum file size is {{maxFileSize}}.',
               {
                 description:
                   'Toast shown when an imported file exceeds the size limit',

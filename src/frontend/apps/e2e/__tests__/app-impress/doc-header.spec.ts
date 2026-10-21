@@ -76,10 +76,10 @@ test.describe('Doc Header', () => {
     await writeInEditor({ page, text: 'Hello Content' });
 
     const card = page.getByLabel(
-      'It is the card information about the document.',
+      'It is the card information about the page.',
     );
 
-    const docTitle = card.getByRole('textbox', { name: 'Document title' });
+    const docTitle = card.getByRole('textbox', { name: 'Page title' });
     await expect(docTitle).toBeVisible();
 
     await page.getByRole('button', { name: 'Share' }).click();
@@ -94,7 +94,7 @@ test.describe('Doc Header', () => {
     await expect(card.getByText('Owner ·')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Share' })).toBeVisible();
     await page
-      .getByRole('button', { name: 'Open the document options' })
+      .getByRole('button', { name: 'Open the page options' })
       .click();
     await expect(
       page.getByRole('menuitem', { name: 'Download' }),
@@ -133,7 +133,7 @@ test.describe('Doc Header', () => {
     await page.waitForTimeout(1000);
 
     await page.keyboard.press('Escape');
-    const elTitle = page.getByRole('textbox', { name: 'Document title' });
+    const elTitle = page.getByRole('textbox', { name: 'Page title' });
     await expect(elTitle).toBeVisible();
     await elTitle.fill('Hello World');
     await elTitle.blur();
@@ -145,7 +145,7 @@ test.describe('Doc Header', () => {
     await verifyDocName(otherPage, 'Hello World');
 
     const elTitleOther = otherPage.getByRole('textbox', {
-      name: 'Document title',
+      name: 'Page title',
     });
     await elTitleOther.fill('Hello Other World');
     await elTitleOther.blur();
@@ -162,12 +162,12 @@ test.describe('Doc Header', () => {
   }) => {
     await createDoc(page, 'doc-title-paste', browserName, 1);
 
-    const docTitle = page.getByRole('textbox', { name: 'Document title' });
+    const docTitle = page.getByRole('textbox', { name: 'Page title' });
     await docTitle.click();
     await page.keyboard.press('Control+a');
 
     await page.evaluate(() => {
-      const el = document.querySelector('[aria-label="Document title"]');
+      const el = document.querySelector('[aria-label="Page title"]');
       if (!el) {
         return;
       }
@@ -194,7 +194,7 @@ test.describe('Doc Header', () => {
 
     const emojiPicker = page.locator('.--docs--doc-title').getByRole('button');
     const docHeader = page.getByLabel(
-      'It is the card information about the document.',
+      'It is the card information about the page.',
     );
     const addEmoji = docHeader.getByRole('button', { name: 'Add emoji' });
     const removeEmoji = docHeader.getByRole('button', {
@@ -232,7 +232,7 @@ test.describe('Doc Header', () => {
     await expect(emojiPicker).toHaveText('😀');
 
     // Update title
-    const docTitle = page.getByRole('textbox', { name: 'Document title' });
+    const docTitle = page.getByRole('textbox', { name: 'Page title' });
     await docTitle.fill('Hello Emoji World');
     await docTitle.blur();
     await verifyDocName(page, 'Hello Emoji World');
@@ -253,19 +253,19 @@ test.describe('Doc Header', () => {
     await clickInEditorMenu(page, 'Delete');
 
     await expect(
-      page.getByRole('heading', { name: 'Delete a doc' }),
+      page.getByRole('heading', { name: 'Delete a page' }),
     ).toBeVisible();
 
     await expect(page.getByText(`This document will be`)).toBeVisible();
 
     await page
       .getByRole('button', {
-        name: 'Delete document',
+        name: 'Delete page',
       })
       .click();
 
     await expect(
-      page.getByText('The document has been deleted.'),
+      page.getByText('The page has been deleted.'),
     ).toBeVisible();
 
     await expect(page.getByRole('button', { name: 'New do' })).toBeVisible();
@@ -301,10 +301,10 @@ test.describe('Doc Header', () => {
     await goToGridDoc(page);
 
     await expect(
-      page.getByRole('textbox', { name: 'Document title' }),
+      page.getByRole('textbox', { name: 'Page title' }),
     ).toContainText('Mocked document');
 
-    await page.getByLabel('Open the document options').click();
+    await page.getByLabel('Open the page options').click();
 
     await expect(
       page.getByRole('menuitem', { name: 'Download' }),
@@ -317,10 +317,10 @@ test.describe('Doc Header', () => {
     await page.getByRole('button', { name: 'Share' }).click();
 
     const shareModal = page.getByRole('dialog', {
-      name: 'Share the document',
+      name: 'Share the page',
     });
     await expect(shareModal).toBeVisible();
-    await expect(page.getByText('Share the document')).toBeVisible();
+    await expect(page.getByText('Share the page')).toBeVisible();
 
     const invitationCard = shareModal.getByLabel('List invitation card');
     await expect(invitationCard).toBeVisible();
@@ -376,10 +376,10 @@ test.describe('Doc Header', () => {
     await goToGridDoc(page);
 
     await expect(
-      page.getByRole('textbox', { name: 'Document title' }),
+      page.getByRole('textbox', { name: 'Page title' }),
     ).toContainText('Mocked document');
 
-    await page.getByLabel('Open the document options').click();
+    await page.getByLabel('Open the page options').click();
 
     await expect(
       page.getByRole('menuitem', { name: 'Download' }),
@@ -392,10 +392,10 @@ test.describe('Doc Header', () => {
     await page.getByRole('button', { name: 'Share' }).click();
 
     const shareModal = page.getByRole('dialog', {
-      name: 'Share the document',
+      name: 'Share the page',
     });
     await expect(shareModal).toBeVisible();
-    await expect(page.getByText('Share the document')).toBeVisible();
+    await expect(page.getByText('Share the page')).toBeVisible();
 
     await expect(page.getByPlaceholder('Type a name or email')).toBeHidden();
 
@@ -404,14 +404,14 @@ test.describe('Doc Header', () => {
     await expect(
       invitationCard.getByText('test.test@invitation.test').first(),
     ).toBeVisible();
-    await expect(invitationCard.getByLabel('Document role text')).toBeVisible();
+    await expect(invitationCard.getByLabel('Page role text')).toBeVisible();
     await expect(
       invitationCard.getByRole('button', { name: 'more_horiz' }),
     ).toBeHidden();
 
     const memberCard = shareModal.getByLabel('List members card');
     await expect(memberCard.getByText('test.test@accesses.test')).toBeVisible();
-    await expect(memberCard.getByLabel('Document role text')).toBeVisible();
+    await expect(memberCard.getByLabel('Page role text')).toBeVisible();
     await expect(
       memberCard.getByRole('button', { name: 'more_horiz' }),
     ).toBeHidden();
@@ -447,7 +447,7 @@ test.describe('Doc Header', () => {
       page.getByRole('heading', { name: 'Mocked document' }),
     ).toBeVisible();
 
-    await page.getByLabel('Open the document options').click();
+    await page.getByLabel('Open the page options').click();
 
     await expect(
       page.getByRole('menuitem', { name: 'Download' }),
@@ -460,9 +460,9 @@ test.describe('Doc Header', () => {
     await page.getByRole('button', { name: 'Share' }).click();
 
     const shareModal = page.getByRole('dialog', {
-      name: 'Share the document',
+      name: 'Share the page',
     });
-    await expect(page.getByText('Share the document')).toBeVisible();
+    await expect(page.getByText('Share the page')).toBeVisible();
 
     await expect(page.getByPlaceholder('Type a name or email')).toBeHidden();
 
@@ -471,14 +471,14 @@ test.describe('Doc Header', () => {
     await expect(
       invitationCard.getByText('test.test@invitation.test').first(),
     ).toBeVisible();
-    await expect(invitationCard.getByLabel('Document role text')).toBeVisible();
+    await expect(invitationCard.getByLabel('Page role text')).toBeVisible();
     await expect(
       invitationCard.getByRole('button', { name: 'more_horiz' }),
     ).toBeHidden();
 
     const memberCard = shareModal.getByLabel('List members card');
     await expect(memberCard.getByText('test.test@accesses.test')).toBeVisible();
-    await expect(memberCard.getByLabel('Document role text')).toBeVisible();
+    await expect(memberCard.getByLabel('Page role text')).toBeVisible();
     await expect(
       memberCard.getByRole('button', { name: 'more_horiz' }),
     ).toBeHidden();
@@ -527,11 +527,11 @@ test.describe('Doc Header', () => {
 
     // Star
     await clickInEditorMenu(page, 'Star');
-    await expect(page.getByText('This document is starred')).toBeVisible();
+    await expect(page.getByText('This page is starred')).toBeVisible();
 
     // UnStar
     await clickInEditorMenu(page, 'Unstar');
-    await expect(page.getByText('This document is starred')).toBeHidden();
+    await expect(page.getByText('This page is starred')).toBeHidden();
   });
 
   test('it duplicates a document', async ({ page, browserName }) => {
@@ -546,7 +546,7 @@ test.describe('Doc Header', () => {
 
     const toast = page.getByRole('alert');
     await expect(
-      toast.getByText('Document duplicated to My docs'),
+      toast.getByText('Page duplicated to My pages'),
     ).toBeVisible();
     await toast.getByRole('link', { name: 'Open' }).click();
 
@@ -562,7 +562,7 @@ test.describe('Doc Header', () => {
     await clickInDocOptionMenu(page, row, 'Duplicate');
 
     const gridToast = page.getByRole('alert');
-    await expect(gridToast.getByText('Document duplicated')).toBeVisible();
+    await expect(gridToast.getByText('Page duplicated')).toBeVisible();
     await gridToast.getByRole('link', { name: 'Open' }).click();
 
     const duplicateDuplicateTitle = 'Copy of ' + duplicateTitle;
@@ -607,7 +607,7 @@ test.describe('Doc Header', () => {
 
     // The toast lets the user undo the duplication and go back to the original document
     const toast = page.getByRole('alert');
-    await expect(toast.getByText('Document duplicated')).toBeVisible();
+    await expect(toast.getByText('Page duplicated')).toBeVisible();
     await toast.getByRole('button', { name: 'Undo' }).click();
 
     await expect(page).toHaveURL(currentUrl);
@@ -636,10 +636,10 @@ test.describe('Doc Header', () => {
     await navigateToTopParentFromTree({ page });
     await verifyDocName(page, docTitle);
 
-    // The document has a subdocument, so a confirmation modal is shown
+    // The page has a subdocument, so a confirmation modal is shown
     await clickInEditorMenu(page, 'Duplicate');
     const modal = page.getByRole('dialog', {
-      name: 'Confirmation to duplicate the document',
+      name: 'Confirmation to duplicate the page',
     });
     await expect(modal).toBeVisible();
     const subdocsCheckbox = modal.getByRole('checkbox', {
@@ -655,7 +655,7 @@ test.describe('Doc Header', () => {
 
     const toast = page.getByRole('alert');
     await expect(
-      toast.getByText('Document duplicated to My docs'),
+      toast.getByText('Page duplicated to My pages'),
     ).toBeVisible();
     await toast.getByRole('link', { name: 'Open' }).click();
 
@@ -676,7 +676,7 @@ test.describe('Doc Header', () => {
     await expect(modal).toBeHidden();
 
     await expect(
-      toast.getByText('Document duplicated to My docs'),
+      toast.getByText('Page duplicated to My pages'),
     ).toBeVisible();
     await toast.getByRole('link', { name: 'Open' }).click();
 

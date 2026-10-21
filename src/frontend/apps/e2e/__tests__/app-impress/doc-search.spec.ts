@@ -37,10 +37,10 @@ test.describe('Document search', () => {
     ).toBeVisible();
 
     await expect(
-      page.getByRole('heading', { name: 'Search for a document' }),
+      page.getByRole('heading', { name: 'Search for a page' }),
     ).toBeVisible();
 
-    const inputSearch = page.getByPlaceholder('Type the name of a document');
+    const inputSearch = page.getByPlaceholder('Type the name of a page');
 
     await inputSearch.click();
     await inputSearch.fill('My doc search');
@@ -82,7 +82,7 @@ test.describe('Document search', () => {
     await page.goto('/');
     await page.getByTestId('search-docs-button').click();
 
-    const inputSearch = page.getByPlaceholder('Type the name of a document');
+    const inputSearch = page.getByPlaceholder('Type the name of a page');
     await inputSearch.fill(docTitle);
 
     const result = page
@@ -101,7 +101,7 @@ test.describe('Document search', () => {
 
     // The search stays open in the first tab
     await expect(
-      page.getByRole('heading', { name: 'Search for a document' }),
+      page.getByRole('heading', { name: 'Search for a page' }),
     ).toBeVisible();
     await expect(result).toBeVisible();
     await newPage.close();
@@ -110,7 +110,7 @@ test.describe('Document search', () => {
     await result.click();
     await verifyDocName(page, docTitle);
     await expect(
-      page.getByRole('heading', { name: 'Search for a document' }),
+      page.getByRole('heading', { name: 'Search for a page' }),
     ).toBeHidden();
   });
 
@@ -128,7 +128,7 @@ test.describe('Document search', () => {
 
     await page.keyboard.press('Control+k');
     await expect(
-      page.getByRole('heading', { name: 'Search for a document' }),
+      page.getByRole('heading', { name: 'Search for a page' }),
     ).toBeVisible();
 
     await page.keyboard.press('Escape');
@@ -141,7 +141,7 @@ test.describe('Document search', () => {
     await page.keyboard.press('Control+k');
     await expect(page.getByRole('textbox', { name: 'Edit URL' })).toBeVisible();
     await expect(
-      page.getByRole('heading', { name: 'Search for a document' }),
+      page.getByRole('heading', { name: 'Search for a page' }),
     ).toBeHidden();
   });
 
@@ -167,7 +167,7 @@ test.describe('Document search', () => {
 
     await searchButton.click();
     await page
-      .getByRole('combobox', { name: 'Type the name of a document' })
+      .getByRole('combobox', { name: 'Type the name of a page' })
       .fill('sub page');
 
     // Expect to find the first and second docs in the results list
@@ -189,7 +189,7 @@ test.describe('Document search', () => {
     );
     await searchButton.click();
     await page
-      .getByRole('combobox', { name: 'Type the name of a document' })
+      .getByRole('combobox', { name: 'Type the name of a page' })
       .fill('sub page');
 
     // Display only current doc results
@@ -213,8 +213,8 @@ test.describe('Document search', () => {
 
     // Click on the filter to show all docs
     await page
-      .getByRole('switch', { name: 'Search in all documents' })
-      .getByText('All docs')
+      .getByRole('switch', { name: 'Search in all pages' })
+      .getByText('All pages')
       .click();
 
     // Expect to see all docs in the results list
@@ -255,7 +255,7 @@ test.describe('Document search', () => {
 
     await otherPage.getByTestId('search-docs-button').click();
     await otherPage
-      .getByRole('combobox', { name: 'Type the name of a document' })
+      .getByRole('combobox', { name: 'Type the name of a page' })
       .fill('sub page');
 
     // Search only in the current doc

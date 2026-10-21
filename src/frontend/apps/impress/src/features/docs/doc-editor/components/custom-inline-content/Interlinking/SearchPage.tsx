@@ -290,7 +290,7 @@ export const SearchPage = ({
               as="input"
               name="doc-search-input"
               role="combobox"
-              aria-label={t('Search for a document', {
+              aria-label={t('Search for a page', {
                 description:
                   'Accessible name or placeholder of a document search field',
               })}
@@ -305,7 +305,7 @@ export const SearchPage = ({
                       description:
                         'Placeholder of the @ search for people, groups and pages',
                     })
-                  : t('mention a sub-doc...', {
+                  : t('mention a sub-page...', {
                       description:
                         'Placeholder of the field to search a doc to link in the editor',
                     })
@@ -455,7 +455,7 @@ export const SearchPage = ({
                   />
                 )}
                 <DocSearchContent
-                  groupName={t('Link a doc', {
+                  groupName={t('Link a page', {
                     description:
                       'Editor menu entry to insert a link to another doc',
                   })}

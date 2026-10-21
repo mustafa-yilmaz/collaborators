@@ -129,7 +129,7 @@ export const DocMoveModal = ({
       })
       .catch(() => {
         toast(
-          t(`An error occurred while moving the document.`, {
+          t(`An error occurred while moving the page.`, {
             description: 'Toast shown when moving a document failed',
           }),
           VariantType.ERROR,
@@ -156,7 +156,7 @@ export const DocMoveModal = ({
             $gap="small"
           >
             <Button
-              aria-label={t('Move the document to the selected location', {
+              aria-label={t('Move the page to the selected location', {
                 description:
                   'Accessible name of the button confirming the move',
               })}
@@ -200,7 +200,7 @@ export const DocMoveModal = ({
         title={
           <>
             <Text as="h2" $margin="0" $size="s" $align="flex-start">
-              {t('Choose a new parent doc', {
+              {t('Choose a new parent page', {
                 description: 'Heading of the dialog to move a document',
               })}
             </Text>
@@ -231,11 +231,11 @@ export const DocMoveModal = ({
           }}
         >
           <QuickSearch
-            label={t('Search for a doc...', {
+            label={t('Search for a page...', {
               description:
                 'Label and placeholder of the doc search in the move dialog',
             })}
-            placeholder={t('Search for a doc...', {
+            placeholder={t('Search for a page...', {
               description:
                 'Label and placeholder of the doc search in the move dialog',
             })}
@@ -255,7 +255,7 @@ export const DocMoveModal = ({
                           description:
                             'Accessible name or heading of the list of search results',
                         })
-                      : t('All docs', {
+                      : t('All pages', {
                           description:
                             'Group title listing every doc the user can access',
                         })
@@ -339,7 +339,7 @@ export const DocMoveModal = ({
             onClose();
           }}
           targetDocumentTitle={docTargetTitle}
-          title={t('Move document', {
+          title={t('Move page', {
             description: 'Title of the dialog to move a document',
           })}
         />

@@ -66,7 +66,7 @@ export const AlertModalRequestAccess = ({
                 $margin={{ right: 'xxs' }}
                 variant="symbols-outlined"
               />
-              {t('You have already requested access to this document.', {
+              {t('You have already requested access to this page.', {
                 description: 'Message in the request access dialog',
               })}
             </Text>

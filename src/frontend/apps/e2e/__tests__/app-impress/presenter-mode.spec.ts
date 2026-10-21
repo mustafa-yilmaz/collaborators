@@ -11,7 +11,7 @@ import {
 } from './utils-editor';
 
 const openPresenter = async (page: Page) => {
-  await page.getByLabel('Open the document options').first().click();
+  await page.getByLabel('Open the page options').first().click();
   await page
     .getByRole('menuitem')
     .getByText(/Present/)
@@ -671,7 +671,7 @@ test.describe('Presenter Mode mobile', () => {
 
     await page.goto('/');
 
-    await page.getByLabel('Open the document options').first().click();
+    await page.getByLabel('Open the page options').first().click();
     await expect(page.getByRole('menuitem', { name: 'Present' })).toBeHidden();
   });
 

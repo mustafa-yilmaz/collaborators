@@ -177,7 +177,7 @@ export const DocTree = ({ currentDoc }: DocTreeProps) => {
       data-testid="doc-tree"
       $height="100%"
       role="tree"
-      aria-label={t('Document tree', {
+      aria-label={t('Page tree', {
         description: 'Accessible name of the tree of documents',
       })}
       $css={css`
@@ -212,7 +212,7 @@ export const DocTree = ({ currentDoc }: DocTreeProps) => {
       {/* Keyboard instructions for screen readers */}
       <Box id={ID_TREE_KEYBOARD_INSTRUCTIONS} className="sr-only">
         {t(
-          'Use the up and down arrow keys to move between documents, and Enter to open one. Press F2 to reach the actions of a document and to move between them, use Escape to go back to the document list.',
+          'Use the up and down arrow keys to move between pages, and Enter to open one. Press F2 to reach the actions of a page and to move between them, use Escape to go back to the page list.',
           {
             description:
               'Screen reader keyboard instructions of the document tree',

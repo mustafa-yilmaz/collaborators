@@ -87,7 +87,7 @@ test.describe('Doc Visibility: Restricted', () => {
     await page.goto(urlDoc);
 
     await expect(
-      page.getByText('You need to sign in before accessing the document'),
+      page.getByText('You need to sign in before accessing the page'),
     ).toBeVisible();
   });
 
@@ -122,7 +122,7 @@ test.describe('Doc Visibility: Restricted', () => {
     await page.goto(urlDoc);
 
     await expect(
-      page.getByText('Insufficient access rights to view the document.'),
+      page.getByText('Insufficient access rights to view the page.'),
     ).toBeVisible({
       timeout: 10000,
     });
@@ -148,7 +148,7 @@ test.describe('Doc Visibility: Restricted', () => {
       });
 
     await expect(
-      otherPage.getByText('Insufficient access rights to view the document.'),
+      otherPage.getByText('Insufficient access rights to view the page.'),
     ).toBeVisible({
       timeout: 10000,
     });
@@ -193,7 +193,7 @@ test.describe('Doc Visibility: Public', () => {
     await page.getByRole('menuitemradio', { name: 'Public' }).click();
 
     await expect(
-      page.getByText('The document visibility has been updated.'),
+      page.getByText('The page visibility has been updated.'),
     ).toBeVisible();
 
     await expect(page.getByTestId('doc-access-mode')).toBeVisible();
@@ -201,13 +201,13 @@ test.describe('Doc Visibility: Public', () => {
     await page.getByRole('menuitemradio', { name: 'Reading' }).click();
 
     await expect(
-      page.getByText('The document visibility has been updated.').first(),
+      page.getByText('The page visibility has been updated.').first(),
     ).toBeVisible();
 
     await page.getByRole('button', { name: 'close' }).click();
 
     const cardContainer = page.getByLabel(
-      'It is the card information about the document.',
+      'It is the card information about the page.',
     );
 
     await expect(cardContainer.getByText('Public ·')).toBeVisible();
@@ -248,7 +248,7 @@ test.describe('Doc Visibility: Public', () => {
     await expect(otherEditor.getByText('Can you see it ?')).toBeVisible();
 
     await otherPage
-      .getByRole('button', { name: 'Open the document options' })
+      .getByRole('button', { name: 'Open the page options' })
       .click();
     await expect(
       otherPage.getByRole('menuitem', { name: 'Leave' }),
@@ -274,20 +274,20 @@ test.describe('Doc Visibility: Public', () => {
     await page.getByRole('menuitemradio', { name: 'Public' }).click();
 
     await expect(
-      page.getByText('The document visibility has been updated.'),
+      page.getByText('The page visibility has been updated.'),
     ).toBeVisible();
 
     await page.getByTestId('doc-access-mode').click();
     await page.getByRole('menuitemradio', { name: 'Editing' }).click();
 
     await expect(
-      page.getByText('The document visibility has been updated.').first(),
+      page.getByText('The page visibility has been updated.').first(),
     ).toBeVisible();
 
     await page.getByRole('button', { name: 'close' }).click();
 
     const cardContainer = page.getByLabel(
-      'It is the card information about the document.',
+      'It is the card information about the page.',
     );
 
     await expect(cardContainer.getByText('Public ·')).toBeVisible();
@@ -345,7 +345,7 @@ test.describe('Doc Visibility: Authenticated', () => {
     await page.getByRole('menuitemradio', { name: 'Connected' }).click();
 
     await expect(
-      page.getByText('The document visibility has been updated.'),
+      page.getByText('The page visibility has been updated.'),
     ).toBeVisible();
 
     await page.getByRole('button', { name: 'close' }).click();
@@ -361,7 +361,7 @@ test.describe('Doc Visibility: Authenticated', () => {
     await expect(otherPage.locator('h2').getByText(docTitle)).toBeHidden();
 
     await expect(
-      otherPage.getByText('You need to sign in before accessing the document'),
+      otherPage.getByText('You need to sign in before accessing the page'),
     ).toBeVisible();
 
     await cleanup();
@@ -388,14 +388,14 @@ test.describe('Doc Visibility: Authenticated', () => {
     await page.getByRole('menuitemradio', { name: 'Connected' }).click();
 
     await expect(
-      page.getByText('The document visibility has been updated.'),
+      page.getByText('The page visibility has been updated.'),
     ).toBeVisible();
 
     await page.getByRole('button', { name: 'close' }).click();
 
     await expect(
       page
-        .getByLabel('It is the card information about the document.')
+        .getByLabel('It is the card information about the page.')
         .getByText('Internal ·'),
     ).toBeVisible();
 
@@ -419,7 +419,7 @@ test.describe('Doc Visibility: Authenticated', () => {
 
     await expect(
       otherPage.getByText(
-        'You can view this document but need additional access to see its members or modify settings.',
+        'You can view this page but need additional access to see its members or modify settings.',
       ),
     ).toBeVisible();
 
@@ -437,7 +437,7 @@ test.describe('Doc Visibility: Authenticated', () => {
 
     await expect(
       otherPage.getByText(
-        'As this is a sub-document, please request access to the parent document to enable these features.',
+        'As this is a sub-page, please request access to the parent page to enable these features.',
       ),
     ).toBeVisible();
 
@@ -469,7 +469,7 @@ test.describe('Doc Visibility: Authenticated', () => {
     await page.getByRole('menuitemradio', { name: 'Connected' }).click();
 
     await expect(
-      page.getByText('The document visibility has been updated.'),
+      page.getByText('The page visibility has been updated.'),
     ).toBeVisible();
 
     const docUrl = page.url();
@@ -477,7 +477,7 @@ test.describe('Doc Visibility: Authenticated', () => {
     await page.getByRole('menuitemradio', { name: 'Editing' }).click();
 
     await expect(
-      page.getByText('The document visibility has been updated.').first(),
+      page.getByText('The page visibility has been updated.').first(),
     ).toBeVisible();
 
     await page.getByRole('button', { name: 'close' }).click();
@@ -492,7 +492,7 @@ test.describe('Doc Visibility: Authenticated', () => {
 
     await expect(
       otherPage.getByText(
-        'You can view this document but need additional access to see its members or modify settings.',
+        'You can view this page but need additional access to see its members or modify settings.',
       ),
     ).toBeVisible();
 

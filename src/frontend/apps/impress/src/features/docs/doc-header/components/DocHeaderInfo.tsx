@@ -52,7 +52,7 @@ export const DocHeaderInfo = ({ doc }: DocHeaderInfoProps) => {
       {doc.is_favorite && (
         <>
           <Text as="dt" className="sr-only">
-            {t('This document is starred', {
+            {t('This page is starred', {
               description:
                 "Screen reader text indicating the document is in the user's favorites",
             })}
@@ -133,7 +133,7 @@ const VisibilityDoc = ({ doc }: { doc: Doc }) => {
         <PublicSVG aria-hidden="true" width="16" height="16" />
         &nbsp;
         {t('Public', {
-          description: 'Document visibility: anyone with the link can access',
+          description: 'Page visibility: anyone with the link can access',
         })}
         &nbsp;·&nbsp;
       </>
@@ -147,7 +147,7 @@ const VisibilityDoc = ({ doc }: { doc: Doc }) => {
         &nbsp;
         {t('Internal', {
           description:
-            'Document visibility: any logged-in user with the link can access',
+            'Page visibility: any logged-in user with the link can access',
         })}
         &nbsp;·&nbsp;
       </>

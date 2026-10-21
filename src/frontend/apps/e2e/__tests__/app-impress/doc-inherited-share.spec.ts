@@ -14,7 +14,7 @@ test.describe('Inherited share accesses', () => {
 
     await page.getByRole('button', { name: 'Share' }).click();
     await expect(
-      page.getByText('People with access via the parent document'),
+      page.getByText('People with access via the parent page'),
     ).toBeVisible();
 
     const users = page.locator('.--docs--doc-share-member-item');
@@ -51,7 +51,7 @@ test.describe('Inherited share accesses', () => {
 
     // Verify share link is like the parent document
     await page.getByRole('button', { name: 'Share' }).click();
-    const docVisibilityCard = page.getByLabel('Doc visibility card');
+    const docVisibilityCard = page.getByLabel('Page visibility card');
 
     await expect(docVisibilityCard.getByText('Connected')).toBeVisible();
     await expect(docVisibilityCard.getByText('Reading')).toBeVisible();
@@ -80,7 +80,7 @@ test.describe('Inherited share accesses', () => {
 
     await expect(
       docVisibilityCard.getByText(
-        'The link sharing rules differ from the parent document',
+        'The link sharing rules differ from the parent page',
       ),
     ).toBeVisible();
 
@@ -93,7 +93,7 @@ test.describe('Inherited share accesses', () => {
     await expect(docVisibilityCard.getByText('Editing')).toBeHidden();
     await expect(
       docVisibilityCard.getByText(
-        'The link sharing rules differ from the parent document',
+        'The link sharing rules differ from the parent page',
       ),
     ).toBeHidden();
   });

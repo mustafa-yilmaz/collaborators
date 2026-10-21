@@ -73,7 +73,7 @@ const Page: NextPageWithLayout = () => {
             $margin="0"
             $size="xs"
           >
-            {t('You need to sign in before accessing the document', {
+            {t('You need to sign in before accessing the page', {
               description: 'Message of the sign-in required page',
             })}
           </Text>

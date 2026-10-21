@@ -129,7 +129,7 @@ export const getTreeRow = async (page: Page, title: string) => {
 };
 
 export const navigateToTopParentFromTree = async ({ page }: { page: Page }) => {
-  await page.getByRole('link', { name: /Open root document/ }).click();
+  await page.getByRole('link', { name: /Open root page/ }).click();
 };
 
 export const navigateToPageFromTree = async ({

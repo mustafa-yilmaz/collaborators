@@ -95,7 +95,7 @@ const createDoc = (overrides: Partial<Doc> = {}): Doc => ({
 
 const openDuplicateOption = async () => {
   const trigger = screen.getByRole('button', {
-    name: /Open the document options/i,
+    name: /Open the page options/i,
   });
   await userEvent.click(trigger);
 

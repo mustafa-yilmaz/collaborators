@@ -70,11 +70,11 @@ export const useDuplicatedDoc = ({
 
       toast(
         isTopRoot && isCurrentDoc
-          ? t('Document duplicated to My docs', {
+          ? t('Page duplicated to My pages', {
               description:
                 "Toast title after duplicating a root document into the user's own docs",
             })
-          : t('Document duplicated', {
+          : t('Page duplicated', {
               description: 'Toast title after duplicating a document',
             }),
         VariantType.INFO,
@@ -120,7 +120,7 @@ export const ConfirmationDuplicateModal = ({
       closeOnClickOutside
       hideCloseButton
       onClose={onClose}
-      aria-label={t('Confirmation to duplicate the document', {
+      aria-label={t('Confirmation to duplicate the page', {
         description: 'Accessible name of the duplicate dialog',
       })}
       aria-labelledby="modal-duplicate-doc-title"
@@ -198,7 +198,7 @@ export const ConfirmationDuplicateModal = ({
           as="p"
           $margin="0"
         >
-          {t('The copy will be private and added to My docs.', {
+          {t('The copy will be private and added to My pages.', {
             description: 'Explanation in the duplicate dialog',
           })}
         </Text>
@@ -249,7 +249,7 @@ export const ToastActions = ({
         // A 401 is already handled globally (redirect to login), avoid a duplicate toast.
         if (error.status !== 401) {
           toast(
-            t('The document could not be deleted.', {
+            t('The page could not be deleted.', {
               description:
                 'Toast shown when deleting a document failed (undo of a duplicate)',
             }),
@@ -292,7 +292,7 @@ export const ToastActions = ({
         onClick={onCloseToast}
       >
         {isTopRoot
-          ? t('Open document', {
+          ? t('Open page', {
               description: 'Action to open the duplicated document',
             })
           : t('Back to original', {

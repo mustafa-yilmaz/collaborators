@@ -35,30 +35,30 @@ test.describe('Header', () => {
 
     await expect(header.getByLabel('Toggle left panel')).toBeHidden();
     await expect(header.getByLabel('Docs animated icon')).toBeHidden();
-    await expect(header.getByLabel('Search docs')).toBeHidden();
+    await expect(header.getByLabel('Search pages')).toBeHidden();
 
     // Tablet viewport
     await page.setViewportSize({ width: 900, height: 1200 });
     await expect(header.getByLabel('Toggle left panel')).toBeVisible();
     await expect(header.getByLabel('Docs animated icon')).toBeHidden();
-    await expect(header.getByLabel('Search docs')).toBeHidden();
+    await expect(header.getByLabel('Search pages')).toBeHidden();
 
     await header.getByLabel('Toggle left panel').click();
     await expect(header.getByLabel('Toggle left panel')).toBeVisible();
     await expect(header.getByLabel('Docs animated icon')).toBeInViewport();
-    await expect(header.getByLabel('Search docs')).toBeVisible();
+    await expect(header.getByLabel('Search pages')).toBeVisible();
 
     // scrollDown
     await page.mouse.wheel(0, 1000);
 
     await expect(header.getByLabel('Toggle left panel')).toBeVisible();
     await expect(header.getByLabel('Docs animated icon')).not.toBeInViewport();
-    await expect(header.getByLabel('Search docs')).toBeVisible();
+    await expect(header.getByLabel('Search pages')).toBeVisible();
 
     // Mobile viewport
     await page.setViewportSize({ width: 500, height: 1200 });
     await expect(header.getByLabel('Toggle left panel')).toBeVisible();
     await expect(header.getByLabel('Docs animated icon')).toBeVisible();
-    await expect(header.getByLabel('Search docs')).toBeVisible();
+    await expect(header.getByLabel('Search pages')).toBeVisible();
   });
 });

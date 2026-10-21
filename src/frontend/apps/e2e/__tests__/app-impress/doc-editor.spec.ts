@@ -445,7 +445,7 @@ test.describe('Doc Editor', () => {
     await navigateToPageFromTree({ page, title: docChild1 });
 
     await openSuggestionMenu({ page });
-    await page.getByText('Link a doc').first().click();
+    await page.getByText('Link a page').first().click();
 
     const input = page.locator(
       "span[data-inline-content-type='interlinkingLinkInline'] input",
@@ -689,7 +689,7 @@ test.describe('Doc Editor', () => {
     await page.keyboard.press('Control+f');
 
     // Search for "Hello" and check that the occurrences are highlighted
-    await page.getByRole('textbox', { name: 'Find in document' }).fill('Hello');
+    await page.getByRole('textbox', { name: 'Find in page' }).fill('Hello');
     await expect(page.getByText('1 / 2')).toBeVisible();
     await expect(
       editor
@@ -708,7 +708,7 @@ test.describe('Doc Editor', () => {
     await page.getByText('World').first().selectText();
     await page.keyboard.press('Control+f');
     await expect(
-      page.getByRole('textbox', { name: 'Find in document' }),
+      page.getByRole('textbox', { name: 'Find in page' }),
     ).toHaveValue('World');
 
     // Replace occurrences

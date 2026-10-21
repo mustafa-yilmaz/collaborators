@@ -13,7 +13,7 @@ test.describe('401', () => {
       }),
     ).toBeVisible();
     await expect(
-      page.getByText('You need to sign in before accessing the document'),
+      page.getByText('You need to sign in before accessing the page'),
     ).toBeVisible();
     await expect(page.getByTestId('header-logo-link')).toBeVisible();
     await expect(page.getByRole('link', { name: 'Try it now' })).toBeVisible();

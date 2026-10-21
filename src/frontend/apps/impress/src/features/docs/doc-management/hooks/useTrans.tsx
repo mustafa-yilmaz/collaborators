@@ -22,7 +22,7 @@ export const useTrans = () => {
     [DocDefaultFilter.ALL_DOCS]: t('Recent', {
       description: 'Name of the filter listing recently opened docs',
     }),
-    [DocDefaultFilter.MY_DOCS]: t('My docs', {
+    [DocDefaultFilter.MY_DOCS]: t('My pages', {
       description: 'Name of the filter listing docs owned by the user',
     }),
     [DocDefaultFilter.SHARED_WITH_ME]: t('Shared with me', {
@@ -43,7 +43,7 @@ export const useTrans = () => {
     transFilter: (filter: DocDefaultFilter) => {
       return translatedFilters[filter];
     },
-    untitledDocument: t('Untitled document', {
+    untitledDocument: t('Untitled page', {
       description: 'Name displayed for a document without a title',
     }),
     translatedRoles,

@@ -51,7 +51,7 @@ export const DocShareAddMemberList = ({
             description: 'Toast shown when inviting an email failed',
             email: dataError['data']?.value,
           })
-        : t(`Failed to add the member in the document.`, {
+        : t(`Failed to add the member in the page.`, {
             description: 'Toast shown when adding a member failed',
           });
 
@@ -59,7 +59,7 @@ export const DocShareAddMemberList = ({
       dataError.cause?.[0] ===
       'Document invitation with this Email address and Document already exists.'
     ) {
-      messageError = t('"{{email}}" is already invited to the document.', {
+      messageError = t('"{{email}}" is already invited to the page.', {
         description: 'Error shown when inviting an email already invited',
         email: dataError['data']?.value,
       });
@@ -69,7 +69,7 @@ export const DocShareAddMemberList = ({
       dataError.cause?.[0] ===
       'This email is already associated to a registered user.'
     ) {
-      messageError = t('"{{email}}" is already member of the document.', {
+      messageError = t('"{{email}}" is already member of the page.', {
         description: 'Error shown when inviting an existing member',
         email: dataError['data']?.value,
       });

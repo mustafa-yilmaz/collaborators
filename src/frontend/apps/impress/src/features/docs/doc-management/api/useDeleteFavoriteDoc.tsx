@@ -51,7 +51,7 @@ export function useDeleteFavoriteDoc({
         { keepFocus: true },
       );
 
-      const message = t('Document unstarred successfully!', {
+      const message = t('Page unstarred successfully!', {
         description: 'Toast shown after removing a document from favorites',
       });
       announce(message, 'polite');
@@ -59,7 +59,7 @@ export function useDeleteFavoriteDoc({
       onSuccess?.();
     },
     onError: () => {
-      const message = t('Failed to unstar the document.', {
+      const message = t('Failed to unstar the page.', {
         description:
           'Toast shown when removing a document from favorites failed',
       });

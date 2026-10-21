@@ -69,7 +69,7 @@ export const useCollaboration = (room: string, readOnly = false) => {
    * The collaboration server refused the connection for good and the retry loop
    * stopped, so nothing will ask again on its own: this refetch is what asks.
    *
-   * A refusal says the answer changed, not what it changed to. The document may
+   * A refusal says the answer changed, not what it changed to. The page may
    * be gone, our access to it revoked, or merely upgraded from reader to editor
    * — the last one has to reconnect to carry the new rights. So the connection
    * comes back only when the document does, and stays closed otherwise, where

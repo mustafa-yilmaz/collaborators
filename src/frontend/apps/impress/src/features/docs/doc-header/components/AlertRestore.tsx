@@ -29,7 +29,7 @@ export const AlertRestore = ({ doc }: { doc: Doc }) => {
     options: {
       onSuccess: (_data) => {
         toast(
-          t('The document has been restored.', {
+          t('The page has been restored.', {
             description: 'Toast shown after a deleted document is restored',
           }),
           VariantType.SUCCESS,
@@ -40,7 +40,7 @@ export const AlertRestore = ({ doc }: { doc: Doc }) => {
       },
       onError: () => {
         toast(
-          t('An error occurred while restoring the document: {{error}}', {
+          t('An error occurred while restoring the page: {{error}}', {
             description: 'Toast shown when restoring a deleted document fails',
             error: error?.message,
           }),
@@ -56,7 +56,7 @@ export const AlertRestore = ({ doc }: { doc: Doc }) => {
   return (
     <Card
       className="--docs--alert-restore"
-      aria-label={t('Alert deleted document', {
+      aria-label={t('Alert deleted page', {
         description:
           'Accessible name of the banner shown on a deleted document',
       })}
@@ -80,7 +80,7 @@ export const AlertRestore = ({ doc }: { doc: Doc }) => {
           iconName="delete"
           variant="symbols-outlined"
         />
-        {t('Document deleted', {
+        {t('Page deleted', {
           description: 'Banner text shown on a document in the trashbin',
         })}
       </Box>

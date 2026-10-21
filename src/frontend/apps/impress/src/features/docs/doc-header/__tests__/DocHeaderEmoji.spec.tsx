@@ -73,7 +73,7 @@ describe('DocHeader - Add emoji (April Fools easter egg)', () => {
       wrapper: AppWrapper,
     });
 
-    const titleInput = screen.getByRole('textbox', { name: 'Document title' });
+    const titleInput = screen.getByRole('textbox', { name: 'Page title' });
     titleInput.textContent = 'My new document';
     fireEvent.blur(titleInput);
     fireEvent.click(screen.getByRole('button', { name: 'Add emoji' }));

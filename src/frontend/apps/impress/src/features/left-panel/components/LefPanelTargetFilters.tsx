@@ -46,7 +46,7 @@ export const LeftPanelTargetFilters = () => {
           $variation="tertiary"
         />
       ),
-      label: t('My docs', {
+      label: t('My pages', {
         description: 'Name of the filter listing docs owned by the user',
       }),
       targetQuery: DocDefaultFilter.MY_DOCS,

@@ -21,10 +21,10 @@ export const ModalConfirmationMoveDoc = ({
     <AlertModal
       onClose={onClose}
       isOpen={isOpen}
-      title={t('Move document', {
+      title={t('Move page', {
         description: 'Title of the dialog to move a document',
       })}
-      aria-label={t('Modal confirmation for moving a document', {
+      aria-label={t('Modal confirmation for moving a page', {
         description: 'Accessible name of the move confirmation dialog',
       })}
       description={

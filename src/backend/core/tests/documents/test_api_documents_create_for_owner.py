@@ -252,7 +252,7 @@ def test_api_documents_create_for_owner_existing(mock_convert_md, mock_yhub):
     email_content = " ".join(email.body.split())
     assert "A new document was created on your behalf!" in email_content
     assert (
-        "You have been granted ownership of a new document: My Document"
+        "You have been granted ownership of a new page: My Document"
     ) in email_content
 
 
@@ -323,7 +323,7 @@ def test_api_documents_create_for_owner_new_user(mock_convert_md, mock_yhub):
     email_content = " ".join(email.body.split())
     assert "A new document was created on your behalf!" in email_content
     assert (
-        "You have been granted ownership of a new document: My Document"
+        "You have been granted ownership of a new page: My Document"
     ) in email_content
 
     # The creator field on the document should be set when the user is created
@@ -414,7 +414,7 @@ def test_api_documents_create_for_owner_existing_user_email_no_sub_with_fallback
     email_content = " ".join(email.body.split())
     assert "A new document was created on your behalf!" in email_content
     assert (
-        "You have been granted ownership of a new document: My Document"
+        "You have been granted ownership of a new page: My Document"
     ) in email_content
 
 
@@ -517,7 +517,7 @@ def test_api_documents_create_for_owner_new_user_no_sub_no_fallback_allow_duplic
     email_content = " ".join(email.body.split())
     assert "A new document was created on your behalf!" in email_content
     assert (
-        "You have been granted ownership of a new document: My Document"
+        "You have been granted ownership of a new page: My Document"
     ) in email_content
 
     # The creator field on the document should be set when the user is created

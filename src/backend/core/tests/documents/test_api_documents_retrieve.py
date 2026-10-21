@@ -894,10 +894,11 @@ def test_api_documents_retrieve_numqueries_with_link_trace(django_assert_num_que
 
     document = factories.DocumentFactory(users=[user], link_traces=[user])
 
-    with django_assert_num_queries(5):
+    # Collaborators: one more for the workspace a top-level page may be in
+    with django_assert_num_queries(6):
         response = client.get(f"/api/v1.0/documents/{document.id!s}/")
 
-    with django_assert_num_queries(3):
+    with django_assert_num_queries(4):
         response = client.get(f"/api/v1.0/documents/{document.id!s}/")
 
     assert response.status_code == 200

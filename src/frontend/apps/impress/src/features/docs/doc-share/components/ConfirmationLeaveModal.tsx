@@ -47,7 +47,7 @@ export const ConfirmationLeaveModal = ({
       onClose={onClose}
       // TODO: add a fix on the Modal component on Cunningham side
       // If aria-label is not set the modal add by default [object Object]
-      aria-label={t('Confirmation to leave the document', {
+      aria-label={t('Confirmation to leave the page', {
         description: 'Accessible name of the leave document dialog',
       })}
       aria-labelledby="modal-leave-doc-title"
@@ -80,7 +80,7 @@ export const ConfirmationLeaveModal = ({
             $margin="0"
             $align="flex-start"
           >
-            {t('Leave a doc', {
+            {t('Leave a page', {
               description: 'Title of the dialog to leave a shared document',
             })}
           </Text>
@@ -180,7 +180,7 @@ const ButtonsLeaveDoc = ({
   return (
     <>
       <Button
-        aria-label={t('Cancel leaving the document', {
+        aria-label={t('Cancel leaving the page', {
           description: 'Accessible name of the button cancelling leaving',
         })}
         variant="secondary"
@@ -194,7 +194,7 @@ const ButtonsLeaveDoc = ({
         })}
       </Button>
       <Button
-        aria-label={t('Confirm leaving the document', {
+        aria-label={t('Confirm leaving the page', {
           description: 'Accessible name of the button confirming leaving',
         })}
         color="error"

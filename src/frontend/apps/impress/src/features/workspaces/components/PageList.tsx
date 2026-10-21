@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
@@ -14,11 +15,14 @@ import {
 import { useLeftPanelStore } from '@/features/left-panel/stores';
 import { useResponsiveStore } from '@/stores';
 
+import { usePageMoves, useSpaces } from '../api';
+
 const PAGES_SHOWN = 30;
 
 /** My independent pages: in no space, nor under another page. */
-const useIndependentPages = () =>
+const useIndependentPages = (enabled: boolean) =>
   useQuery<APIList<Doc>, APIError>({
+    enabled,
     queryKey: [KEY_LIST_DOC, 'independent'],
     queryFn: async () => {
       const response = await fetchAPI(
@@ -34,25 +38,51 @@ const useIndependentPages = () =>
     },
   });
 
+/** Puts a page just created directly in the workspace, then opens it. */
+const PlaceInWorkspace = ({
+  pageId,
+  workspaceId,
+  onDone,
+}: {
+  pageId: string;
+  workspaceId: string;
+  onDone: () => void;
+}) => {
+  const { moveToWorkspace } = usePageMoves(pageId);
+  if (moveToWorkspace.isIdle) {
+    moveToWorkspace.mutate({ workspaceId }, { onSettled: onDone });
+  }
+  return null;
+};
+
 /**
- * The pages belonging to no space or workspace, under "My spaces & pages",
- * with a button creating one.
+ * The pages outside any space: under "My spaces & pages", those belonging
+ * to no workspace either; in a workspace, those placed directly in it. With
+ * a button creating one there.
  */
-export const PageList = () => {
+export const PageList = ({ workspaceId }: { workspaceId?: string }) => {
   const { t } = useTranslation();
   const router = useRouter();
   const { colorsTokens } = useCunninghamTheme();
   const { isMobile } = useResponsiveStore();
   const { closePanel } = useLeftPanelStore();
-  const { data, isLoading } = useIndependentPages();
-  const pages = data?.results ?? [];
+  const independent = useIndependentPages(!workspaceId);
+  const inWorkspace = useSpaces(
+    { workspaceId: workspaceId ?? '', pages: true },
+    !!workspaceId,
+  );
+  const isLoading = workspaceId ? inWorkspace.isLoading : independent.isLoading;
+  const pages: { id: string; title?: string | null }[] =
+    (workspaceId ? inWorkspace.data : independent.data?.results) ?? [];
+  const [placing, setPlacing] = useState<string>();
+  const open = (pageId: string) => {
+    void router.push(`/docs/${pageId}/`);
+    if (isMobile) {
+      closePanel();
+    }
+  };
   const { mutate: createPage, isPending } = useCreateDoc({
-    onSuccess: (doc) => {
-      void router.push(`/docs/${doc.id}/`);
-      if (isMobile) {
-        closePanel();
-      }
-    },
+    onSuccess: (doc) => (workspaceId ? setPlacing(doc.id) : open(doc.id)),
   });
 
   return (
@@ -94,15 +124,37 @@ export const PageList = () => {
         </BoxButton>
       </Box>
 
+      {placing && workspaceId && (
+        <PlaceInWorkspace
+          pageId={placing}
+          workspaceId={workspaceId}
+          onDone={() => {
+            setPlacing(undefined);
+            open(placing);
+          }}
+        />
+      )}
+
       {!isLoading && pages.length === 0 && (
         <Text
           $size="sm"
           $variation="secondary"
           $padding={{ horizontal: '2xs' }}
         >
-          {t('Pages of your own, outside any space, appear here.', {
-            description: 'Shown when the user has no page outside spaces',
-          })}
+          {workspaceId
+            ? t(
+                'Pages placed directly in this workspace, outside its spaces, appear here.',
+                {
+                  description:
+                    'Shown when a workspace has no page outside its spaces',
+                },
+              )
+            : t(
+                'Pages of your own, outside any workspace and/or space, appear here.',
+                {
+                  description: 'Shown when the user has no page outside spaces',
+                },
+              )}
         </Text>
       )}
 

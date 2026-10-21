@@ -237,10 +237,10 @@ export const AccountHints = () => {
         <Text $display="block" $size="sm">
           {returning ? (
             <Trans
-              i18nKey="You're signed in to the <brand/> account of {{email}}. If you have another <brand/> account under another email, it is a separate one: sign out and sign in with your usual account instead."
+              i18nKey="You're signed in to <brand/> with the email address <strong>{{email}}</strong>. If you have another <brand/> account under another email, it is a separate one: sign out and sign in with your usual account instead."
               values={{ email: user?.email ?? '' }}
               tOptions={{ description: 'Welcome note at a later visit' }}
-              components={{ brand: <Brand /> }}
+              components={{ brand: <Brand />, strong: <strong /> }}
             />
           ) : (
             <Trans

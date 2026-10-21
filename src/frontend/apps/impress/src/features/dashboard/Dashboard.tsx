@@ -249,7 +249,9 @@ const DashboardCard = ({
         border: 1px solid var(--c--contextuals--border--surface--primary);
         border-radius: var(--c--globals--spacings--xs);
         background: var(--c--contextuals--background--surface--primary);
-        padding: var(--c--globals--spacings--xs);
+        /* The inner alignment of the dashboard's notes: everything starts
+           on one left edge, the drag handle sitting in the margin */
+        padding: var(--c--globals--spacings--xs) var(--c--globals--spacings--sm);
         opacity: ${drag.isDragging ? 0.5 : 1};
         box-shadow: ${
           drop.isOver && !drag.isDragging
@@ -266,7 +268,7 @@ const DashboardCard = ({
         ${cardCss}
       `}
     >
-      <Box $direction="row" $align="center" $gap="2xs">
+      <Box $direction="row" $align="center" $gap="xs" $position="relative">
         <span
           ref={drag.setNodeRef}
           {...drag.listeners}
@@ -283,9 +285,11 @@ const DashboardCard = ({
             cursor: 'grab',
             display: 'inline-flex',
             touchAction: 'none',
+            position: 'absolute',
+            left: 'calc(-1 * var(--c--globals--spacings--sm))',
           }}
         >
-          <Icon iconName="drag_indicator" $size="20px" $variation="secondary" />
+          <Icon iconName="drag_indicator" $size="16px" $variation="secondary" />
         </span>
         <Icon iconName={definition.icon} $size="20px" $variation="secondary" />
         <Text as="h2" $size="md" $weight="700" $margin="none" $css="flex: 1;">
@@ -325,7 +329,15 @@ const DashboardCard = ({
         />
       </Box>
       {!card.collapsed && (
-        <Box $margin={{ top: 'xs' }} $gap="4xs">
+        // Rows keep their own padding (for their hover): pulled back by it,
+        // their icons line up under the card's icon, their text under its title
+        <Box
+          $margin={{ top: 'xs' }}
+          $gap="4xs"
+          $css={css`
+            margin-inline: calc(-1 * var(--c--globals--spacings--xs));
+          `}
+        >
           <Body wide={!!card.wide && !isMobile} />
         </Box>
       )}

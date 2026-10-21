@@ -208,6 +208,7 @@ const RecentBody = ({ wide }: BodyProps) => {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
           gap: var(--c--globals--spacings--xs);
+          padding-inline: var(--c--globals--spacings--xs);
         `}
       >
         {data.map((doc) => (

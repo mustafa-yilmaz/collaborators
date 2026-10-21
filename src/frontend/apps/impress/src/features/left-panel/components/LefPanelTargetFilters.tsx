@@ -71,18 +71,18 @@ export const LeftPanelTargetFilters = () => {
       label: transFilter(DocDefaultFilter.LABELS),
       targetQuery: DocDefaultFilter.LABELS,
     },
-    // Finding workspaces to join: the "Discover workspaces" screen
+    // What is open to join or read: the "Explore collaborations" screen
     {
       icon: (
         <Icon
-          iconName="search"
+          iconName="travel_explore"
           $size="20px"
           $padding="4xs"
           $variation="tertiary"
         />
       ),
-      label: t('Search', {
-        description: 'Left panel entry opening the directory of workspaces',
+      label: t('Explore', {
+        description: 'Left panel entry opening the directory of collaborations',
       }),
       href: DISCOVER_PATH,
     },

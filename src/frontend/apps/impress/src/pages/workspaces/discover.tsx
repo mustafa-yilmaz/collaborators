@@ -142,7 +142,7 @@ const Page: NextPageWithLayout = () => {
   const [query, setQuery] = useState('');
   const { authenticated } = useAuth();
   const { data: workspaces = [], isLoading } = useWorkspaceDirectory(query);
-  const title = t('Discover workspaces', {
+  const title = t('Explore collaborations', {
     description: 'Heading of the directory of workspaces',
   });
 

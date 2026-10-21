@@ -244,10 +244,10 @@ export const AccountHints = () => {
           <Text $display="block" $size="sm">
             {returning ? (
               <Trans
-                i18nKey="You're signed in to <brand/> with the email address <strong>{{email}}</strong>."
+                i18nKey="You're signed in with the email address <strong>{{email}}</strong>."
                 values={{ email: user?.email ?? '' }}
                 tOptions={{ description: 'Welcome note at a later visit' }}
-                components={{ brand: <Brand />, strong: <strong /> }}
+                components={{ strong: <strong /> }}
               />
             ) : (
               t('A new account was created for {{email}}.', {
@@ -259,20 +259,21 @@ export const AccountHints = () => {
           <Text $display="block" $size="sm">
             {returning
               ? t(
-                  'If you have another account under another email, it is a separate one: sign out and sign in with your usual account instead.',
+                  'If you have another account with another email address, it is a separate one: sign out and sign in with your usual account instead.',
                   { description: 'Welcome note at a later visit' },
                 )
               : t(
-                  'If you already have another account under another email, this is a separate one: sign out and sign in with your usual account instead.',
+                  'If you already have another account with another email address, this is a separate one: sign out and sign in with your usual account instead.',
                   { description: 'Welcome note of a new account' },
                 )}
           </Text>
           {providers.length > 1 && (
             <Text $display="block" $size="sm">
-              {t(
-                'To sign in here with your other Google, Microsoft or LinkedIn accounts too, connect them on the sign-in methods page.',
-                { description: 'Welcome note of a new account' },
-              )}
+              <Trans
+                i18nKey="To merge your multiple accounts in <brand/>, you may connect them on the sign-in methods page."
+                tOptions={{ description: 'Welcome note, connecting accounts' }}
+                components={{ brand: <Brand /> }}
+              />
             </Text>
           )}
         </Box>

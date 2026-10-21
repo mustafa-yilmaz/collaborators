@@ -81,7 +81,9 @@ describe('AccountHints', () => {
 
     const welcome = await screen.findByTestId('hint-welcome');
     expect(welcome).toHaveTextContent('Welcome back!');
-    expect(welcome).toHaveTextContent("You're signed in to");
+    expect(welcome).toHaveTextContent(
+      "You're signed in with the email address",
+    );
     expect(welcome).toHaveTextContent('with the email address a@x.test.');
     expect(
       within(welcome).getByRole('button', { name: 'Close' }),

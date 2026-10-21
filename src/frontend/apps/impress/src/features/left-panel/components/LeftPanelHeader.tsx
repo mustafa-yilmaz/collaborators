@@ -69,7 +69,12 @@ export const LeftPanelHeaderActions = () => {
         {authenticated && (
           <NewDocButton onClose={() => isMobile && closePanel()} />
         )}
-        <Box $direction="row" $gap="2px" $margin={{ left: 'auto' }}>
+        <Box
+          $direction="row"
+          $align="center"
+          $gap="2px"
+          $margin={{ left: 'auto' }}
+        >
           {router.pathname !== '/' && (
             <ButtonLink
               href="/"

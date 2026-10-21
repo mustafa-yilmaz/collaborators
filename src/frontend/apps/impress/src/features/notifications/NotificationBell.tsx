@@ -193,8 +193,19 @@ export const NotificationBell = () => {
         }
         aria-expanded={opened}
         $position="relative"
-        $padding="3xs"
-        $css="border-radius: 4px;"
+        // The size of the buttons beside it in the left panel
+        $width="40px"
+        $height="40px"
+        $align="center"
+        $justify="center"
+        $css={css`
+          border-radius: 4px;
+          &:hover {
+            background-color: var(
+              --c--contextuals--background--semantic--contextual--primary
+            );
+          }
+        `}
       >
         <Icon
           iconName={count ? 'notifications_active' : 'notifications'}
@@ -207,8 +218,8 @@ export const NotificationBell = () => {
             aria-hidden="true"
             $position="absolute"
             $css={css`
-              top: 0;
-              right: 0;
+              top: 4px;
+              right: 4px;
               min-width: 16px;
               height: 16px;
               padding: 0 4px;

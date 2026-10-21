@@ -179,6 +179,7 @@ urlpatterns = [
                 path("teams/<str:team>/", people.TeamCardView.as_view()),
                 path("join/<str:token>/", workspaces.JoinWorkspaceView.as_view()),
                 path("dashboard/layout/", dashboard.DashboardLayoutView.as_view()),
+                path("dashboard/sidebar/", dashboard.SidebarOrderView.as_view()),
                 path("dashboard/recent/", dashboard.DashboardRecentView.as_view()),
                 path("dashboard/assigned/", dashboard.DashboardAssignedView.as_view()),
                 path(

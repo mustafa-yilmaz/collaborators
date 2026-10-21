@@ -200,3 +200,35 @@ def test_api_assigned_hides_pages_i_lost_access_to():
     document.accesses.filter(user=assignee).delete()
 
     assert client_for(assignee).get("/api/v1.0/dashboard/assigned/").json() == []
+
+
+# -- The order of the lists of "My collaborations"
+
+
+def test_api_sidebar_order_is_kept_per_collaborator():
+    """Saved, read back at the next visit; other people keep their own."""
+    me, other = factories.UserFactory.create_batch(2)
+    url = "/api/v1.0/dashboard/sidebar/"
+    order = [
+        "starred",
+        "recent",
+        "notifications",
+        "labels",
+        "explore",
+        "owned",
+        "shared",
+    ]
+
+    assert client_for(me).get(url).json() == []
+    assert client_for(me).put(url, order, format="json").status_code == 200
+
+    assert client_for(me).get(url).json() == order
+    assert client_for(other).get(url).json() == []
+
+
+def test_api_sidebar_order_takes_known_items_once():
+    """The trash is not reorderable; nothing unknown nor twice."""
+    me = factories.UserFactory()
+    url = "/api/v1.0/dashboard/sidebar/"
+    for order in (["trashbin"], ["recent", "recent"], "recent"):
+        assert client_for(me).put(url, order, format="json").status_code == 400

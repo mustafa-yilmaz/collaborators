@@ -525,10 +525,9 @@ export const LabelsOverview = ({ full = false }: { full?: boolean }) => {
   if (!isLoading && !data.length) {
     return (
       <Empty>
-        {t(
-          'Labels put on workspaces, spaces and pages appear here. Add some under a page’s title.',
-          { description: 'Empty labels card' },
-        )}
+        {t('Labels you are involved with appear here.', {
+          description: 'Empty labels card',
+        })}
       </Empty>
     );
   }

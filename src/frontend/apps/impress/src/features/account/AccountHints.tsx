@@ -1,9 +1,10 @@
 import { Button } from '@gouvfr-lasuite/ui-components';
-import { ReactNode, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { ReactNode, useEffect, useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import { Box, BoxButton, Icon, StyledLink, Text } from '@/components';
+import { Title } from '@/components/Title';
 import { useConfig } from '@/core';
 import { useAuth } from '@/features/auth';
 
@@ -30,6 +31,9 @@ export const hasUnconnectedProviders = (methods?: SignInMethods) => {
     connected.length < methods.methods.length
   );
 };
+
+/** The name of the platform, as its logo, inside a sentence. */
+const Brand = () => <Title as="span" $size="0.95em" />;
 
 /** A bordered note; a warning only has its symbol in yellow. */
 export const HintCard = ({
@@ -106,10 +110,13 @@ export const ConnectAccountsText = ({
         })}
       </Text>
       <Text $size="sm">
-        {t(
-          'Signing in with another Google, Microsoft or LinkedIn account under a different email opens a separate Collaborators account.',
-          { description: 'Note that only one sign-in method is connected' },
-        )}
+        <Trans
+          i18nKey="Signing in with another Google, Microsoft or LinkedIn account under a different email opens a separate <brand/> account."
+          tOptions={{
+            description: 'Note that only one sign-in method is connected',
+          }}
+          components={{ brand: <Brand /> }}
+        />
       </Text>
       <Text $size="sm">
         {onSignInMethodsPage
@@ -162,20 +169,30 @@ export const AccountHints = () => {
   const dismiss = useDismissHint();
   const providers = config?.COLLABORATORS_SIGNIN_PROVIDERS ?? [];
   const dismissed = (hint: Hint) => !!hints?.dismissed.includes(hint);
-  // Closed for this visit only: it comes back at the next one (visit.ts);
-  // the server remembers it was seen, for the words of the next visits
+  // Closed for this visit only: it comes back at the next one (visit.ts)
   const [welcomeClosed, setWelcomeClosed] = useState(() =>
     isHiddenThisVisit('welcome'),
   );
   const closeWelcome = () => {
     hideForThisVisit('welcome');
     setWelcomeClosed(true);
-    if (!dismissed('welcome')) {
-      dismiss.mutate('welcome');
-    }
   };
-  const returning = dismissed('welcome');
+  // "A new account was created" only at the very first visit: the server
+  // records that the welcome was seen as soon as it shows, and its words
+  // stay the same until the page is left
+  const returningRef = useRef<boolean | undefined>(undefined);
+  if (hints && returningRef.current === undefined) {
+    returningRef.current = dismissed('welcome');
+  }
+  const returning = !!returningRef.current;
   const showWelcome = !!hints && !welcomeClosed;
+  const seen = dismissed('welcome');
+  const { mutate: markSeen, isIdle } = dismiss;
+  useEffect(() => {
+    if (showWelcome && !seen && isIdle) {
+      markSeen('welcome');
+    }
+  }, [showWelcome, seen, isIdle, markSeen]);
   const { data: methods } = useSignInMethods(
     !!hints && !showWelcome && providers.length > 1,
   );
@@ -203,30 +220,34 @@ export const AccountHints = () => {
         }
       >
         <Text $weight="600">
-          {returning
-            ? t('Welcome back!', {
-                description: 'Welcome note at a later visit',
-              })
-            : t('Welcome to Collaborators!', {
-                description: 'Welcome note of a new account',
-              })}
+          {returning ? (
+            t('Welcome back!', {
+              description: 'Welcome note at a later visit',
+            })
+          ) : (
+            <Trans
+              i18nKey="Welcome to <brand/>!"
+              tOptions={{ description: 'Welcome note of a new account' }}
+              components={{ brand: <Brand /> }}
+            />
+          )}
         </Text>
         <Text $size="sm">
-          {returning
-            ? t(
-                'Your Collaborators account is {{email}}. If you have another Collaborators account under another email, it is a separate one: sign out and sign in with your usual account instead.',
-                {
-                  description: 'Welcome note at a later visit',
-                  email: user?.email ?? '',
-                },
-              )
-            : t(
-                'A new account was created for {{email}}. If you already have a Collaborators account under another email, this is a separate one: sign out and sign in with your usual account instead.',
-                {
-                  description: 'Welcome note of a new account',
-                  email: user?.email ?? '',
-                },
-              )}
+          {returning ? (
+            <Trans
+              i18nKey="You're signed in to the <brand/> account of {{email}}. If you have another <brand/> account under another email, it is a separate one: sign out and sign in with your usual account instead."
+              values={{ email: user?.email ?? '' }}
+              tOptions={{ description: 'Welcome note at a later visit' }}
+              components={{ brand: <Brand /> }}
+            />
+          ) : (
+            <Trans
+              i18nKey="A new account was created for {{email}}. If you already have a <brand/> account under another email, this is a separate one: sign out and sign in with your usual account instead."
+              values={{ email: user?.email ?? '' }}
+              tOptions={{ description: 'Welcome note of a new account' }}
+              components={{ brand: <Brand /> }}
+            />
+          )}
         </Text>
         {providers.length > 1 && (
           <Text $size="sm">

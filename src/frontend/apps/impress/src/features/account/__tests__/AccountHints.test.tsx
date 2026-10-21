@@ -81,7 +81,8 @@ describe('AccountHints', () => {
 
     const welcome = await screen.findByTestId('hint-welcome');
     expect(welcome).toHaveTextContent('Welcome back!');
-    expect(welcome).toHaveTextContent('Your Collaborators account is a@x.test');
+    expect(welcome).toHaveTextContent("You're signed in to the");
+    expect(welcome).toHaveTextContent('account of a@x.test');
     expect(
       within(welcome).getByRole('button', { name: 'Close' }),
     ).toBeVisible();

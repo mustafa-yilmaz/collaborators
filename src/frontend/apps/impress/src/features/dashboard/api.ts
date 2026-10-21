@@ -67,6 +67,56 @@ export function useDashboardLayout() {
   return { query, save };
 }
 
+export const KEY_SIDEBAR_ORDER = 'sidebar-order';
+
+/** The order of the lists of "My collaborations", kept per collaborator. */
+export function useSidebarOrder() {
+  const queryClient = useQueryClient();
+  const query = useQuery<string[], APIError>({
+    queryKey: [KEY_SIDEBAR_ORDER],
+    queryFn: () => get<string[]>('dashboard/sidebar/'),
+    staleTime: Infinity,
+  });
+  const save = useMutation<string[], APIError, string[]>({
+    mutationFn: async (order) => {
+      const response = await fetchAPI('dashboard/sidebar/', {
+        method: 'PUT',
+        body: JSON.stringify(order),
+      });
+      if (!response.ok) {
+        throw new APIError('Saving failed', await errorCauses(response));
+      }
+      return response.json() as Promise<string[]>;
+    },
+    onMutate: (order) => {
+      queryClient.setQueryData([KEY_SIDEBAR_ORDER], order);
+    },
+  });
+  return { query, save };
+}
+
+/**
+ * The items in the saved order: those saved first, the others (added since,
+ * or never moved) where they stand by default.
+ */
+export const orderItems = <T extends { id: string }>(
+  items: T[],
+  saved: string[],
+): T[] => {
+  const known = saved
+    .map((id) => items.find((item) => item.id === id))
+    .filter((item): item is T => !!item);
+  const merged = [...known];
+  items.forEach((item, index) => {
+    if (merged.includes(item)) {
+      return;
+    }
+    const next = items.slice(index + 1).find((later) => merged.includes(later));
+    merged.splice(next ? merged.indexOf(next) : merged.length, 0, item);
+  });
+  return merged;
+};
+
 export const useRecentDocs = (enabled: boolean) =>
   useQuery<RecentDoc[], APIError>({
     queryKey: ['dashboard-recent'],

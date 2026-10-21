@@ -209,6 +209,8 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
     )
     # The dashboard as this collaborator arranged it: [{id, hidden, collapsed}]
     collaborator_dashboard = models.JSONField(default=list, blank=True)
+    # The order of the lists of "My collaborations" in the left panel
+    collaborator_sidebar = models.JSONField(default=list, blank=True)
     # Derived from workspace and group memberships, see `teams`
     collaborator_teams = ArrayField(
         models.CharField(max_length=100), default=list, blank=True, editable=False

@@ -56,7 +56,8 @@ type ResizableLeftPanelProps = {
 
 export const ResizableLeftPanel = ({
   children,
-  minPanelSizePx = 300,
+  // Collaborators: fits the smaller logo and the New button's row
+  minPanelSizePx = 260,
   maxPanelSizePx = 450,
 }: ResizableLeftPanelProps) => {
   const { t } = useTranslation();

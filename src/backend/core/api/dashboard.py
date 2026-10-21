@@ -181,6 +181,7 @@ class AssignmentSerializer(serializers.Serializer):
         if not is_valid_anchor(value):
             raise serializers.ValidationError("Unknown place in the page.")
         return value
+
     assignee_id = serializers.PrimaryKeyRelatedField(
         queryset=models.User.objects.filter(is_active=True),
         required=False,
@@ -269,3 +270,41 @@ class DocumentAssignmentsView(APIView):
             team=data["team"],
         ).delete()
         return drf.response.Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# The lists of "My collaborations" one can reorder (the trash stays last)
+SIDEBAR_ITEMS = (
+    "recent",
+    "notifications",
+    "labels",
+    "explore",
+    "owned",
+    "shared",
+    "starred",
+)
+
+
+class SidebarOrderView(APIView):
+    """
+    GET, PUT /api/v1.0/dashboard/sidebar/ — the order of the lists of "My
+    collaborations" in the left panel, chosen by the collaborator.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """The saved order; empty means the default one."""
+        return drf.response.Response(request.user.collaborator_sidebar or [])
+
+    def put(self, request):
+        """Save an order: known items, each once."""
+        order = request.data
+        if (
+            not isinstance(order, list)
+            or len(set(order)) != len(order)
+            or any(item not in SIDEBAR_ITEMS for item in order)
+        ):
+            raise drf.exceptions.ValidationError({"order": ", ".join(SIDEBAR_ITEMS)})
+        request.user.collaborator_sidebar = order
+        request.user.save(update_fields=["collaborator_sidebar", "updated_at"])
+        return drf.response.Response(order)

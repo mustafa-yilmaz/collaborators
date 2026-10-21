@@ -366,7 +366,7 @@ export const LeftPanelTargetFilters = () => {
         >
           <Icon iconName="restart_alt" $size="16px" $color="inherit" />
           <Text $size="xs" $color="inherit">
-            {t('Restore the order', {
+            {t('Reset the order', {
               description: 'Button putting the left panel items back in order',
             })}
           </Text>

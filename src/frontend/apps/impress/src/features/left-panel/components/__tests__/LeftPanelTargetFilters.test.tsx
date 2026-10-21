@@ -67,7 +67,7 @@ describe('LeftPanelTargetFilters', () => {
     render(<LeftPanelTargetFilters />, { wrapper: AppWrapper });
 
     const restore = await screen.findByRole('button', {
-      name: 'Restore the order',
+      name: 'Reset the order',
     });
     expect(
       screen
@@ -91,7 +91,7 @@ describe('LeftPanelTargetFilters', () => {
       ),
     );
     expect(
-      screen.queryByRole('button', { name: 'Restore the order' }),
+      screen.queryByRole('button', { name: 'Reset the order' }),
     ).toBeNull();
   });
 
@@ -99,7 +99,7 @@ describe('LeftPanelTargetFilters', () => {
     render(<LeftPanelTargetFilters />, { wrapper: AppWrapper });
 
     expect(
-      screen.queryByRole('button', { name: 'Restore the order' }),
+      screen.queryByRole('button', { name: 'Reset the order' }),
     ).toBeNull();
   });
 });

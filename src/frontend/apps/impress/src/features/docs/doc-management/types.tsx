@@ -124,6 +124,8 @@ export enum DocDefaultFilter {
   // Collaborators: the full screens of the dashboard's cards
   NOTIFICATIONS = 'notifications',
   LABELS = 'labels',
+  // The people one may see: "My Collaborators"
+  PEOPLE = 'people',
 }
 
 export type DocsOrdering =

@@ -118,10 +118,12 @@ export const Auth = ({ children }: PropsWithChildren) => {
 
   // Collaborators: a newcomer not let in yet sees where they stand, and
   // nothing else of the platform
+  // (except to accept an invitation by email, which lets them in)
   if (
     authenticated &&
     user?.registration_status &&
-    user.registration_status !== 'approved'
+    user.registration_status !== 'approved' &&
+    !pathname.startsWith('/invite')
   ) {
     return <RegistrationWaiting user={user} />;
   }

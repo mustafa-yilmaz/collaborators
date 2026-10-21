@@ -20,6 +20,7 @@ import { useCunninghamTheme } from '@/cunningham';
 import { DocDefaultFilter, useTrans } from '@/docs/doc-management';
 import { orderItems, useSidebarOrder } from '@/features/dashboard/api';
 import { useLeftPanelStore } from '@/features/left-panel';
+import { MyCollaboratorsName } from '@/features/people/BrandName';
 import { SEARCH_PATH } from '@/features/search/api';
 import ClockIcon from '@/icons/clock.svg';
 import SharedIcon from '@/icons/shared.svg';
@@ -141,6 +142,8 @@ export const LeftPanelTargetFilters = () => {
     id: string;
     icon: ReactNode;
     label: string;
+    /** What the item shows, when not just its label */
+    display?: ReactNode;
     targetQuery?: DocDefaultFilter;
     href?: string;
   }[] = [
@@ -221,6 +224,21 @@ export const LeftPanelTargetFilters = () => {
       label: transFilter(DocDefaultFilter.SHARED_WITH_ME),
       targetQuery: DocDefaultFilter.SHARED_WITH_ME,
     },
+    // The people one may see, named in the style of the logo
+    {
+      icon: (
+        <Icon
+          iconName="contacts"
+          $size="20px"
+          $padding="4xs"
+          $variation="tertiary"
+        />
+      ),
+      id: 'people',
+      label: transFilter(DocDefaultFilter.PEOPLE),
+      display: <MyCollaboratorsName size="0.95em" />,
+      targetQuery: DocDefaultFilter.PEOPLE,
+    },
     {
       icon: (
         <Icon
@@ -263,11 +281,10 @@ export const LeftPanelTargetFilters = () => {
     save.mutate(ids);
   };
 
-  const buildHref = (query: DocDefaultFilter) => {
-    const params = new URLSearchParams(searchParams);
-    params.set('target', query);
-    return `${pathname}?${params.toString()}`;
-  };
+  // Collaborators: the lists are screens of the home, from wherever one is
+  // (not the current address plus a target: from Search, that kept ?q=…)
+  const buildHref = (query: DocDefaultFilter) =>
+    `/?${new URLSearchParams({ target: query }).toString()}`;
 
   const handleFilterClick = () => {
     if (isMobile) {
@@ -329,7 +346,7 @@ export const LeftPanelTargetFilters = () => {
               `}
             >
               {query.icon}
-              <Text $size="sm">{query.label}</Text>
+              <Text $size="sm">{query.display ?? query.label}</Text>
             </StyledLink>
           );
           // The trash stays last; the others can be dragged into any order

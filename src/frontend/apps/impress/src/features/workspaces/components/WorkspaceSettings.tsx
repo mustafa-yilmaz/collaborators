@@ -23,6 +23,11 @@ import {
 import { useAuth } from '@/features/auth';
 import { Role } from '@/features/docs/doc-management';
 import { SearchUserRow } from '@/features/docs/doc-share/components/SearchUserRow';
+import { LogoPicker } from '@/features/invitations/LogoPicker';
+import {
+  useWorkspaceInvitationMutations,
+  useWorkspaceInvitations,
+} from '@/features/invitations/api';
 import { LabelEditor } from '@/features/labels/LabelEditor';
 import { PublishingSection } from '@/features/publishing/PublishingSection';
 
@@ -178,6 +183,17 @@ const GeneralSection = ({ workspace }: { workspace: Workspace }) => {
       </Box>
       <Box $gap="3xs">
         <Text $size="sm" $weight="600">
+          {t('Logo', { description: 'Heading of a workspace’s logo' })}
+        </Text>
+        <LogoPicker
+          owner="workspaces"
+          id={workspace.id}
+          canEdit={workspace.abilities.update}
+          fallbackIcon="workspaces"
+        />
+      </Box>
+      <Box $gap="3xs">
+        <Text $size="sm" $weight="600">
           {t('Labels', { description: 'Heading of a workspace’s labels' })}
         </Text>
         <LabelEditor path={`workspaces/${workspace.id}`} />
@@ -282,6 +298,11 @@ const MembersSection = ({ workspace }: { workspace: Workspace }) => {
   const { data: accesses = [] } = useWorkspaceAccesses(workspace.id);
   const { add, update, remove } = useWorkspaceAccessMutations(workspace.id);
   const canManage = workspace.abilities.manage_accesses;
+  const { data: invitations = [] } = useWorkspaceInvitations(
+    workspace.id,
+    canManage,
+  );
+  const { invite, cancel } = useWorkspaceInvitationMutations(workspace.id);
 
   const roles = [
     {
@@ -313,7 +334,59 @@ const MembersSection = ({ workspace }: { workspace: Workspace }) => {
           })}
           excludeIds={accesses.map((access) => access.user.id)}
           onPick={(picked) => add.mutate({ userId: picked.id }, { onError })}
+          onInviteEmail={(email) => invite.mutate({ email }, { onError })}
         />
+      )}
+      {canManage && invitations.length > 0 && (
+        <Box>
+          {invitations.map((invitation) => (
+            <Row key={invitation.id}>
+              <Box $direction="row" $align="center" $gap="xs" $flex={1}>
+                <Icon
+                  iconName="forward_to_inbox"
+                  $size="20px"
+                  $variation="secondary"
+                />
+                <Box $css="min-width: 0;">
+                  <Text $size="sm" $ellipsis>
+                    {invitation.email}
+                  </Text>
+                  <Text $size="xs" $variation="secondary">
+                    {invitation.is_expired
+                      ? t('Invitation expired', {
+                          description: 'State of an invitation by email',
+                        })
+                      : t('Invited by email, not joined yet', {
+                          description: 'State of an invitation by email',
+                        })}
+                  </Text>
+                </Box>
+              </Box>
+              <Button
+                size="small"
+                variant="tertiary"
+                onClick={() =>
+                  invite.mutate(
+                    { email: invitation.email, role: invitation.role },
+                    { onError },
+                  )
+                }
+              >
+                {t('Send again', {
+                  description: 'Button sending an invitation again',
+                })}
+              </Button>
+              <IconButton
+                icon="close"
+                label={t('Cancel the invitation of {{email}}', {
+                  description: 'Button cancelling an invitation by email',
+                  email: invitation.email,
+                })}
+                onClick={() => cancel.mutate(invitation.id, { onError })}
+              />
+            </Row>
+          ))}
+        </Box>
       )}
       <Box>
         {accesses.map((access) => (

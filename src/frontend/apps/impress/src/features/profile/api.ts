@@ -38,7 +38,11 @@ export interface Profile {
   workspaces: { id: string; name: string }[];
 }
 
+/** Who may find someone by name, see their profile and invite them. */
+export type Reach = 'colleagues' | 'platform' | 'public';
+
 export interface MyProfile extends Profile {
+  reach: Reach;
   visibility: Record<ProfileField, AudienceSetting>;
   workspace_choices: { id: string; name: string }[];
   space_choices: { id: string; title: string }[];
@@ -48,7 +52,10 @@ export type MyProfileUpdate = Partial<
   Pick<
     Profile,
     'headline' | 'organization' | 'location' | 'bio' | 'website' | 'interests'
-  > & { visibility: Partial<Record<ProfileField, AudienceSetting>> }
+  > & {
+    visibility: Partial<Record<ProfileField, AudienceSetting>>;
+    reach: Reach;
+  }
 >;
 
 export const KEY_PROFILE = 'profile';

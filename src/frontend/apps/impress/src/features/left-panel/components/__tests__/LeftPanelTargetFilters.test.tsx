@@ -8,8 +8,9 @@ import { LeftPanelTargetFilters } from '../LefPanelTargetFilters';
 
 vi.mock('next/navigation', async () => ({
   ...(await vi.importActual('next/navigation')),
-  usePathname: () => '/',
-  useSearchParams: () => new URLSearchParams(),
+  // On the Search screen, with a query
+  usePathname: () => '/workspaces/discover/',
+  useSearchParams: () => new URLSearchParams('q=plan'),
 }));
 
 const API = 'http://test.jest/api/v1.0';
@@ -34,6 +35,7 @@ describe('LeftPanelTargetFilters', () => {
       'Starred',
       'Owned by me',
       'Shared with me',
+      'My Collaborators',
       'Trashbin',
     ]);
     expect(screen.getByRole('link', { name: 'Search' })).toHaveAttribute(
@@ -80,6 +82,7 @@ describe('LeftPanelTargetFilters', () => {
       'Search',
       'Starred',
       'Owned by me',
+      'My Collaborators',
       'Trashbin',
     ]);
 
@@ -101,5 +104,18 @@ describe('LeftPanelTargetFilters', () => {
     expect(
       screen.queryByRole('button', { name: 'Reset the order' }),
     ).toBeNull();
+  });
+
+  test('lists lead to the home, whatever screen one is on', () => {
+    render(<LeftPanelTargetFilters />, { wrapper: AppWrapper });
+
+    expect(screen.getByRole('link', { name: 'Recent' })).toHaveAttribute(
+      'href',
+      '/?target=all_docs',
+    );
+    expect(screen.getByRole('link', { name: 'Trashbin' })).toHaveAttribute(
+      'href',
+      '/?target=trashbin',
+    );
   });
 });

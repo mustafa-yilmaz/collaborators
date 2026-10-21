@@ -21,3 +21,19 @@ vi.mock('next/image', () => ({
     return React.createElement('img', { src: resolved, alt, ...rest });
   },
 }));
+
+// jsdom has no Web Animations: menus and selects that animate get a no-op
+if (typeof Element !== 'undefined' && !Element.prototype.animate) {
+  Element.prototype.animate = function animate() {
+    return {
+      finished: Promise.resolve(),
+      cancel: () => {},
+      finish: () => {},
+      play: () => {},
+      pause: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      onfinish: null,
+    } as unknown as Animation;
+  };
+}

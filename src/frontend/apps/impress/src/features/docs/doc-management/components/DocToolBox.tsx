@@ -14,6 +14,7 @@ import { ReactNode, memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Box } from '@/components/Box';
+import { Icon } from '@/components/Icon';
 import { Text } from '@/components/Text';
 import { useConfig } from '@/core/config/api';
 import { useEditorStore } from '@/docs/doc-editor/stores/useEditorStore';
@@ -131,6 +132,14 @@ const MoveSpaceModal = dynamic(
   { ssr: false },
 );
 
+const LogoModal = dynamic(
+  () =>
+    import('@/features/invitations/LogoModal').then((mod) => ({
+      default: mod.LogoModal,
+    })),
+  { ssr: false },
+);
+
 const ModalExport = dynamic(
   () =>
     import('@/docs/doc-export/components/ModalExport').then((mod) => ({
@@ -185,6 +194,7 @@ const DocToolBoxComponent = ({
     'move' | 'link' | null
   >(null);
   const [isModalIndependentOpen, setIsModalIndependentOpen] = useState(false);
+  const [isModalLogoOpen, setIsModalLogoOpen] = useState(false);
   const managesDoc =
     doc.user_role === Role.OWNER || doc.user_role === Role.ADMIN;
   const isSpace = doc.kind === 'space';
@@ -409,6 +419,15 @@ const DocToolBoxComponent = ({
         ? !!doc.home_workspace || doc.user_role !== Role.OWNER
         : !managesDoc,
     },
+    // Collaborators: shown in invitations and on the page accepting them
+    {
+      label: t('Logo', {
+        description: 'Dropdown menu item choosing the logo of a page',
+      }),
+      icon: <Icon iconName="image" $size="18px" $color="inherit" />,
+      callback: () => setIsModalLogoOpen(true),
+      isHidden: !doc.abilities.partial_update || !!doc.deleted_at,
+    },
     { type: 'separator' },
     {
       label: t('History', {
@@ -508,6 +527,9 @@ const DocToolBoxComponent = ({
             treeContext?.setRoot(null);
           }}
         />
+      )}
+      {isModalLogoOpen && (
+        <LogoModal doc={doc} onClose={() => setIsModalLogoOpen(false)} />
       )}
       {isModalIndependentOpen && (
         <MakeIndependentModal

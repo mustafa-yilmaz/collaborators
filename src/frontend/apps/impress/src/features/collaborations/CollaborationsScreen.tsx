@@ -3,6 +3,8 @@ import { DocDefaultFilter, useTrans } from '@/features/docs/doc-management';
 import { DocsGrid } from '@/features/docs/docs-grid';
 import { LabelsOverview } from '@/features/labels/LabelsOverview';
 import { ForMeList } from '@/features/notifications/ForMeList';
+import { MyCollaboratorsName } from '@/features/people/BrandName';
+import { PeopleDirectory } from '@/features/people/PeopleDirectory';
 import { useResponsiveStore } from '@/stores/useResponsiveStore';
 
 import { CollaborationsList } from './CollaborationsList';
@@ -42,11 +44,16 @@ export const CollaborationsScreen = ({
       $css="overflow-y: auto;"
     >
       <Text as="h1" $size="h4" $margin="none">
-        {transFilter(target)}
+        {target === DocDefaultFilter.PEOPLE ? (
+          <MyCollaboratorsName />
+        ) : (
+          transFilter(target)
+        )}
       </Text>
       {view && <CollaborationsList view={view} />}
       {target === DocDefaultFilter.NOTIFICATIONS && <ForMeList full />}
       {target === DocDefaultFilter.LABELS && <LabelsOverview />}
+      {target === DocDefaultFilter.PEOPLE && <PeopleDirectory />}
     </Box>
   );
 };

@@ -41,6 +41,9 @@ export const useTrans = () => {
     [DocDefaultFilter.LABELS]: t('Labels', {
       description: 'Name of the list of labels',
     }),
+    [DocDefaultFilter.PEOPLE]: t('My Collaborators', {
+      description: 'Name of the list of the people one may see',
+    }),
   };
 
   return {

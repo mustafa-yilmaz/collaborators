@@ -16,6 +16,8 @@ import { css } from 'styled-components';
 
 import { Box, BoxButton, Icon, Text } from '@/components';
 import { User } from '@/features/auth';
+import { Role } from '@/features/docs/doc-management';
+import { createDocInvitation } from '@/features/docs/doc-share/api/useCreateDocInvitation';
 
 import { useCreateSpace, useGroups } from '../api';
 import { SpaceVisibility, Workspace } from '../types';
@@ -40,6 +42,8 @@ export const CreateSpaceModal = ({
     workspace ? SpaceVisibility.WORKSPACE : SpaceVisibility.INVITED,
   );
   const [editors, setEditors] = useState<User[]>([]);
+  // Collaborators: people invited by email, editors once they accept
+  const [invitedEmails, setInvitedEmails] = useState<string[]>([]);
   const [editorGroupIds, setEditorGroupIds] = useState<string[]>([]);
   const { data: groups = [] } = useGroups(workspace?.id ?? '');
   const { mutate: createSpace, isPending } = useCreateSpace();
@@ -55,6 +59,15 @@ export const CreateSpaceModal = ({
       },
       {
         onSuccess: (space) => {
+          void Promise.allSettled(
+            invitedEmails.map((email) =>
+              createDocInvitation({
+                email,
+                role: Role.EDITOR,
+                docId: space.id,
+              }),
+            ),
+          );
           onClose();
           void router.push(`/docs/${space.id}`);
         },
@@ -209,7 +222,48 @@ export const CreateSpaceModal = ({
             })}
             excludeIds={editors.map((user) => user.id)}
             onPick={(user) => setEditors((current) => [...current, user])}
+            onInviteEmail={(email) =>
+              setInvitedEmails((current) =>
+                current.includes(email) ? current : [...current, email],
+              )
+            }
           />
+          {invitedEmails.length > 0 && (
+            <Box $direction="row" $gap="2xs" $css="flex-wrap: wrap;">
+              {invitedEmails.map((email) => (
+                <BoxButton
+                  key={email}
+                  onClick={() =>
+                    setInvitedEmails((current) =>
+                      current.filter((item) => item !== email),
+                    )
+                  }
+                  aria-label={t('Remove {{name}}', {
+                    description:
+                      'Accessible name of a button removing a person',
+                    name: email,
+                  })}
+                  title={t('Invited by email', {
+                    description: 'Tooltip of an email to invite',
+                  })}
+                  $direction="row"
+                  $align="center"
+                  $gap="4xs"
+                  $padding={{ horizontal: 'xs', vertical: '4xs' }}
+                  $css={css`
+                    border-radius: 999px;
+                    background: var(
+                      --c--contextuals--background--semantic--brand--tertiary
+                    );
+                  `}
+                >
+                  <Icon iconName="forward_to_inbox" $size="14px" />
+                  <Text $size="sm">{email}</Text>
+                  <Icon iconName="close" $size="14px" />
+                </BoxButton>
+              ))}
+            </Box>
+          )}
           {editors.length > 0 && (
             <Box $direction="row" $gap="2xs" $css="flex-wrap: wrap;">
               {editors.map((user) => (

@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled, { css } from 'styled-components';
 
@@ -66,6 +66,33 @@ export const Footer = () => {
 
   const { logo, legalLinks, externalLinks, credits, bottomInformation } =
     content || {};
+  // Collaborators: the address under the logo, sized to be as wide as it
+  const logoRef = useRef<HTMLDivElement>(null);
+  const labelRef = useRef<HTMLElement>(null);
+  const [labelSize, setLabelSize] = useState<number>();
+  useLayoutEffect(() => {
+    const fit = () => {
+      const logoBox = logoRef.current;
+      const label = labelRef.current;
+      if (!logoBox || !label) {
+        return;
+      }
+      const base = parseFloat(getComputedStyle(label).fontSize);
+      const width = label.getBoundingClientRect().width;
+      const target = logoBox.getBoundingClientRect().width;
+      if (base && width && target) {
+        setLabelSize(Math.round(base * (target / width) * 10) / 10);
+      }
+    };
+    fit();
+    const observer =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null;
+    if (logoRef.current) {
+      observer?.observe(logoRef.current);
+    }
+    void document.fonts?.ready.then(fit);
+    return () => observer?.disconnect();
+  }, [logo?.link?.label, isMobile]);
 
   if (!footerJson || (!legalLinks && !externalLinks && !bottomInformation)) {
     return null;
@@ -95,8 +122,8 @@ export const Footer = () => {
         >
           {/* On a phone, no logo nor link: the cover above shows them */}
           {!isMobile && (
-            <Box className="--docs--footer-logo" $gap="2xs" $align="center">
-              <Box $align="center" $gap="6rem" $direction="row">
+            <Box className="--docs--footer-logo" $gap="2xs" $align="flex-start">
+              <Box ref={logoRef} $align="center" $gap="6rem" $direction="row">
                 {logo && (
                   <Box
                     $align="center"
@@ -143,7 +170,16 @@ export const Footer = () => {
                     }
                   `}
                 >
-                  <Text $size="sm" $variation="secondary">
+                  {/* Collaborators: as wide as the logo above, the arrow aside */}
+                  <Text
+                    ref={labelRef}
+                    $size="sm"
+                    $variation="secondary"
+                    $css={css`
+                      white-space: nowrap;
+                      ${labelSize ? `font-size: ${labelSize}px;` : ''}
+                    `}
+                  >
                     {logo.link.label}
                   </Text>
                   <IconLink width={14} />

@@ -18,6 +18,7 @@ import {
   AudienceSetting,
   MyProfile,
   ProfileField,
+  Reach,
   profileHref,
   useMyProfile,
 } from './api';
@@ -167,6 +168,7 @@ export const ProfileSettings = () => {
   const [interests, setInterests] = useState<string[]>([]);
   const [interest, setInterest] = useState('');
   const [visibility, setVisibility] = useState<Visibility>();
+  const [reach, setReach] = useState<Reach>('colleagues');
 
   useEffect(() => {
     if (profile) {
@@ -179,6 +181,7 @@ export const ProfileSettings = () => {
       });
       setInterests(profile.interests);
       setVisibility(profile.visibility);
+      setReach(profile.reach ?? 'colleagues');
     }
   }, [profile]);
 
@@ -228,6 +231,51 @@ export const ProfileSettings = () => {
           </Text>
         </StyledLink>
       </Text>
+      <Field
+        title={t('Who can find me and invite me', {
+          description: 'Profile setting: who may find someone',
+        })}
+        picker={
+          <Box $gap="3xs">
+            <Select
+              fullWidth
+              label={t('Who can find me', {
+                description: 'Label of the reach choice of a profile',
+              })}
+              hideLabel
+              clearable={false}
+              options={[
+                {
+                  value: 'colleagues',
+                  label: t('People I share a workspace, space or page with', {
+                    description: 'Reach: only the people one works with',
+                  }),
+                },
+                {
+                  value: 'platform',
+                  label: t('Everyone on Collaborators', {
+                    description: 'Reach: every signed-in collaborator',
+                  }),
+                },
+                {
+                  value: 'public',
+                  label: t('Public on the internet', {
+                    description: 'Reach: anyone, even without an account',
+                  }),
+                },
+              ]}
+              value={reach}
+              onChange={(event) => setReach(event.target.value as Reach)}
+            />
+            <Text $size="xs" $variation="secondary">
+              {t(
+                'Others find you by name (to share with you, to invite you, in My Collaborators) only if you share something, unless you open it wider. It also limits who sees each piece below. Anyone can still invite your email address.',
+                { description: 'Explanation of the reach of a profile' },
+              )}
+            </Text>
+          </Box>
+        }
+      />
       <Field
         title={t('Name: {{name}}', {
           description: 'Profile field: the name',
@@ -344,7 +392,7 @@ export const ProfileSettings = () => {
           disabled={update.isPending}
           onClick={() =>
             update.mutate(
-              { ...text, interests, visibility },
+              { ...text, interests, visibility, reach },
               {
                 onSuccess: () =>
                   toast(

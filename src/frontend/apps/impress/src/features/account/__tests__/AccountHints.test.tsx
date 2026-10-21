@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { AppWrapper } from '@/tests/utils';
 
 import { AccountHints } from '../AccountHints';
+import { VISIT_GAP_MS, hideForThisVisit, touchVisit } from '../visit';
 
 vi.mock('next/router', async () => ({
   ...(await vi.importActual('next/router')),
@@ -25,6 +26,7 @@ const methods = (connected: string[]) => ({
 
 describe('AccountHints', () => {
   beforeEach(() => {
+    window.localStorage.clear();
     fetchMock.hardReset();
     fetchMock.mockGlobal();
     fetchMock.get(`${API}/users/me/`, { id: 'u-1', email: 'a@x.test' });
@@ -33,7 +35,7 @@ describe('AccountHints', () => {
     });
   });
 
-  test('welcomes a new account first, until closed', async () => {
+  test('welcomes a new account first, until closed for this visit', async () => {
     fetchMock.get(`${API}/users/me/hints/`, { dismissed: [] });
     fetchMock.post(`${API}/users/me/hints/`, { dismissed: ['welcome'] });
     fetchMock.get(`${API}/users/me/sign-in-methods/`, methods(['google']));
@@ -48,10 +50,46 @@ describe('AccountHints', () => {
       await screen.findByTestId('hint-connect-accounts'),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('hint-welcome')).not.toBeInTheDocument();
+    // seen: the server remembers it, for the words of later visits
+    expect(
+      fetchMock.callHistory.called(`${API}/users/me/hints/`, {
+        method: 'POST',
+      }),
+    ).toBe(true);
+  });
+
+  test('closed, the welcome stays hidden during the visit', async () => {
+    fetchMock.get(`${API}/users/me/hints/`, { dismissed: ['welcome'] });
+    fetchMock.get(`${API}/users/me/sign-in-methods/`, methods(['google']));
+    hideForThisVisit('welcome');
+
+    render(<AccountHints />, { wrapper: AppWrapper });
+
+    expect(
+      await screen.findByTestId('hint-connect-accounts'),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('hint-welcome')).not.toBeInTheDocument();
+  });
+
+  test('the welcome comes back at the next visit, in returning words', async () => {
+    fetchMock.get(`${API}/users/me/hints/`, { dismissed: ['welcome'] });
+    fetchMock.get(`${API}/users/me/sign-in-methods/`, methods(['google']));
+    // closed during a visit that ended (nobody there for longer than the gap)
+    hideForThisVisit('welcome', Date.now() - VISIT_GAP_MS - 60_000);
+
+    render(<AccountHints />, { wrapper: AppWrapper });
+
+    const welcome = await screen.findByTestId('hint-welcome');
+    expect(welcome).toHaveTextContent('Welcome back!');
+    expect(welcome).toHaveTextContent('Your Collaborators account is a@x.test');
+    expect(
+      within(welcome).getByRole('button', { name: 'Close' }),
+    ).toBeVisible();
   });
 
   test('suggests connecting only with a single provider connected', async () => {
     fetchMock.get(`${API}/users/me/hints/`, { dismissed: ['welcome'] });
+    hideForThisVisit('welcome');
     fetchMock.get(
       `${API}/users/me/sign-in-methods/`,
       methods(['google', 'linkedin']),
@@ -74,6 +112,8 @@ describe('AccountHints', () => {
     fetchMock.get(`${API}/users/me/hints/`, {
       dismissed: ['welcome', 'connect-accounts'],
     });
+    touchVisit();
+    hideForThisVisit('welcome');
     fetchMock.get(`${API}/users/me/sign-in-methods/`, methods(['google']));
 
     render(<AccountHints />, { wrapper: AppWrapper });

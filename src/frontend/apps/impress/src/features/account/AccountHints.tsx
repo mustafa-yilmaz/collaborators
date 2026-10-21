@@ -1,5 +1,5 @@
 import { Button } from '@gouvfr-lasuite/ui-components';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
@@ -14,6 +14,7 @@ import {
   useHints,
   useSignInMethods,
 } from './api';
+import { hideForThisVisit, isHiddenThisVisit } from './visit';
 
 export const SIGN_IN_METHODS_PATH = '/account/sign-in-methods/';
 
@@ -146,9 +147,9 @@ const SignInMethodsLink = ({
 
 /**
  * Dashboard notes about signing in, one at a time:
- * - a new account is welcomed once (closed for good), in case the person
- *   already has another one (signed in with another provider and email, it
- *   is a separate account);
+ * - a welcome, in case the person already has another account (signed in
+ *   with another provider and email, it is a separate one). Closed, it comes
+ *   back at their next visit, in returning words;
  * - while a single provider is connected, a note says so and where to
  *   connect the others, so all of them open this same account. It stays
  *   until another one is connected.
@@ -161,7 +162,20 @@ export const AccountHints = () => {
   const dismiss = useDismissHint();
   const providers = config?.COLLABORATORS_SIGNIN_PROVIDERS ?? [];
   const dismissed = (hint: Hint) => !!hints?.dismissed.includes(hint);
-  const showWelcome = !!hints && !dismissed('welcome');
+  // Closed for this visit only: it comes back at the next one (visit.ts);
+  // the server remembers it was seen, for the words of the next visits
+  const [welcomeClosed, setWelcomeClosed] = useState(() =>
+    isHiddenThisVisit('welcome'),
+  );
+  const closeWelcome = () => {
+    hideForThisVisit('welcome');
+    setWelcomeClosed(true);
+    if (!dismissed('welcome')) {
+      dismiss.mutate('welcome');
+    }
+  };
+  const returning = dismissed('welcome');
+  const showWelcome = !!hints && !welcomeClosed;
   const { data: methods } = useSignInMethods(
     !!hints && !showWelcome && providers.length > 1,
   );
@@ -172,10 +186,10 @@ export const AccountHints = () => {
         icon="waving_hand"
         testId="hint-welcome"
         closeLabel={t('Close', { description: 'Button closing a hint' })}
-        onClose={() => dismiss.mutate('welcome')}
+        onClose={closeWelcome}
         actions={
           <>
-            <Button size="small" onClick={() => dismiss.mutate('welcome')}>
+            <Button size="small" onClick={closeWelcome}>
               {t('Got it', { description: 'Button closing a hint' })}
             </Button>
             {providers.length > 1 && (
@@ -189,18 +203,30 @@ export const AccountHints = () => {
         }
       >
         <Text $weight="600">
-          {t('Welcome to Collaborators!', {
-            description: 'Welcome note of a new account',
-          })}
+          {returning
+            ? t('Welcome back!', {
+                description: 'Welcome note at a later visit',
+              })
+            : t('Welcome to Collaborators!', {
+                description: 'Welcome note of a new account',
+              })}
         </Text>
         <Text $size="sm">
-          {t(
-            'A new account was created for {{email}}. If you already have a Collaborators account under another email, this is a separate one: sign out and sign in with your usual account instead.',
-            {
-              description: 'Welcome note of a new account',
-              email: user?.email ?? '',
-            },
-          )}
+          {returning
+            ? t(
+                'Your Collaborators account is {{email}}. If you have another Collaborators account under another email, it is a separate one: sign out and sign in with your usual account instead.',
+                {
+                  description: 'Welcome note at a later visit',
+                  email: user?.email ?? '',
+                },
+              )
+            : t(
+                'A new account was created for {{email}}. If you already have a Collaborators account under another email, this is a separate one: sign out and sign in with your usual account instead.',
+                {
+                  description: 'Welcome note of a new account',
+                  email: user?.email ?? '',
+                },
+              )}
         </Text>
         {providers.length > 1 && (
           <Text $size="sm">

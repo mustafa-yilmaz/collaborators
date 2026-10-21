@@ -3,6 +3,7 @@ import { PropsWithChildren, useEffect, useMemo, useState } from 'react';
 
 import { Loading } from '@/components';
 import { useConfig } from '@/core';
+import { watchVisit } from '@/features/account/visit';
 import { RegistrationWaiting } from '@/features/registrations/RegistrationWaiting';
 
 import { HOME_URL } from '../conf';
@@ -44,6 +45,9 @@ export const Auth = ({ children }: PropsWithChildren) => {
   const shouldTryLogin =
     !authenticated && !isAuthLoading && !isRedirecting && !pathAllowed;
   const { replace, pathname } = useRouter();
+
+  // Collaborators: notice when someone leaves and comes back (see visit.ts)
+  useEffect(() => watchVisit(), []);
 
   /**
    * If the user is authenticated and initially wanted to access a specific page, redirect him to that page now.

@@ -1,3 +1,4 @@
+import { endVisit } from '@/features/account/visit';
 import { forgetLeftPanel } from '@/features/left-panel/stores/useLeftPanelStore';
 import { safeLocalStorage, safeSessionStorage } from '@/utils/storages';
 
@@ -100,5 +101,7 @@ export const resetSilent = () => {
 };
 
 export const gotoLogout = () => {
+  // Collaborators: signing out ends the visit (notes closed come back)
+  endVisit();
   window.location.replace(LOGOUT_URL);
 };

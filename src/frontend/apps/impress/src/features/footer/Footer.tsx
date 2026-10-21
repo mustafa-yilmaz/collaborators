@@ -181,11 +181,10 @@ export const Footer = () => {
                   {/* Collaborators: as wide as the logo above, the arrow aside */}
                   <Text
                     className="--collaborators--footer-address"
-                    $size="sm"
+                    $size={labelSize ? `${labelSize}px` : 'sm'}
                     $variation="secondary"
                     $css={css`
                       white-space: nowrap;
-                      ${labelSize ? `font-size: ${labelSize}px;` : ''}
                     `}
                   >
                     {logo.link.label}

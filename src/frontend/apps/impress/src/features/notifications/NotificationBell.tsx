@@ -56,10 +56,11 @@ export const NotificationBell = () => {
           }
         `}
       >
+        {/* As large and as coloured as the home and search buttons beside */}
         <Icon
           iconName={count ? 'notifications_active' : 'notifications'}
-          $size="22px"
-          $variation="secondary"
+          $size="24px"
+          $color="var(--c--contextuals--content--semantic--brand--tertiary)"
         />
         {count > 0 && (
           <Box

@@ -91,7 +91,7 @@ describe('Mentions, notifications and assignments card', () => {
     render(<card.Body />, { wrapper: AppWrapper });
 
     const toggle = await screen.findByRole('checkbox', {
-      name: 'Also send me an email',
+      name: 'Also send me emails',
     });
     await waitFor(() => expect(toggle).toBeEnabled());
     expect(toggle).not.toBeChecked();

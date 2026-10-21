@@ -41,7 +41,7 @@ export const EmailSwitch = () => {
     >
       <Switch
         labelSide="right"
-        label={t('Also send me an email', {
+        label={t('Also send me emails', {
           description: 'Email preference of the notification inbox',
         })}
         checked={query.data?.email ?? false}

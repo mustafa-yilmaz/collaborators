@@ -26,12 +26,12 @@ export interface BodyProps {
   wide?: boolean;
 }
 
-/** How many of each group (workspaces, spaces, pages) a list card shows. */
-export const LIST_CARD_SIZE = 3;
+/** How many rows a list card shows: workspaces, spaces and pages together. */
+export const LIST_CARD_SIZE = 6;
 
 /**
  * A card summing up a list of "My collaborations" in the left panel: the
- * same lists, the first of each group, and a link to the whole of it.
+ * same lists, the latest in one plain list, and a link to the whole of it.
  */
 const listCard =
   (view: CollaborationsView, target: DocDefaultFilter) =>

@@ -29,15 +29,20 @@ export const FOR_ME_SIZE = 8;
  * of the bell, of the card and of the screen move together. Off until one
  * turns it on.
  */
-export const EmailSwitch = () => {
+export const EmailSwitch = ({ bare = false }: { bare?: boolean }) => {
   const { t } = useTranslation();
   const { query, update } = useNotificationPreferences(true);
   return (
     <Box
-      $padding={{ horizontal: 'xs', top: 'xs' }}
-      $css={css`
-        border-top: 1px solid var(--c--contextuals--border--surface--primary);
-      `}
+      $padding={bare ? undefined : { horizontal: 'xs', top: 'xs' }}
+      $css={
+        bare
+          ? undefined
+          : css`
+              border-top: 1px solid
+                var(--c--contextuals--border--surface--primary);
+            `
+      }
     >
       <Switch
         labelSide="right"
@@ -103,6 +108,35 @@ export const ForMeList = ({
 
   return (
     <>
+      {/* The whole list can be long: its settings come first */}
+      {full && (
+        <Box
+          $direction="row"
+          $align="center"
+          $justify="space-between"
+          $gap="sm"
+          $padding={{ horizontal: 'xs', bottom: 'xs' }}
+          $css={css`
+            flex-wrap: wrap;
+            border-bottom: 1px solid
+              var(--c--contextuals--border--surface--primary);
+          `}
+        >
+          {emailSwitch && <EmailSwitch bare />}
+          {unreadCount > 0 && (
+            <BoxButton
+              onClick={() => markAllRead.mutate()}
+              $padding={{ horizontal: 'xs', vertical: '4xs' }}
+            >
+              <Text $size="sm" $theme="brand">
+                {t('Mark all as read', {
+                  description: 'Button reading every notification',
+                })}
+              </Text>
+            </BoxButton>
+          )}
+        </Box>
+      )}
       {empty && (
         <Empty>
           {t('No mentions or assignments yet.', {
@@ -110,20 +144,6 @@ export const ForMeList = ({
               'Empty card of mentions, notifications and assignments',
           })}
         </Empty>
-      )}
-      {full && unreadCount > 0 && (
-        <Box $direction="row" $justify="flex-end">
-          <BoxButton
-            onClick={() => markAllRead.mutate()}
-            $padding={{ horizontal: 'xs', vertical: '4xs' }}
-          >
-            <Text $size="sm" $theme="brand">
-              {t('Mark all as read', {
-                description: 'Button reading every notification',
-              })}
-            </Text>
-          </BoxButton>
-        </Box>
       )}
       {shown.map(({ key, notification, row }) => {
         if (row) {
@@ -198,7 +218,7 @@ export const ForMeList = ({
         );
       })}
       {!full && !empty && <SeeAll href={NOTIFICATIONS_HREF} onClick={onOpen} />}
-      {emailSwitch && <EmailSwitch />}
+      {!full && emailSwitch && <EmailSwitch />}
     </>
   );
 };

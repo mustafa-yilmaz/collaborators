@@ -78,18 +78,27 @@ describe('CollaborationsList', () => {
     expect(screen.queryByRole('button', { name: 'New page' })).toBeNull();
   });
 
-  test('as a summary: the first of each group, nothing to create', async () => {
+  test('as a summary: one plain list, the latest first, nothing to create', async () => {
     const page = (n: number) => ({
       id: `p-${n}`,
       title: `Page ${n}`,
       kind: 'page',
-      updated_at: '2026-10-20T08:00:00Z',
+      updated_at: `2026-10-0${n}T08:00:00Z`,
       is_owned: true,
       is_favorite: false,
     });
     fetchMock.get(`${API}/collaborations/?view=owned`, {
       view: 'owned',
-      workspaces: [],
+      workspaces: [
+        {
+          id: 'w-1',
+          name: 'Acme',
+          slug: 'acme',
+          role: 'owner',
+          updated_at: '2026-10-04T12:00:00Z',
+          is_favorite: false,
+        },
+      ],
       spaces: [],
       pages: [1, 2, 3, 4, 5].map(page),
     });
@@ -98,10 +107,14 @@ describe('CollaborationsList', () => {
       wrapper: AppWrapper,
     });
 
-    expect(await screen.findByText('Page 3')).toBeVisible();
-    expect(screen.queryByText('Page 4')).toBeNull();
-    // Empty groups are left out of a summary
-    expect(screen.queryByText('No workspace here yet.')).toBeNull();
+    expect(await screen.findByText('Page 5')).toBeVisible();
+    const titles = screen.getAllByRole('link').map((link) => link.textContent);
+    expect(titles[0]).toContain('Page 5');
+    expect(titles[1]).toContain('Acme');
+    expect(titles[2]).toContain('Page 4');
+    expect(screen.queryByText('Page 3')).toBeNull();
+    // No groups in a summary
+    expect(screen.queryByText('Workspaces')).toBeNull();
     expect(screen.queryByRole('button', { name: 'New page' })).toBeNull();
   });
 

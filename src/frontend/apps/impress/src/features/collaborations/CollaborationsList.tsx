@@ -23,6 +23,7 @@ import { useDate } from '@/hooks/useDate';
 
 import {
   CollaborationDocument,
+  CollaborationWorkspace,
   CollaborationsView,
   KEY_COLLABORATIONS,
   useCollaborations,
@@ -84,56 +85,38 @@ const Group = ({
   empty,
   children,
   count,
-  compact,
 }: {
   title: string;
   action?: ReactNode;
   empty: string;
   children: ReactNode;
   count: number;
-  /** In a card: a smaller heading, and nothing said when it is empty */
-  compact?: boolean;
-}) =>
-  compact && !count ? null : (
-    <Box $gap="2xs" as="section" $css="min-width: 0;">
-      <Box
-        $direction="row"
-        $align="center"
-        $justify="space-between"
-        $gap="sm"
-        $css={
-          compact
-            ? css`
-                /* In a card: over the titles of its rows */
-                padding-inline-start: ${TEXT_INDENT};
-              `
-            : css`
-                border-bottom: 1px solid
-                  var(--c--contextuals--border--surface--primary);
-                padding-bottom: var(--c--globals--spacings--3xs);
-              `
-        }
-      >
-        <Text
-          as={compact ? 'h3' : 'h2'}
-          $size={compact ? 'sm' : 'md'}
-          $weight="700"
-          $variation={compact ? 'secondary' : undefined}
-          $margin="none"
-        >
-          {title}
-        </Text>
-        {action}
-      </Box>
-      {count ? (
-        children
-      ) : (
-        <Text $size="sm" $variation="secondary" $padding={{ horizontal: 'xs' }}>
-          {empty}
-        </Text>
-      )}
+}) => (
+  <Box $gap="2xs" as="section" $css="min-width: 0;">
+    <Box
+      $direction="row"
+      $align="center"
+      $justify="space-between"
+      $gap="sm"
+      $css={css`
+        border-bottom: 1px solid var(--c--contextuals--border--surface--primary);
+        padding-bottom: var(--c--globals--spacings--3xs);
+      `}
+    >
+      <Text as="h2" $size="md" $weight="700" $margin="none">
+        {title}
+      </Text>
+      {action}
     </Box>
-  );
+    {count ? (
+      children
+    ) : (
+      <Text $size="sm" $variation="secondary" $padding={{ horizontal: 'xs' }}>
+        {empty}
+      </Text>
+    )}
+  </Box>
+);
 
 const DocumentRow = ({ doc }: { doc: CollaborationDocument }) => {
   const { untitledDocument } = useTrans();
@@ -185,11 +168,11 @@ export const CollaborationsList = ({
 }: {
   view: CollaborationsView;
   /**
-   * On a dashboard card: at most this many of each group, without the
-   * buttons creating one.
+   * On a dashboard card: the latest this many, in one plain list (workspaces,
+   * spaces and pages together), without the buttons creating one.
    */
   summary?: number;
-  /** A summary across the dashboard: its groups side by side */
+  /** A summary across the dashboard: its rows in columns */
   wide?: boolean;
 }) => {
   const { t } = useTranslation();
@@ -203,16 +186,17 @@ export const CollaborationsList = ({
     onSuccess: (doc) => void router.push(`/docs/${doc.id}/`),
   });
   const canCreate = view === 'owned' && !summary;
-  const compact = !!summary;
 
   if (isLoading || !data) {
     return <Loading />;
   }
 
-  const workspaces = data.workspaces.slice(0, summary);
-  const spaces = data.spaces.slice(0, summary);
-  const pages = data.pages.slice(0, summary);
-  if (compact && !workspaces.length && !spaces.length && !pages.length) {
+  if (
+    summary &&
+    !data.workspaces.length &&
+    !data.spaces.length &&
+    !data.pages.length
+  ) {
     return (
       <Text
         $size="sm"
@@ -245,25 +229,82 @@ export const CollaborationsList = ({
         {label}
       </Button>
     ) : undefined;
+  const workspaceRow = (workspace: CollaborationWorkspace) => (
+    <Box key={workspace.id} $direction="row" $align="center" $gap="2xs">
+      <StyledLink
+        href="/"
+        $css={rowCss}
+        onClick={() => setCurrentWorkspaceId(workspace.id)}
+      >
+        <Icon
+          iconName="workspaces"
+          $size={CARD_ICON_SIZE}
+          $variation="secondary"
+        />
+        <Box $css="min-width: 0;">
+          <Text $size="sm" $weight="500" $ellipsis>
+            {workspace.name}
+          </Text>
+          <Text $size="xs" $variation="secondary">
+            {[
+              workspace.role && roles[workspace.role],
+              relativeDate(workspace.updated_at),
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </Text>
+        </Box>
+      </StyledLink>
+      <StarButton
+        starred={workspace.is_favorite}
+        onToggle={() =>
+          starWorkspace.mutate({
+            id: workspace.id,
+            starred: !workspace.is_favorite,
+          })
+        }
+      />
+    </Box>
+  );
+
+  // A summary is one plain list, the latest first, without its groups
+  if (summary) {
+    const items = [
+      ...data.workspaces.map((workspace) => ({
+        date: workspace.updated_at,
+        node: workspaceRow(workspace),
+      })),
+      ...[...data.spaces, ...data.pages].map((doc) => ({
+        date: doc.updated_at,
+        node: <DocumentRow key={doc.id} doc={doc} />,
+      })),
+    ]
+      .sort((first, second) => second.date.localeCompare(first.date))
+      .slice(0, summary);
+    return (
+      <Box
+        $gap="2xs"
+        data-testid={`collaborations-${view}`}
+        $css={
+          wide
+            ? css`
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+                column-gap: var(--c--globals--spacings--md);
+              `
+            : undefined
+        }
+      >
+        {items.map((item) => item.node)}
+      </Box>
+    );
+  }
 
   return (
-    <Box
-      $gap="md"
-      data-testid={`collaborations-${view}`}
-      $css={
-        wide
-          ? css`
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-              align-items: start;
-            `
-          : undefined
-      }
-    >
+    <Box $gap="md" data-testid={`collaborations-${view}`}>
       <Group
         title={t('Workspaces', { description: 'Group of My collaborations' })}
-        count={workspaces.length}
-        compact={compact}
+        count={data.workspaces.length}
         empty={t('No workspace here yet.', {
           description: 'Empty group of My collaborations',
         })}
@@ -272,51 +313,14 @@ export const CollaborationsList = ({
           () => setCreating('workspace'),
         )}
       >
-        {workspaces.map((workspace) => (
-          <Box key={workspace.id} $direction="row" $align="center" $gap="2xs">
-            <StyledLink
-              href="/"
-              $css={rowCss}
-              onClick={() => setCurrentWorkspaceId(workspace.id)}
-            >
-              <Icon
-                iconName="workspaces"
-                $size={CARD_ICON_SIZE}
-                $variation="secondary"
-              />
-              <Box $css="min-width: 0;">
-                <Text $size="sm" $weight="500" $ellipsis>
-                  {workspace.name}
-                </Text>
-                <Text $size="xs" $variation="secondary">
-                  {[
-                    workspace.role && roles[workspace.role],
-                    relativeDate(workspace.updated_at),
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </Text>
-              </Box>
-            </StyledLink>
-            <StarButton
-              starred={workspace.is_favorite}
-              onToggle={() =>
-                starWorkspace.mutate({
-                  id: workspace.id,
-                  starred: !workspace.is_favorite,
-                })
-              }
-            />
-          </Box>
-        ))}
+        {data.workspaces.map(workspaceRow)}
       </Group>
 
       <Group
         title={t('Spaces outside workspaces', {
           description: 'Group of My collaborations',
         })}
-        count={spaces.length}
-        compact={compact}
+        count={data.spaces.length}
         empty={t('No space here yet.', {
           description: 'Empty group of My collaborations',
         })}
@@ -325,7 +329,7 @@ export const CollaborationsList = ({
           () => setCreating('space'),
         )}
       >
-        {spaces.map((doc) => (
+        {data.spaces.map((doc) => (
           <DocumentRow key={doc.id} doc={doc} />
         ))}
       </Group>
@@ -334,8 +338,7 @@ export const CollaborationsList = ({
         title={t('Pages outside workspaces and spaces', {
           description: 'Group of My collaborations',
         })}
-        count={pages.length}
-        compact={compact}
+        count={data.pages.length}
         empty={t('No page here yet.', {
           description: 'Empty group of My collaborations',
         })}
@@ -344,7 +347,7 @@ export const CollaborationsList = ({
           () => createPage({}),
         )}
       >
-        {pages.map((doc) => (
+        {data.pages.map((doc) => (
           <DocumentRow key={doc.id} doc={doc} />
         ))}
       </Group>

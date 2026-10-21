@@ -585,10 +585,7 @@ export const CARDS: CardDefinition[] = [
   {
     id: 'notifications',
     icon: 'notifications',
-    title: (t) =>
-      t('Mentions, notifications, assignments', {
-        description: 'Dashboard card',
-      }),
+    title: (t) => t('Notifications', { description: 'Dashboard card' }),
     defaultVisible: true,
     Body: ForMeBody,
   },

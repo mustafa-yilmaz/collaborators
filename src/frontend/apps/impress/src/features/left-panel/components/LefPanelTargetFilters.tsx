@@ -1,4 +1,6 @@
 import { usePathname, useSearchParams } from 'next/navigation';
+import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import { Box, Icon, StyledLink, Text } from '@/components';
@@ -12,7 +14,11 @@ import TrashIcon from '@/icons/trash.svg';
 import UserIcon from '@/icons/user.svg';
 import { useResponsiveStore } from '@/stores/useResponsiveStore';
 
+/** The directory of workspaces one may join */
+const DISCOVER_PATH = '/workspaces/discover/';
+
 export const LeftPanelTargetFilters = () => {
+  const { t } = useTranslation();
   const { transFilter } = useTrans();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -24,7 +30,12 @@ export const LeftPanelTargetFilters = () => {
   const target = searchParams.get('target') as DocDefaultFilter | null;
 
   // "My collaborations": what one is involved in, then the trash
-  const defaultQueries = [
+  const defaultQueries: {
+    icon: ReactNode;
+    label: string;
+    targetQuery?: DocDefaultFilter;
+    href?: string;
+  }[] = [
     {
       icon: (
         <Icon
@@ -59,6 +70,21 @@ export const LeftPanelTargetFilters = () => {
       ),
       label: transFilter(DocDefaultFilter.LABELS),
       targetQuery: DocDefaultFilter.LABELS,
+    },
+    // Finding workspaces to join: the "Discover workspaces" screen
+    {
+      icon: (
+        <Icon
+          iconName="search"
+          $size="20px"
+          $padding="4xs"
+          $variation="tertiary"
+        />
+      ),
+      label: t('Search', {
+        description: 'Left panel entry opening the directory of workspaces',
+      }),
+      href: DISCOVER_PATH,
     },
     {
       icon: (
@@ -126,8 +152,12 @@ export const LeftPanelTargetFilters = () => {
       className="--docs--left-panel-target-filters"
     >
       {defaultQueries.map((query) => {
-        const isActive = target === query.targetQuery;
-        const href = buildHref(query.targetQuery);
+        const isActive = query.href
+          ? pathname?.startsWith(query.href.replace(/\/$/, ''))
+          : target === query.targetQuery;
+        const href =
+          query.href ??
+          buildHref(query.targetQuery ?? DocDefaultFilter.ALL_DOCS);
 
         return (
           <StyledLink

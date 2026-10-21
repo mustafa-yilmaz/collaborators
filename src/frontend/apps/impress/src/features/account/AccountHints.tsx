@@ -234,31 +234,52 @@ export const AccountHints = () => {
             />
           )}
         </Text>
-        <Text $display="block" $size="sm">
-          {returning ? (
-            <Trans
-              i18nKey="You're signed in to <brand/> with the email address <strong>{{email}}</strong>. If you have another <brand/> account under another email, it is a separate one: sign out and sign in with your usual account instead."
-              values={{ email: user?.email ?? '' }}
-              tOptions={{ description: 'Welcome note at a later visit' }}
-              components={{ brand: <Brand />, strong: <strong /> }}
-            />
-          ) : (
-            <Trans
-              i18nKey="A new account was created for {{email}}. If you already have a <brand/> account under another email, this is a separate one: sign out and sign in with your usual account instead."
-              values={{ email: user?.email ?? '' }}
-              tOptions={{ description: 'Welcome note of a new account' }}
-              components={{ brand: <Brand /> }}
-            />
-          )}
-        </Text>
-        {providers.length > 1 && (
-          <Text $size="sm">
-            {t(
-              'To sign in here with your other Google, Microsoft or LinkedIn accounts too, connect them on the sign-in methods page.',
-              { description: 'Welcome note of a new account' },
+        {/* Three rows, a blank line between each */}
+        <Box
+          $css={css`
+            row-gap: 1.25em;
+            row-gap: 1lh;
+          `}
+        >
+          <Text $display="block" $size="sm">
+            {returning ? (
+              <Trans
+                i18nKey="You're signed in to <brand/> with the email address <strong>{{email}}</strong>."
+                values={{ email: user?.email ?? '' }}
+                tOptions={{ description: 'Welcome note at a later visit' }}
+                components={{ brand: <Brand />, strong: <strong /> }}
+              />
+            ) : (
+              t('A new account was created for {{email}}.', {
+                description: 'Welcome note of a new account',
+                email: user?.email ?? '',
+              })
             )}
           </Text>
-        )}
+          <Text $display="block" $size="sm">
+            {returning ? (
+              <Trans
+                i18nKey="If you have another <brand/> account under another email, it is a separate one: sign out and sign in with your usual account instead."
+                tOptions={{ description: 'Welcome note at a later visit' }}
+                components={{ brand: <Brand /> }}
+              />
+            ) : (
+              <Trans
+                i18nKey="If you already have a <brand/> account under another email, this is a separate one: sign out and sign in with your usual account instead."
+                tOptions={{ description: 'Welcome note of a new account' }}
+                components={{ brand: <Brand /> }}
+              />
+            )}
+          </Text>
+          {providers.length > 1 && (
+            <Text $display="block" $size="sm">
+              {t(
+                'To sign in here with your other Google, Microsoft or LinkedIn accounts too, connect them on the sign-in methods page.',
+                { description: 'Welcome note of a new account' },
+              )}
+            </Text>
+          )}
+        </Box>
       </HintCard>
     );
   }

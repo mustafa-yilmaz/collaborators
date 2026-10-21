@@ -8,6 +8,7 @@ import { DocDefaultFilter, useTrans } from '@/docs/doc-management';
 import { CollaborationsScreen } from '@/features/collaborations/CollaborationsScreen';
 import { Dashboard } from '@/features/dashboard/Dashboard';
 import { HeaderFloatingBar } from '@/features/header/components/HeaderFloatingBar';
+import { useSidebarSide } from '@/features/left-panel';
 import { MainLayout } from '@/layouts';
 import { useResponsiveStore } from '@/stores/useResponsiveStore';
 import { NextPageWithLayout } from '@/types/next';
@@ -55,13 +56,16 @@ const Page: NextPageWithLayout = () => {
 
 const DocsPageLayout = ({ children }: PropsWithChildren) => {
   const { isDesktop } = useResponsiveStore();
+  // Collaborators: the tint goes to the corner away from the left panel,
+  // wherever it stands
+  const { isRight } = useSidebarSide();
 
   return (
     <MainLayout
       propsContent={{
         $background: !isDesktop
           ? 'var(--c--contextuals--background--surface--primary)'
-          : 'linear-gradient(53deg, var(--c--contextuals--background--surface--primary) 39.96%, var(--c--contextuals--background--semantic--brand--tertiary) 125.64%)',
+          : `linear-gradient(${isRight ? '-53deg' : '53deg'}, var(--c--contextuals--background--surface--primary) 39.96%, var(--c--contextuals--background--semantic--brand--tertiary) 125.64%)`,
       }}
     >
       {children}

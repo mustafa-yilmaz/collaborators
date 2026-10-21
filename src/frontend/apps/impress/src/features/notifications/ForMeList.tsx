@@ -34,12 +34,13 @@ export const EmailSwitch = ({ bare = false }: { bare?: boolean }) => {
   const { query, update } = useNotificationPreferences(true);
   return (
     <Box
-      $padding={bare ? undefined : { horizontal: 'xs', top: 'xs' }}
+      // First, above the list (however long it is), a line under it
+      $padding={bare ? undefined : { horizontal: 'xs', bottom: 'xs' }}
       $css={
         bare
           ? undefined
           : css`
-              border-top: 1px solid
+              border-bottom: 1px solid
                 var(--c--contextuals--border--surface--primary);
             `
       }
@@ -137,6 +138,7 @@ export const ForMeList = ({
           )}
         </Box>
       )}
+      {!full && emailSwitch && <EmailSwitch />}
       {empty && (
         <Empty>
           {t('No mentions or assignments yet.', {
@@ -218,7 +220,6 @@ export const ForMeList = ({
         );
       })}
       {!full && !empty && <SeeAll href={NOTIFICATIONS_HREF} onClick={onOpen} />}
-      {!full && emailSwitch && <EmailSwitch />}
     </>
   );
 };

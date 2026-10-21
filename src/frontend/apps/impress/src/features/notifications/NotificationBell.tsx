@@ -122,6 +122,9 @@ export const NotificationBell = () => {
                 </Button>
               )}
             </Box>
+            <Box $padding={{ horizontal: '2xs', bottom: 'xs' }}>
+              <EmailSwitch />
+            </Box>
             {/* The summary of the dashboard's card, word for word */}
             <Box
               $gap="2xs"
@@ -129,9 +132,6 @@ export const NotificationBell = () => {
               $css="max-height: min(520px, 70vh); overflow-y: auto;"
             >
               <ForMeList onOpen={() => setOpened(false)} emailSwitch={false} />
-            </Box>
-            <Box $padding={{ horizontal: '2xs', bottom: 'xs' }}>
-              <EmailSwitch />
             </Box>
           </Box>
         </AnchoredPanel>

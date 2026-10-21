@@ -1,4 +1,3 @@
-import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -45,7 +44,6 @@ export const LeftPanelHeader = () => {
   );
 };
 export const LeftPanelHeaderActions = () => {
-  const router = useRouter();
   const { authenticated } = useAuth();
   const { togglePanel, closePanel } = useLeftPanelStore();
   const { t } = useTranslation();
@@ -75,21 +73,20 @@ export const LeftPanelHeaderActions = () => {
           $gap="2px"
           $margin={{ left: 'auto' }}
         >
-          {router.pathname !== '/' && (
-            <ButtonLink
-              href="/"
-              data-testid="home-button"
-              onClick={onHomeClick}
-              aria-label={t('Back to homepage', {
-                description:
-                  'Accessible name of the button going back to the home page',
-              })}
-              size="medium"
-              color="brand"
-              variant="tertiary"
-              icon={<HomeSVG aria-hidden="true" width={24} height={24} />}
-            />
-          )}
+          {/* Collaborators: on every screen, so the buttons keep their place */}
+          <ButtonLink
+            href="/"
+            data-testid="home-button"
+            onClick={onHomeClick}
+            aria-label={t('Back to homepage', {
+              description:
+                'Accessible name of the button going back to the home page',
+            })}
+            size="medium"
+            color="brand"
+            variant="tertiary"
+            icon={<HomeSVG aria-hidden="true" width={24} height={24} />}
+          />
           <NotificationBell />
           <DocSearchButtonModal />
         </Box>

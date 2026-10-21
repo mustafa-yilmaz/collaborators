@@ -233,6 +233,64 @@ const RecentBody = ({ wide }: BodyProps) => {
   );
 };
 
+/** One step of the hierarchy: an icon and its name. */
+const Level = ({ icon, name }: { icon: string; name: string }) => (
+  <Box
+    $direction="row"
+    $align="center"
+    $gap="4xs"
+    $padding={{ horizontal: 'xs', vertical: '4xs' }}
+    $css={css`
+      border-radius: 999px;
+      background: var(
+        --c--contextuals--background--semantic--contextual--primary
+      );
+    `}
+  >
+    <Icon iconName={icon} $size="18px" $variation="secondary" />
+    <Text $size="sm" $weight="600">
+      {name}
+    </Text>
+  </Box>
+);
+
+/**
+ * A lean reminder of how things fit together: workspaces hold spaces,
+ * spaces hold pages; pages can also sit directly in a workspace, or alone.
+ */
+const HierarchyBody = () => {
+  const { t } = useTranslation();
+  const arrow = (
+    <Icon iconName="arrow_forward" $size="16px" $variation="tertiary" />
+  );
+  return (
+    <Box $gap="xs" $padding={{ horizontal: 'xs' }} data-testid="hierarchy">
+      <Box $direction="row" $align="center" $gap="2xs" $css="flex-wrap: wrap;">
+        <Level
+          icon="workspaces"
+          name={t('Workspace', { description: 'Level of the hierarchy' })}
+        />
+        {arrow}
+        <Level
+          icon="folder"
+          name={t('Space', { description: 'Level of the hierarchy' })}
+        />
+        {arrow}
+        <Level
+          icon="description"
+          name={t('Page', { description: 'Level of the hierarchy' })}
+        />
+      </Box>
+      <Text $size="sm" $variation="secondary">
+        {t(
+          'A workspace holds spaces, and a space holds pages. A page can also sit directly in a workspace, or stay on its own.',
+          { description: 'Explanation of the hierarchy' },
+        )}
+      </Text>
+    </Box>
+  );
+};
+
 /** How many entries the "for me" card shows. */
 const FOR_ME_SIZE = 8;
 
@@ -522,7 +580,7 @@ export const CARDS: CardDefinition[] = [
     id: 'notifications',
     icon: 'notifications',
     title: (t) =>
-      t('Mentions, notifications and assignments for me', {
+      t('Mentions, notifications, assignments', {
         description: 'Dashboard card',
       }),
     defaultVisible: true,
@@ -542,6 +600,14 @@ export const CARDS: CardDefinition[] = [
     defaultVisible: true,
     defaultWide: true,
     Body: RecentBody,
+  },
+  // A reminder of how workspaces, spaces and pages fit together
+  {
+    id: 'hierarchy',
+    icon: 'account_tree',
+    title: (t) => t('How it fits together', { description: 'Dashboard card' }),
+    defaultVisible: true,
+    Body: HierarchyBody,
   },
   {
     id: 'favorites',

@@ -52,7 +52,8 @@ export const HeaderLogoLink = ({ headingLevel }: HeaderLogoLinkProps) => {
         <Title
           as={headingLevel ?? 'span'}
           className={!icon?.src || icon.withTitle ? undefined : 'sr-only'}
-          $size="1.7rem"
+          // In proportion with the sidebar's own headings
+          $size="1.35rem"
           $weight="bold"
         />
       </Box>

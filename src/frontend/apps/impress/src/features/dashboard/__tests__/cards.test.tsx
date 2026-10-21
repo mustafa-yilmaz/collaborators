@@ -11,7 +11,7 @@ describe('dashboard layout', () => {
   it('is lean by default: mentions and assignments beside labels, recent pages across', () => {
     expect(
       DEFAULT_LAYOUT.filter((card) => !card.hidden).map((card) => card.id),
-    ).toEqual(['notifications', 'labels', 'recent']);
+    ).toEqual(['notifications', 'labels', 'recent', 'hierarchy']);
     expect(
       DEFAULT_LAYOUT.filter((card) => card.wide).map((card) => card.id),
     ).toEqual(['recent']);

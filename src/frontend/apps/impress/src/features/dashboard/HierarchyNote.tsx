@@ -96,17 +96,30 @@ export const HierarchyNote = () => {
           name={t('Page', { description: 'Level of the hierarchy' })}
         />
       </Box>
-      <Text $size="sm" $variation="secondary" $maxWidth="560px">
-        {t(
-          'A workspace holds spaces, and a space holds pages. A page can also sit directly in a workspace and/or space, or stay on its own.',
-          { description: 'Explanation of the hierarchy' },
-        )}{' '}
-        <StyledLink href={GUIDE_PATH} $css="display: inline;">
-          <Text as="span" $size="sm" $theme="brand">
-            {t('Learn more', { description: 'Link to the guide' })}
-          </Text>
-        </StyledLink>
-      </Text>
+      {/* One idea per row */}
+      <Box $gap="4xs" $maxWidth="600px">
+        <Text $size="sm" $variation="secondary">
+          {t('A workspace holds spaces, and a space holds pages.', {
+            description: 'Explanation of the hierarchy, first row',
+          })}
+        </Text>
+        <Text $size="sm" $variation="secondary">
+          {t(
+            'A page can also sit directly in a workspace and/or space, or stay on its own.',
+            { description: 'Explanation of the hierarchy, second row' },
+          )}
+        </Text>
+        <Text $size="sm" $variation="secondary">
+          {t('Similarly, a space can sit in a workspace, or stay on its own.', {
+            description: 'Explanation of the hierarchy, third row',
+          })}{' '}
+          <StyledLink href={GUIDE_PATH} $css="display: inline;">
+            <Text as="span" $size="sm" $theme="brand">
+              {t('Learn more', { description: 'Link to the guide' })}
+            </Text>
+          </StyledLink>
+        </Text>
+      </Box>
     </Box>
   );
 };

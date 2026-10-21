@@ -3,44 +3,26 @@ import {
   LegalPage,
   MailLink,
   PageLink,
-  Placeholder,
 } from '@/features/legal/LegalPage';
 import { NextPageWithLayout } from '@/types/next';
 
 /** /legal-notice/: who runs the site, and who hosts it. English only for now. */
 const Page: NextPageWithLayout = () => (
-  <LegalPage title="Legal notice" updated="20 October 2026">
+  <LegalPage title="Legal notice" updated="21 October 2026">
     <h2>Publisher</h2>
     <p>
       The website collaborators.community and its sub-domains are published by:
     </p>
     <ul>
-      <li>
-        <Placeholder>
-          name of the person or legal entity, and its legal form
-        </Placeholder>
-      </li>
-      <li>
-        Address: <Placeholder>postal address</Placeholder>
-      </li>
+      <li>The Collaborators founding team</li>
       <li>
         Email: <MailLink />
       </li>
-      <li>
-        Phone:{' '}
-        <Placeholder>
-          phone number, if the law of the operator&apos;s country requires one
-        </Placeholder>
-      </li>
-      <li>
-        Company registration and VAT number:{' '}
-        <Placeholder>register, number and VAT number, if any</Placeholder>
-      </li>
-      <li>
-        Person responsible for the content:{' '}
-        <Placeholder>name of the director of publication</Placeholder>
-      </li>
     </ul>
+    <p>
+      For any question about the publisher, its address or the person
+      responsible for the content, write to <MailLink />.
+    </p>
 
     <h2>Hosting</h2>
     <p>The website is hosted by:</p>

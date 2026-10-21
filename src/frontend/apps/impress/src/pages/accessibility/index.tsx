@@ -1,9 +1,9 @@
-import { LegalPage, MailLink, Placeholder } from '@/features/legal/LegalPage';
+import { LegalPage, MailLink } from '@/features/legal/LegalPage';
 import { NextPageWithLayout } from '@/types/next';
 
 /** /accessibility/: the accessibility statement. English only for now. */
 const Page: NextPageWithLayout = () => (
-  <LegalPage title="Accessibility statement" updated="20 October 2026">
+  <LegalPage title="Accessibility statement" updated="21 October 2026">
     <p>
       We want Collaborators to be usable by everyone, including people who use a
       screen reader, a keyboard only, magnification or other assistive
@@ -34,12 +34,8 @@ const Page: NextPageWithLayout = () => (
 
     <h2>Enforcement</h2>
     <p>
-      If you are not satisfied with our answer, you can contact{' '}
-      <Placeholder>
-        the authority in charge of accessibility complaints in the
-        operator&apos;s country, if any
-      </Placeholder>
-      .
+      If you are not satisfied with our answer, you can contact the authority in
+      charge of accessibility complaints where you live, if there is one.
     </p>
 
     <h2>Preparation of this statement</h2>

@@ -3,7 +3,6 @@ import {
   LegalPage,
   MailLink,
   PageLink,
-  Placeholder,
 } from '@/features/legal/LegalPage';
 import { NextPageWithLayout } from '@/types/next';
 
@@ -15,7 +14,7 @@ import { NextPageWithLayout } from '@/types/next';
 const Page: NextPageWithLayout = () => (
   <LegalPage
     title="Privacy policy: personal data and cookies"
-    updated="20 October 2026"
+    updated="21 October 2026"
   >
     <p>
       Collaborators (collaborators.community) is a platform where people write
@@ -27,11 +26,8 @@ const Page: NextPageWithLayout = () => (
 
     <h2>Who is responsible</h2>
     <p>
-      The data controller is{' '}
-      <Placeholder>
-        name of the person or legal entity operating Collaborators
-      </Placeholder>
-      , <Placeholder>postal address</Placeholder>. See also the{' '}
+      The data controller is the Collaborators founding team, which you can
+      reach at <MailLink />. See also the{' '}
       <PageLink href={LEGAL_PAGES.legalNotice}>legal notice</PageLink>.
     </p>
     <p>
@@ -249,11 +245,7 @@ const Page: NextPageWithLayout = () => (
     </p>
     <p>
       You may also complain to a data protection authority, in particular the
-      one where you live, or{' '}
-      <Placeholder>
-        the data protection authority of the operator&apos;s country
-      </Placeholder>
-      .
+      one where you live or work.
     </p>
 
     <h2>Security</h2>

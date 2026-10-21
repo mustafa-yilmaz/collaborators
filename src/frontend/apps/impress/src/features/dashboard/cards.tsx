@@ -487,6 +487,14 @@ export const CARDS: CardDefinition[] = [
     Body: AssignedBody,
   },
   {
+    id: 'labels',
+    icon: 'sell',
+    title: (t) => t('Labels', { description: 'Dashboard card' }),
+    defaultVisible: true,
+    defaultWide: true,
+    Body: LabelsBody,
+  },
+  {
     id: 'recent',
     icon: 'schedule',
     title: (t) => t('Recent pages', { description: 'Dashboard card' }),
@@ -545,14 +553,6 @@ export const CARDS: CardDefinition[] = [
     },
   },
   {
-    id: 'labels',
-    icon: 'sell',
-    title: (t) => t('Labels', { description: 'Dashboard card' }),
-    defaultVisible: true,
-    defaultWide: true,
-    Body: LabelsBody,
-  },
-  {
     id: 'pages',
     icon: 'description',
     title: (t) => t('Independent pages', { description: 'Dashboard card' }),
@@ -581,12 +581,27 @@ export const DEFAULT_LAYOUT = CARDS.map((card) => ({
 
 /**
  * The saved layout, completed with the cards added since it was saved: those
- * shown on a fresh dashboard appear (at the end), the others stay hidden.
+ * shown on a fresh dashboard appear where they stand by default (before the
+ * card that follows them there), the others stay hidden. The order someone
+ * chose is kept.
  */
 export const mergeLayout = (saved: CardLayout[]) => {
   const known = saved.filter((card) => CARDS.some((def) => def.id === card.id));
-  const missing = DEFAULT_LAYOUT.filter(
-    (card) => !known.some((item) => item.id === card.id),
-  );
-  return known.length ? [...known, ...missing] : DEFAULT_LAYOUT;
+  if (!known.length) {
+    return DEFAULT_LAYOUT;
+  }
+  const merged = [...known];
+  DEFAULT_LAYOUT.forEach((card, index) => {
+    if (merged.some((item) => item.id === card.id)) {
+      return;
+    }
+    const next = DEFAULT_LAYOUT.slice(index + 1).find((later) =>
+      merged.some((item) => item.id === later.id),
+    );
+    const at = next
+      ? merged.findIndex((item) => item.id === next.id)
+      : merged.length;
+    merged.splice(at, 0, card);
+  });
+  return merged;
 };

@@ -8,10 +8,10 @@ vi.mock('@/features/notifications/NotificationBell', () => ({
 }));
 
 describe('dashboard layout', () => {
-  it('is lean by default: mentions and assigned, recent pages and labels across', () => {
+  it('is lean by default: mentions and assigned, labels and recent pages across', () => {
     expect(
       DEFAULT_LAYOUT.filter((card) => !card.hidden).map((card) => card.id),
-    ).toEqual(['notifications', 'assigned', 'recent', 'labels']);
+    ).toEqual(['notifications', 'assigned', 'labels', 'recent']);
     for (const id of ['recent', 'labels']) {
       expect(DEFAULT_LAYOUT.find((card) => card.id === id)?.wide).toBe(true);
     }
@@ -29,7 +29,9 @@ describe('dashboard layout', () => {
       { id: 'recent', hidden: true, collapsed: false },
     ]);
 
-    expect(merged.slice(0, 2)).toEqual([
+    expect(
+      merged.filter((card) => ['assigned', 'recent'].includes(card.id)),
+    ).toEqual([
       { id: 'assigned', hidden: false, collapsed: true },
       { id: 'recent', hidden: true, collapsed: false },
     ]);
@@ -42,10 +44,27 @@ describe('dashboard layout', () => {
       { id: 'recent', hidden: false, collapsed: false },
     ]);
 
-    for (const card of merged.slice(1)) {
+    for (const card of merged.filter((item) => item.id !== 'recent')) {
       const definition = CARDS.find((item) => item.id === card.id);
       expect(card.hidden).toBe(!definition?.defaultVisible);
     }
+  });
+
+  it('puts a card added since at its default place, the chosen order kept', () => {
+    // Saved before the labels card existed, recent pages moved first
+    const merged = mergeLayout([
+      { id: 'recent', hidden: false, collapsed: false, wide: true },
+      { id: 'notifications', hidden: false, collapsed: false },
+      { id: 'assigned', hidden: false, collapsed: false },
+    ]);
+
+    expect(merged.slice(0, 4).map((card) => card.id)).toEqual([
+      'labels',
+      'recent',
+      'notifications',
+      'assigned',
+    ]);
+    expect(merged[0].hidden).toBe(false);
   });
 
   it('lays wide cards across, the others two by two', () => {

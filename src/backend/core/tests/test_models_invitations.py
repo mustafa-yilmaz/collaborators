@@ -144,7 +144,9 @@ def test_models_invitations_new_user_filter_expired_invitations():
     ).exists()
 
 
-@pytest.mark.parametrize("num_invitations, num_queries", [(0, 3), (1, 7), (20, 7)])
+# Collaborators: one more to look for invitations to workspaces, and one
+# marking the user invited when there are some
+@pytest.mark.parametrize("num_invitations, num_queries", [(0, 4), (1, 9), (20, 9)])
 def test_models_invitations_new_userd_user_creation_constant_num_queries(
     django_assert_num_queries, num_invitations, num_queries
 ):

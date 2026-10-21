@@ -57,9 +57,7 @@ def _loop_cell_texts(value, column_type, labels):
     if isinstance(value, pycrdt.Text):
         # "@Label" for people and groups, a linked page as its title
         yield LOOP_MENTION_RE.sub(
-            lambda match: (
-                f"@{match[1]}" if match[2] in ("user", "group") else match[1]
-            ),
+            lambda match: f"@{match[1]}" if match[2] in ("user", "group") else match[1],
             str(value),
         )
     elif column_type == "label" and value:

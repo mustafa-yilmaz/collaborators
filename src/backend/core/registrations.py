@@ -65,6 +65,9 @@ def check_sign_in(user, is_new_user):
         return
     if not is_new_user or not settings.COLLABORATORS_SIGNUP_APPROVAL:
         return
+    # Invited by email: the inviter vouches for them
+    if models.User.objects.filter(pk=user.pk, collaborator_invited=True).exists():
+        return
     user.registration_status = PENDING
     user.save(update_fields=["registration_status", "updated_at"])
     for admin in platform_admins():

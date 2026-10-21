@@ -11,9 +11,10 @@ from rest_framework.views import APIView
 from core import models
 from core.api import permissions
 from core.api.filters import remove_accents
+from core.api.profiles import Viewer
 from core.api.serializers import UserSerializer
 from core.choices import WORKSPACE_PRIVILEGED_ROLES
-from core.utils.users import users_sharing_documents_with
+from core.utils.users import findable_user_ids, users_sharing_documents_with
 
 # Everyone one works with, as a scrolling list; a safety bound only
 PEOPLE_LIMIT = 500
@@ -193,3 +194,77 @@ class TeamCardView(APIView):
             }
         )
         return drf.response.Response(card)
+
+
+class PeopleDirectoryView(APIView):
+    """
+    GET /api/v1.0/people/directory/?q=<text> — "My Collaborators": everyone
+    the requester may see, the people they share a workspace, space or page
+    with first (with the workspaces they share), then those who let everyone
+    find them. Each shows what their profile lets the requester see.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """The people, closest first."""
+        me = request.user
+        closeness = users_sharing_documents_with(me.id)
+        open_ids = set(findable_user_ids()) - set(closeness) - {me.id}
+        query = remove_accents((request.query_params.get("q") or "").strip()).lower()
+        people = [
+            person
+            for person in models.User.objects.filter(
+                id__in=[*closeness, *open_ids], is_active=True
+            )
+            if not query
+            or query in remove_accents(person.full_name or "").lower()
+            or query in (person.email or "").lower()
+        ]
+        known = sorted(
+            (person for person in people if person.id in closeness),
+            key=lambda person: closeness[person.id],
+            reverse=True,
+        )
+        others = sorted(
+            (person for person in people if person.id not in closeness),
+            key=lambda person: (person.full_name or person.email or "").lower(),
+        )
+        people = (known + others)[:PEOPLE_LIMIT]
+
+        ids = [person.id for person in people]
+        profiles = {
+            profile.user_id: profile
+            for profile in models.UserProfile.objects.filter(user_id__in=ids)
+        }
+        shared = {}
+        for user_id, name in (
+            models.WorkspaceAccess.objects.filter(
+                user_id__in=ids,
+                workspace__accesses__user=me,
+            )
+            .order_by("workspace__name")
+            .values_list("user_id", "workspace__name")
+        ):
+            shared.setdefault(user_id, []).append(name)
+
+        result = []
+        for person in people:
+            profile = profiles.get(person.id) or models.UserProfile(user=person)
+            relation = Viewer(person, me)
+            result.append(
+                {
+                    "id": str(person.id),
+                    "full_name": person.full_name or "",
+                    "email": person.email if relation.can_see(profile, "email") else "",
+                    "headline": profile.headline
+                    if relation.can_see(profile, "headline")
+                    else "",
+                    "organization": profile.organization
+                    if relation.can_see(profile, "organization")
+                    else "",
+                    "is_colleague": person.id in closeness,
+                    "workspaces": shared.get(person.id, []),
+                }
+            )
+        return drf.response.Response(result)

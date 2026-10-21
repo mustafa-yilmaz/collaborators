@@ -46,7 +46,9 @@ from rest_framework.views import APIView
 from treebeard.exceptions import InvalidMoveToDescendant
 
 from core import authentication, choices, enums, models, notifications
+from core.api import invitations
 from core.api.filters import remove_accents
+from core.api.people_privacy import check_can_find
 from core.services import mime_types
 from core.services.ai_services.blocknote import AIService
 from core.services.ai_services.legacy import get_legacy_ai_service
@@ -84,7 +86,7 @@ from core.utils.analytics import PosthogEventName, posthog_capture
 from core.utils.dicts import lowercase_keys
 from core.utils.s3 import get_s3_client
 from core.utils.treebeard import create_tree_node_with_retry
-from core.utils.users import users_sharing_documents_with
+from core.utils.users import findable_user_ids, users_sharing_documents_with
 from core.utils.yjs import extract_attachments_from_update
 
 from ..enums import FeatureFlag, SearchType
@@ -235,6 +237,21 @@ class UserViewSet(
         filter_data = filterset.form.cleaned_data
         query = remove_accents(filter_data["q"])
 
+        current_user = self.request.user
+        shared_map = users_sharing_documents_with(current_user.id)
+        privacy = settings.COLLABORATORS_PEOPLE_PRIVACY
+        findable = set(findable_user_ids()) if privacy else set()
+
+        # Collaborators: an email finds its owner only when one may see them
+        # (they share something, or let everyone find them); otherwise it is
+        # invited by email, without telling whether it has an account
+        if "@" in query and privacy:
+            return [
+                user
+                for user in queryset.filter(email__iexact=query)
+                if user.id in shared_map or user.id in findable
+            ][: settings.API_USERS_LIST_LIMIT]
+
         # For emails, match emails by Levenstein distance to prevent typing errors
         if "@" in query:
             return (
@@ -257,8 +274,8 @@ class UserViewSet(
         # and return the top N results.
         # For security results, users that match neither of these proximity criteria
         # are not returned at all, to prevent email enumeration.
-        current_user = self.request.user
-        shared_map = users_sharing_documents_with(current_user.id)
+        # Collaborators: only those one shares a workspace, space or page with,
+        # and those who let everyone find them (not the same email domain).
 
         user_email_domain = get_domain_from_email(current_user.email) or ""
 
@@ -274,15 +291,18 @@ class UserViewSet(
 
         # Keep only users that either share documents with the current user
         # or have an email with the same domain as the current user.
-        filtered_candidates = []
-        for u in candidates:
-            candidate_domain = get_domain_from_email(u.email) or ""
-            if shared_map.get(u.id) or (
-                user_email_domain and candidate_domain == user_email_domain
-            ):
-                filtered_candidates.append(u)
-
-        candidates = filtered_candidates
+        # Collaborators: or let everyone find them; not the same domain
+        candidates = [
+            u
+            for u in candidates
+            if shared_map.get(u.id)
+            or u.id in findable
+            or (
+                not privacy
+                and user_email_domain
+                and get_domain_from_email(u.email) == user_email_domain
+            )
+        ]
 
         # Build ordering key for each candidate
         def _sort_key(u):
@@ -2886,6 +2906,9 @@ class DocumentAccessViewSet(
                 "Only owners of a document can assign other users as owners."
             )
 
+        # Collaborators: only people one may see; the others by email
+        check_can_find(self.request.user, serializer.validated_data.get("user"))
+
         access = serializer.save(document_id=self.kwargs["resource_id"])
 
         posthog_capture(
@@ -3061,11 +3084,13 @@ class InvitationViewset(
             )
         invitation = serializer.save()
 
+        # Collaborators: the email leads to the page accepting the invitation
         invitation.document.send_invitation_email(
             invitation.email,
             invitation.role,
             self.request.user,
             self.request.user.language or settings.LANGUAGE_CODE,
+            link=invitations.invite_link(invitations.DOCUMENT, invitation),
         )
 
 

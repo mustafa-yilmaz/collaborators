@@ -281,6 +281,8 @@ SIDEBAR_ITEMS = (
     "owned",
     "shared",
     "starred",
+    # "My Collaborators": the people one may see
+    "people",
 )
 
 

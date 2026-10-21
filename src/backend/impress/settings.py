@@ -821,10 +821,15 @@ class Base(Configuration):
     COLLABORATORS_PLATFORM_ADMIN_EMAILS = values.ListValue(
         [], environ_name="COLLABORATORS_PLATFORM_ADMIN_EMAILS", environ_prefix=None
     )
-    # Collaborators join by signing in: no account is created from an email
-    # invitation to a document
+    # Invitations by email to workspaces, spaces and pages: their email leads
+    # to a page to sign up (with the sign-in providers) and accept them
     COLLABORATORS_EMAIL_INVITATIONS = values.BooleanValue(
-        False, environ_name="COLLABORATORS_EMAIL_INVITATIONS", environ_prefix=None
+        True, environ_name="COLLABORATORS_EMAIL_INVITATIONS", environ_prefix=None
+    )
+    # Only people sharing a workspace, space or page find, see and invite
+    # each other by name, unless one lets everyone find them (their profile)
+    COLLABORATORS_PEOPLE_PRIVACY = values.BooleanValue(
+        True, environ_name="COLLABORATORS_PEOPLE_PRIVACY", environ_prefix=None
     )
     # Wikis at <workspace>.<this domain>/<wiki>, e.g. acme.collaborators.community
     COLLABORATORS_WIKI_BASE_DOMAIN = values.Value(
@@ -1719,6 +1724,9 @@ class Test(Base):
     STATIC_ROOT = None
 
     CELERY_TASK_ALWAYS_EAGER = values.BooleanValue(True)
+
+    # Docs' own tests share with anyone: Collaborators' tests turn it on
+    COLLABORATORS_PEOPLE_PRIVACY = False
 
     STORAGES = {
         "default": {

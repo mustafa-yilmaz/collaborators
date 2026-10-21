@@ -8,6 +8,7 @@ GET /api/v1.0/profiles/<user id>/  — what the viewer may see (anyone)
 GET, PUT /api/v1.0/profiles/me/    — one's own profile and its settings
 """
 
+from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import URLValidator
 from django.db import transaction
@@ -23,6 +24,11 @@ from core.api import permissions
 from core.utils.users import users_sharing_documents_with
 
 AUDIENCES = [choice.value for choice in models.ProfileAudience]
+REACHES = [
+    models.ProfileAudience.COLLEAGUES,
+    models.ProfileAudience.PLATFORM,
+    models.ProfileAudience.PUBLIC,
+]
 TEXT_FIELDS = {
     "headline": 120,
     "organization": 120,
@@ -80,7 +86,7 @@ class Viewer:
         if self.is_self:
             return True
         audience = profile.audience(field)
-        level = audience["level"]
+        level = capped(audience["level"], profile.reach)
         if level == models.ProfileAudience.PUBLIC:
             return True
         if level == models.ProfileAudience.PLATFORM:
@@ -91,6 +97,28 @@ class Viewer:
             # the name can't be hidden from the people one works with
             field == "name" and self.is_colleague
         )
+
+
+# From the widest audience to the narrowest
+WIDTH = [
+    models.ProfileAudience.SELECTED,
+    models.ProfileAudience.COLLEAGUES,
+    models.ProfileAudience.PLATFORM,
+    models.ProfileAudience.PUBLIC,
+]
+
+
+def capped(level, reach):
+    """
+    A piece's audience, no wider than who may find the person: with "people
+    I work with", "everyone on Collaborators" means the people they work with.
+    """
+    if not settings.COLLABORATORS_PEOPLE_PRIVACY:
+        return level
+    reach = reach or models.ProfileAudience.COLLEAGUES
+    if WIDTH.index(level) > WIDTH.index(reach):
+        return reach
+    return level
 
 
 def visible_workspaces_of(owner, viewer):
@@ -167,6 +195,8 @@ class MyProfileView(APIView):
         profile = profile_of(user)
         return {
             **describe(user, user),
+            # who may find them, see their profile and invite them by name
+            "reach": profile.reach,
             "visibility": {
                 field: profile.audience(field) for field in models.PROFILE_FIELDS
             },
@@ -200,6 +230,11 @@ class MyProfileView(APIView):
         data = request.data
         errors = {}
         _apply_texts(profile, data, errors)
+        if "reach" in data:
+            if data["reach"] not in REACHES:
+                errors["reach"] = _("Unknown audience.")
+            else:
+                profile.reach = data["reach"]
         if "visibility" in data:
             _apply_visibility(profile, data["visibility"], user, errors)
         if errors:
@@ -233,7 +268,7 @@ def _apply_texts(profile, data, errors):
     profile.website = website
 
 
-def _apply_visibility(profile, settings, user, errors):
+def _apply_visibility(profile, wanted, user, errors):
     """Who sees each piece given; chosen workspaces must be one's own."""
     mine = {
         str(pk)
@@ -242,7 +277,7 @@ def _apply_visibility(profile, settings, user, errors):
         )
     }
     visibility = {}
-    for field, setting in (settings or {}).items():
+    for field, setting in (wanted or {}).items():
         if field not in models.PROFILE_FIELDS or not isinstance(setting, dict):
             continue
         if setting.get("level") not in AUDIENCES:

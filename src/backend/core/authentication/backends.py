@@ -2,6 +2,7 @@
 
 import logging
 import os
+import re
 
 from django.conf import settings
 from django.core.exceptions import SuspiciousOperation
@@ -195,10 +196,12 @@ class SessionAuthentication(BaseSessionAuthentication):
         if result is None:
             return None
         user = result[0]
-        if getattr(
-            user, "registration_status", registrations.APPROVED
-        ) != registrations.APPROVED and not request.path.endswith(
-            REGISTRATION_OPEN_PATHS
+        if (
+            getattr(user, "registration_status", registrations.APPROVED)
+            != registrations.APPROVED
+            and not request.path.endswith(REGISTRATION_OPEN_PATHS)
+            # accepting an invitation by email lets them in
+            and not INVITATION_ACCEPT_PATH.search(request.path)
         ):
             return None
         return result
@@ -206,3 +209,4 @@ class SessionAuthentication(BaseSessionAuthentication):
 
 # What a newcomer waiting for approval may still call
 REGISTRATION_OPEN_PATHS = ("/users/me/",)
+INVITATION_ACCEPT_PATH = re.compile(r"/invitations/[^/]+/accept/$")

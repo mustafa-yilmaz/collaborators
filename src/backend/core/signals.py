@@ -12,7 +12,10 @@ from django.dispatch import receiver
 from core import models
 from core.tasks.access import reset_service_connections_on_commit
 from core.tasks.search import trigger_batch_document_indexer
-from core.utils.users import get_users_sharing_documents_with_cache_key
+from core.utils.users import (
+    forget_all_people,
+    get_users_sharing_documents_with_cache_key,
+)
 
 
 def forget_people_around(document_id, user_id):
@@ -30,6 +33,7 @@ def forget_people_around(document_id, user_id):
             if other_id
         ]
     )
+    forget_all_people()
 
 
 @receiver(signals.post_save, sender=models.Document)
@@ -111,3 +115,4 @@ def membership_changed(sender, instance, **kwargs):  # pylint: disable=unused-ar
                 for member_id in [instance.user_id, *member_ids]
             ]
         )
+    forget_all_people()

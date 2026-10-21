@@ -10,6 +10,7 @@ from rest_framework.routers import DefaultRouter
 from core.api import (
     collaborations,
     dashboard,
+    invitations,
     labels,
     notifications,
     page_links,
@@ -177,6 +178,31 @@ urlpatterns = [
                     collaborations.WorkspaceFavoriteView.as_view(),
                 ),
                 path("people/", people.KnownPeopleView.as_view()),
+                path("people/directory/", people.PeopleDirectoryView.as_view()),
+                path("invitations/<str:token>/", invitations.InvitationView.as_view()),
+                path(
+                    "invitations/<str:token>/logo/",
+                    invitations.InvitationLogoView.as_view(),
+                ),
+                path(
+                    "invitations/<str:token>/accept/",
+                    invitations.AcceptInvitationView.as_view(),
+                ),
+                path(
+                    "workspaces/<uuid:workspace_id>/invitations/",
+                    invitations.WorkspaceInvitationsView.as_view(),
+                ),
+                path(
+                    "workspaces/<uuid:workspace_id>/invitations/<uuid:invitation_id>/",
+                    invitations.WorkspaceInvitationView.as_view(),
+                ),
+                path(
+                    "workspaces/<uuid:pk>/logo/",
+                    invitations.WorkspaceLogoView.as_view(),
+                ),
+                path(
+                    "documents/<uuid:pk>/logo/", invitations.DocumentLogoView.as_view()
+                ),
                 path("people/<uuid:user_id>/", people.PersonCardView.as_view()),
                 path("teams/<str:team>/", people.TeamCardView.as_view()),
                 path("join/<str:token>/", workspaces.JoinWorkspaceView.as_view()),

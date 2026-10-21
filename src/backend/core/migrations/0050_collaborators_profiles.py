@@ -8,31 +8,69 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0049_collaborators_labels'),
+        ("core", "0049_collaborators_labels"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='UserProfile',
+            name="UserProfile",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, help_text='primary key for the record as UUID', primary_key=True, serialize=False, verbose_name='id')),
-                ('created_at', models.DateTimeField(auto_now_add=True, help_text='date and time at which a record was created', verbose_name='created on')),
-                ('updated_at', models.DateTimeField(auto_now=True, help_text='date and time at which a record was last updated', verbose_name='updated on')),
-                ('headline', models.CharField(blank=True, default='', max_length=120)),
-                ('organization', models.CharField(blank=True, default='', max_length=120)),
-                ('location', models.CharField(blank=True, default='', max_length=120)),
-                ('bio', models.TextField(blank=True, default='', max_length=2000)),
-                ('website', models.URLField(blank=True, default='', max_length=300)),
-                ('visibility', models.JSONField(blank=True, default=dict)),
-                ('interests', models.ManyToManyField(blank=True, related_name='profiles', to='core.label')),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='profile', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        help_text="primary key for the record as UUID",
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="id",
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True,
+                        help_text="date and time at which a record was created",
+                        verbose_name="created on",
+                    ),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(
+                        auto_now=True,
+                        help_text="date and time at which a record was last updated",
+                        verbose_name="updated on",
+                    ),
+                ),
+                ("headline", models.CharField(blank=True, default="", max_length=120)),
+                (
+                    "organization",
+                    models.CharField(blank=True, default="", max_length=120),
+                ),
+                ("location", models.CharField(blank=True, default="", max_length=120)),
+                ("bio", models.TextField(blank=True, default="", max_length=2000)),
+                ("website", models.URLField(blank=True, default="", max_length=300)),
+                ("visibility", models.JSONField(blank=True, default=dict)),
+                (
+                    "interests",
+                    models.ManyToManyField(
+                        blank=True, related_name="profiles", to="core.label"
+                    ),
+                ),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="profile",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Profile',
-                'verbose_name_plural': 'Profiles',
-                'db_table': 'collaborators_user_profile',
+                "verbose_name": "Profile",
+                "verbose_name_plural": "Profiles",
+                "db_table": "collaborators_user_profile",
             },
         ),
     ]

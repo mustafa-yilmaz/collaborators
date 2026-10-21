@@ -279,6 +279,9 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
         choices=RegistrationStatusChoices.choices,
         default=RegistrationStatusChoices.APPROVED,
     )
+    # Collaborators: came in through an invitation by email (someone vouches
+    # for them: no approval of the registration needed)
+    collaborator_invited = models.BooleanField(default=False)
 
     objects = UserManager()
 
@@ -467,11 +470,19 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
                     sandbox_id,
                 )
 
+    def mark_invited(self):
+        """Came in through an invitation by email (see collaborator_invited)."""
+        User.objects.filter(pk=self.pk).update(collaborator_invited=True)
+        self.collaborator_invited = True
+
     def _convert_valid_invitations(self):
         """
         Convert valid invitations to document accesses.
         Expired invitations are ignored.
+
+        Collaborators: invitations to workspaces too.
         """
+        WorkspaceInvitation.convert_for(self)
         valid_invitations = Invitation.objects.filter(
             email__iexact=self.email,
             created_at__gte=(
@@ -491,6 +502,7 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
                 for invitation in valid_invitations
             ]
         )
+        self.mark_invited()
 
         # Set creator of documents if not yet set (e.g. documents created via server-to-server API)
         document_ids = [invitation.document_id for invitation in valid_invitations]
@@ -1671,8 +1683,12 @@ class Document(MP_Node, BaseModel):
             except smtplib.SMTPException as exception:
                 logger.error("invitation to %s was not sent: %s", emails, exception)
 
-    def send_invitation_email(self, email, role, sender, language=None):
-        """Method allowing a user to send an email invitation to another user for a document."""
+    def send_invitation_email(self, email, role, sender, language=None, link=None):
+        """
+        Method allowing a user to send an email invitation to another user for a document.
+
+        Collaborators: `link`, to the page accepting an invitation by email.
+        """
         language = language or get_language()
         role = RoleChoices(role).label
         sender_name = sender.full_name or sender.email
@@ -1684,6 +1700,11 @@ class Document(MP_Node, BaseModel):
 
         with override(language):
             context = {
+                **(
+                    {"link": link, "button_label": _("Accept the invitation")}
+                    if link
+                    else {}
+                ),
                 "title": _("{name} shared a page with you!").format(name=sender_name),
                 "message": _(
                     '{name} invited you with the role "{role}" on the following document:'
@@ -2479,18 +2500,9 @@ class Invitation(BaseModel):
     def __str__(self):
         return f"{self.email} invited to {self.document}"
 
-    def clean(self):
-        """Validate fields."""
-        super().clean()
-
-        # Check if an identity already exists for the provided email
-        if (
-            User.objects.filter(email__iexact=self.email).exists()
-            and not settings.OIDC_ALLOW_DUPLICATE_EMAILS
-        ):
-            raise ValidationError(
-                {"email": [_("This email is already associated to a registered user.")]}
-            )
+    # Collaborators: someone with an account may be invited by email too, when
+    # the inviter can't find them (they share nothing yet): the invitation
+    # waits for them to accept it from its email
 
     @property
     def is_expired(self):
@@ -3012,6 +3024,18 @@ class UserProfile(BaseModel):
     website = models.URLField(max_length=300, blank=True, default="")
     interests = models.ManyToManyField(Label, blank=True, related_name="profiles")
     visibility = models.JSONField(default=dict, blank=True)
+    # Who can find this collaborator (search, "My Collaborators") and invite
+    # them: the people they share a workspace, space or page with, or
+    # everyone. It also caps the audience of each piece of the profile.
+    reach = models.CharField(
+        max_length=10,
+        choices=[
+            (choice.value, choice.label)
+            for choice in ProfileAudience
+            if choice != ProfileAudience.SELECTED
+        ],
+        default=ProfileAudience.COLLEAGUES,
+    )
 
     class Meta:
         db_table = "collaborators_user_profile"
@@ -3385,3 +3409,109 @@ class PublicationLog(BaseModel):
 
     def __str__(self):
         return f"{self.action} {self.document_id!s}"
+
+
+class WorkspaceInvitation(BaseModel):
+    """
+    An invitation by email to a workspace, for someone without an account
+    (or whom the inviter can't find): its email links to a page to sign up
+    and accept it. Signing up with the same email accepts it too.
+    """
+
+    email = models.EmailField(_("email address"))
+    workspace = models.ForeignKey(
+        Workspace, on_delete=models.CASCADE, related_name="invitations"
+    )
+    role = models.CharField(
+        max_length=20,
+        choices=WorkspaceRoleChoices.choices,
+        default=WorkspaceRoleChoices.MEMBER,
+    )
+    issuer = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="workspace_invitations",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        db_table = "collaborators_workspace_invitation"
+        verbose_name = _("Workspace invitation")
+        verbose_name_plural = _("Workspace invitations")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["email", "workspace"],
+                name="workspace_invitation_email_unique",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.email} invited to {self.workspace}"
+
+    @property
+    def is_expired(self):
+        """Older than INVITATION_VALIDITY_DURATION."""
+        validity = timedelta(seconds=settings.INVITATION_VALIDITY_DURATION)
+        return timezone.now() > self.created_at + validity
+
+    @classmethod
+    def convert_for(cls, user):
+        """A newcomer's valid invitations to workspaces become memberships."""
+        valid = cls.objects.filter(
+            email__iexact=user.email,
+            created_at__gte=timezone.now()
+            - timedelta(seconds=settings.INVITATION_VALIDITY_DURATION),
+        )
+        if not valid.exists():
+            return
+        for invitation in valid.select_related("workspace"):
+            WorkspaceAccess.objects.get_or_create(
+                workspace=invitation.workspace,
+                user=user,
+                defaults={"role": invitation.role},
+            )
+        valid.delete()
+        user.mark_invited()
+
+
+class ItemLogo(BaseModel):
+    """
+    The image standing for a workspace, a space or a page (in invitations, on
+    the page to accept one, in its settings), kept small in the database.
+    """
+
+    MAX_BYTES = 512 * 1024
+    CONTENT_TYPES = ("image/png", "image/jpeg", "image/webp", "image/gif")
+
+    workspace = models.OneToOneField(
+        Workspace,
+        on_delete=models.CASCADE,
+        related_name="logo",
+        null=True,
+        blank=True,
+    )
+    document = models.OneToOneField(
+        Document,
+        on_delete=models.CASCADE,
+        related_name="logo",
+        null=True,
+        blank=True,
+    )
+    content_type = models.CharField(max_length=20)
+    data = models.BinaryField()
+
+    class Meta:
+        db_table = "collaborators_item_logo"
+        verbose_name = _("Logo")
+        verbose_name_plural = _("Logos")
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(workspace__isnull=False, document__isnull=True)
+                | models.Q(workspace__isnull=True, document__isnull=False),
+                name="item_logo_of_one_item",
+            )
+        ]
+
+    def __str__(self):
+        return f"Logo of {self.workspace or self.document}"

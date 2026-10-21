@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0052_collaborators_workspace_favorites'),
+        ("core", "0052_collaborators_workspace_favorites"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='collaborator_sidebar',
+            model_name="user",
+            name="collaborator_sidebar",
             field=models.JSONField(blank=True, default=list),
         ),
     ]

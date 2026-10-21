@@ -176,8 +176,9 @@ def test_join_link_lifecycle():
 # -- Email invitations
 
 
-def test_email_invitations_are_off():
-    """Documents are shared with people who have an account, not by email."""
+def test_email_invitations_can_be_turned_off(settings):
+    """COLLABORATORS_EMAIL_INVITATIONS: on by default, off on request."""
+    settings.COLLABORATORS_EMAIL_INVITATIONS = False
     owner = factories.UserFactory()
     document = factories.DocumentFactory(users=[(owner, "owner")])
 

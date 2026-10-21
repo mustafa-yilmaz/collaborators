@@ -574,9 +574,9 @@ def test_api_document_invitations_create_cannot_duplicate_invitation():
     }
 
 
-def test_api_document_invitations_create_cannot_invite_existing_users():
+def test_api_document_invitations_create_existing_users():
     """
-    It should not be possible to invite already existing users.
+    Collaborators: already existing users can be invited by email too.
     """
     user = factories.UserFactory()
     document = factories.DocumentFactory(users=[(user, "owner")])
@@ -597,15 +597,14 @@ def test_api_document_invitations_create_cannot_invite_existing_users():
         format="json",
     )
 
-    assert response.status_code == 400
-    assert response.json() == {
-        "email": ["This email is already associated to a registered user."]
-    }
+    # Collaborators: someone with an account may be invited by email too,
+    # when the inviter can't find them: they accept it from its email
+    assert response.status_code == 201
 
 
-def test_api_item_invitations_create_cannot_invite_existing_users_case_insensitive():
+def test_api_item_invitations_create_existing_users_case_insensitive():
     """
-    It should not be possible to invite already existing users, even with different email case.
+    Collaborators: already existing users can be invited by email too, whatever the case.
     """
     user = factories.UserFactory()
     document = factories.DocumentFactory(users=[(user, "owner")])
@@ -629,10 +628,9 @@ def test_api_item_invitations_create_cannot_invite_existing_users_case_insensiti
         format="json",
     )
 
-    assert response.status_code == 400
-    assert response.json() == {
-        "email": ["This email is already associated to a registered user."]
-    }
+    # Collaborators: someone with an account may be invited by email too,
+    # when the inviter can't find them: they accept it from its email
+    assert response.status_code == 201
 
 
 def test_api_document_invitations_create_lower_email():

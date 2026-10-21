@@ -19,6 +19,7 @@ from rest_framework.views import APIView
 
 from core import choices, joining, models
 from core.api import permissions
+from core.api.people_privacy import check_can_find
 from core.api.serializers import ListDocumentSerializer, UserSerializer
 from core.utils.treebeard import create_tree_node_with_retry
 
@@ -545,9 +546,13 @@ class WorkspaceAccessViewSet(WorkspaceNestedMixin, viewsets.ModelViewSet):
             )
 
     def perform_create(self, serializer):
-        """Administrators add existing collaborators."""
+        """
+        Administrators add existing collaborators, among those they may see;
+        the others are invited by email.
+        """
         self.check_workspace_admin()
         self._check_role_change(serializer.validated_data.get("role"))
+        check_can_find(self.request.user, serializer.validated_data.get("user"))
         serializer.save(workspace=self.workspace)
 
     def perform_update(self, serializer):

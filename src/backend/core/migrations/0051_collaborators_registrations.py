@@ -4,20 +4,40 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0050_collaborators_profiles'),
+        ("core", "0050_collaborators_profiles"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='registration_status',
-            field=models.CharField(choices=[('approved', 'Approved'), ('pending', 'Pending'), ('declined', 'Declined')], default='approved', max_length=10, verbose_name='registration status'),
+            model_name="user",
+            name="registration_status",
+            field=models.CharField(
+                choices=[
+                    ("approved", "Approved"),
+                    ("pending", "Pending"),
+                    ("declined", "Declined"),
+                ],
+                default="approved",
+                max_length=10,
+                verbose_name="registration status",
+            ),
         ),
         migrations.AlterField(
-            model_name='notification',
-            name='kind',
-            field=models.CharField(choices=[('mention', 'Mention'), ('comment_mention', 'Mention in a comment'), ('assignment', 'Assignment'), ('join_request', 'Request to join a workspace'), ('join_approved', 'Request to join approved'), ('signup', 'New registration'), ('signup_approved', 'Registration approved')], default='mention', max_length=20),
+            model_name="notification",
+            name="kind",
+            field=models.CharField(
+                choices=[
+                    ("mention", "Mention"),
+                    ("comment_mention", "Mention in a comment"),
+                    ("assignment", "Assignment"),
+                    ("join_request", "Request to join a workspace"),
+                    ("join_approved", "Request to join approved"),
+                    ("signup", "New registration"),
+                    ("signup_approved", "Registration approved"),
+                ],
+                default="mention",
+                max_length=20,
+            ),
         ),
     ]

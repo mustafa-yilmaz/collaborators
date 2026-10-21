@@ -10,7 +10,14 @@ import { Title } from '@/components/Title';
 export const MyCollaboratorsName = ({ size = '1em' }: { size?: string }) => {
   const { t } = useTranslation();
   return (
-    <Text as="span" $display="inline-flex" $align="baseline" $gap="0.3em">
+    <Text
+      as="span"
+      $display="inline-flex"
+      $direction="row"
+      $align="baseline"
+      $gap="0.3em"
+      $css="white-space: nowrap;"
+    >
       {t('My', {
         description: 'First word of "My Collaborators", before the logo',
       })}

@@ -67,13 +67,15 @@ export const Footer = () => {
   const { logo, legalLinks, externalLinks, credits, bottomInformation } =
     content || {};
   // Collaborators: the address under the logo, sized to be as wide as it
-  const logoRef = useRef<HTMLDivElement>(null);
-  const labelRef = useRef<HTMLElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
   const [labelSize, setLabelSize] = useState<number>();
   useLayoutEffect(() => {
+    const footer = footerRef.current;
+    const logoBox = footer?.querySelector('.--collaborators--footer-mark');
     const fit = () => {
-      const logoBox = logoRef.current;
-      const label = labelRef.current;
+      const label = footer?.querySelector<HTMLElement>(
+        '.--collaborators--footer-address',
+      );
       if (!logoBox || !label) {
         return;
       }
@@ -87,12 +89,12 @@ export const Footer = () => {
     fit();
     const observer =
       typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null;
-    if (logoRef.current) {
-      observer?.observe(logoRef.current);
+    if (logoBox) {
+      observer?.observe(logoBox);
     }
     void document.fonts?.ready.then(fit);
     return () => observer?.disconnect();
-  }, [logo?.link?.label, isMobile]);
+  }, [logo?.link?.label, isMobile, content]);
 
   if (!footerJson || (!legalLinks && !externalLinks && !bottomInformation)) {
     return null;
@@ -100,6 +102,7 @@ export const Footer = () => {
 
   return (
     <Box
+      ref={footerRef}
       $position="relative"
       as="footer"
       role="contentinfo"
@@ -123,7 +126,12 @@ export const Footer = () => {
           {/* On a phone, no logo nor link: the cover above shows them */}
           {!isMobile && (
             <Box className="--docs--footer-logo" $gap="2xs" $align="flex-start">
-              <Box ref={logoRef} $align="center" $gap="6rem" $direction="row">
+              <Box
+                className="--collaborators--footer-mark"
+                $align="center"
+                $gap="6rem"
+                $direction="row"
+              >
                 {logo && (
                   <Box
                     $align="center"
@@ -172,7 +180,7 @@ export const Footer = () => {
                 >
                   {/* Collaborators: as wide as the logo above, the arrow aside */}
                   <Text
-                    ref={labelRef}
+                    className="--collaborators--footer-address"
                     $size="sm"
                     $variation="secondary"
                     $css={css`

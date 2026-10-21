@@ -24,7 +24,13 @@ import { useResponsiveStore } from '@/stores';
 
 import { HierarchyNote } from './HierarchyNote';
 import { CardLayout, useDashboardLayout } from './api';
-import { CARDS, DEFAULT_LAYOUT, mergeLayout } from './cards';
+import {
+  CARDS,
+  CARD_ICON_GAP,
+  CARD_ICON_SIZE,
+  DEFAULT_LAYOUT,
+  mergeLayout,
+} from './cards';
 
 const IconButton = ({
   icon,
@@ -268,7 +274,12 @@ const DashboardCard = ({
         ${cardCss}
       `}
     >
-      <Box $direction="row" $align="center" $gap="xs" $position="relative">
+      <Box
+        $direction="row"
+        $align="center"
+        $gap={CARD_ICON_GAP}
+        $position="relative"
+      >
         <span
           ref={drag.setNodeRef}
           {...drag.listeners}
@@ -291,7 +302,11 @@ const DashboardCard = ({
         >
           <Icon iconName="drag_indicator" $size="16px" $variation="secondary" />
         </span>
-        <Icon iconName={definition.icon} $size="20px" $variation="secondary" />
+        <Icon
+          iconName={definition.icon}
+          $size={CARD_ICON_SIZE}
+          $variation="secondary"
+        />
         <Text as="h2" $size="md" $weight="700" $margin="none" $css="flex: 1;">
           {title}
         </Text>

@@ -47,10 +47,19 @@ export interface BodyProps {
   wide?: boolean;
 }
 
+/**
+ * The inner alignment of the dashboard's notes, for the cards: a column of
+ * 22px icons, then the text at the same gap. A card's body is pulled back by
+ * its rows' padding (xs); text without an icon starts under the title.
+ */
+export const CARD_ICON_SIZE = '22px';
+export const CARD_ICON_GAP = 'var(--c--globals--spacings--sm)';
+const TEXT_INDENT = `calc(var(--c--globals--spacings--xs) + ${CARD_ICON_SIZE} + ${CARD_ICON_GAP})`;
+
 const rowCss = css`
   display: flex;
   align-items: center;
-  gap: var(--c--globals--spacings--xs);
+  gap: ${CARD_ICON_GAP};
   padding: var(--c--globals--spacings--2xs) var(--c--globals--spacings--xs);
   border-radius: var(--c--globals--spacings--3xs);
   color: inherit;
@@ -77,7 +86,7 @@ const Row = ({
   onClick?: () => void;
 }) => (
   <StyledLink href={href} $css={rowCss} onClick={onClick}>
-    <Icon iconName={icon} $size="20px" $variation="secondary" />
+    <Icon iconName={icon} $size={CARD_ICON_SIZE} $variation="secondary" />
     <Box $flex={1} $css="min-width: 0;">
       <Text $size="sm" $weight="500" $ellipsis>
         {title}
@@ -92,7 +101,13 @@ const Row = ({
 );
 
 const Empty = ({ children }: { children: ReactNode }) => (
-  <Text $size="sm" $variation="secondary" $padding={{ horizontal: 'xs' }}>
+  <Text
+    $size="sm"
+    $variation="secondary"
+    $css={css`
+      padding-inline: ${TEXT_INDENT} var(--c--globals--spacings--xs);
+    `}
+  >
     {children}
   </Text>
 );
@@ -208,7 +223,7 @@ const RecentBody = ({ wide }: BodyProps) => {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
           gap: var(--c--globals--spacings--xs);
-          padding-inline: var(--c--globals--spacings--xs);
+          padding-inline: ${TEXT_INDENT} var(--c--globals--spacings--xs);
         `}
       >
         {data.map((doc) => (
@@ -528,8 +543,12 @@ export const LabelsOverview = ({ full = false }: { full?: boolean }) => {
         $direction="row"
         $align="baseline"
         $gap="xs"
-        $padding="xs"
-        $css="flex-wrap: wrap; row-gap: 4px;"
+        $css={css`
+          flex-wrap: wrap;
+          row-gap: 4px;
+          padding: var(--c--globals--spacings--xs);
+          padding-left: ${TEXT_INDENT};
+        `}
         data-testid="label-cloud"
       >
         {sorted.map((item) => {

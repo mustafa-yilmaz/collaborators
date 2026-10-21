@@ -33,7 +33,9 @@ export const hasUnconnectedProviders = (methods?: SignInMethods) => {
 };
 
 /** The name of the platform, as its logo, inside a sentence. */
-const Brand = () => <Title as="span" $size="0.95em" />;
+const Brand = () => (
+  <Title as="span" $size="0.95em" $css="vertical-align: bottom;" />
+);
 
 /** A bordered note; a warning only has its symbol in yellow. */
 export const HintCard = ({
@@ -109,7 +111,7 @@ export const ConnectAccountsText = ({
           description: 'Note that only one sign-in method is connected',
         })}
       </Text>
-      <Text $size="sm">
+      <Text $display="block" $size="sm">
         <Trans
           i18nKey="Signing in with another Google, Microsoft or LinkedIn account under a different email opens a separate <brand/> account."
           tOptions={{
@@ -219,7 +221,7 @@ export const AccountHints = () => {
           </>
         }
       >
-        <Text $weight="600">
+        <Text $display="block" $weight="600">
           {returning ? (
             t('Welcome back!', {
               description: 'Welcome note at a later visit',
@@ -232,7 +234,7 @@ export const AccountHints = () => {
             />
           )}
         </Text>
-        <Text $size="sm">
+        <Text $display="block" $size="sm">
           {returning ? (
             <Trans
               i18nKey="You're signed in to the <brand/> account of {{email}}. If you have another <brand/> account under another email, it is a separate one: sign out and sign in with your usual account instead."

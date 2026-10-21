@@ -1,7 +1,7 @@
 import { Button, Input } from '@gouvfr-lasuite/ui-components';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
@@ -15,6 +15,9 @@ import {
 } from '@/components';
 import { Title } from '@/components/Title';
 import { gotoLogin, useAuth } from '@/features/auth';
+import { LabelsOverview } from '@/features/labels/LabelsOverview';
+import { SearchResults } from '@/features/search/SearchResults';
+import { SEARCH_MIN_LENGTH, useSearch } from '@/features/search/api';
 import {
   DirectoryWorkspace,
   useAskToJoin,
@@ -138,6 +141,116 @@ const WorkspaceCard = ({ workspace }: { workspace: DirectoryWorkspace }) => {
  * Collaborators once signed in.
  */
 const Page: NextPageWithLayout = () => {
+  const { authenticated } = useAuth();
+  // Signed in, this is the left panel's Search screen
+  return authenticated ? <SearchScreen /> : <Directory />;
+};
+
+/** Results per kind on the Search screen */
+const SCREEN_SIZE = 25;
+
+/**
+ * Search (signed in): the one search over workspaces, spaces, pages and
+ * labels, what one is part of then what is open to them. Without a query:
+ * the workspaces one can ask to join, and the labels.
+ */
+const SearchScreen = () => {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const initial = typeof router.query.q === 'string' ? router.query.q : '';
+  const [query, setQuery] = useState(initial);
+  const [submitted, setSubmitted] = useState(initial);
+  useEffect(() => {
+    setQuery(initial);
+    setSubmitted(initial);
+  }, [initial]);
+  useEffect(() => {
+    const timer = setTimeout(() => setSubmitted(query.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+  const { data, isFetching } = useSearch(submitted, SCREEN_SIZE);
+  const ready = submitted.length >= SEARCH_MIN_LENGTH;
+  const { data: workspaces = [], isLoading } = useWorkspaceDirectory('');
+  const title = t('Search', { description: 'Heading of the Search screen' });
+
+  return (
+    <>
+      <Head>
+        <title>{`${title} - Collaborators`}</title>
+      </Head>
+      <Box
+        as="main"
+        $width="100%"
+        $maxWidth={SCREEN_MAX_WIDTH}
+        $margin={{ horizontal: 'auto' }}
+        $padding={{ horizontal: 'md', vertical: 'lg' }}
+        $gap="md"
+        $css="overflow-y: auto;"
+      >
+        <Text as="h1" $size="h4" $margin="none">
+          {title}
+        </Text>
+        <Input
+          fullWidth
+          label={title}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          icon={<Icon iconName="search" $size="20px" />}
+          rightIcon={
+            isFetching ? <Loading $height="18px" $width="18px" /> : undefined
+          }
+        />
+        {ready && data ? (
+          <SearchResults
+            result={data}
+            renderVisibleWorkspace={(found) => {
+              const workspace = workspaces.find((item) => item.id === found.id);
+              return workspace ? <WorkspaceCard workspace={workspace} /> : null;
+            }}
+          />
+        ) : (
+          <>
+            <Box $gap="sm" as="section">
+              <Text as="h2" $size="md" $weight="700" $margin="none">
+                {t('Workspaces you can ask to join', {
+                  description: 'Heading of the directory on the Search screen',
+                })}
+              </Text>
+              {isLoading ? (
+                <Loading />
+              ) : workspaces.filter((item) => !item.is_member).length ? (
+                <Box as="ul" $gap="sm" $margin="none" $padding="none">
+                  {workspaces
+                    .filter((item) => !item.is_member)
+                    .map((workspace) => (
+                      <WorkspaceCard key={workspace.id} workspace={workspace} />
+                    ))}
+                </Box>
+              ) : (
+                <Text $variation="secondary" $size="sm">
+                  {t('No workspace to discover here yet.', {
+                    description: 'Shown when the directory is empty',
+                  })}
+                </Text>
+              )}
+            </Box>
+            <Box $gap="sm" as="section">
+              <Text as="h2" $size="md" $weight="700" $margin="none">
+                {t('Labels', {
+                  description: 'Heading of the labels on the Search screen',
+                })}
+              </Text>
+              <LabelsOverview />
+            </Box>
+          </>
+        )}
+      </Box>
+    </>
+  );
+};
+
+/** Signed out: the public workspaces, to ask to join after signing in. */
+const Directory = () => {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const { authenticated } = useAuth();

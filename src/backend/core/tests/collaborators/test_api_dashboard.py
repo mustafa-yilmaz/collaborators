@@ -213,7 +213,6 @@ def test_api_sidebar_order_is_kept_per_collaborator():
         "starred",
         "recent",
         "notifications",
-        "labels",
         "explore",
         "owned",
         "shared",
@@ -230,5 +229,28 @@ def test_api_sidebar_order_takes_known_items_once():
     """The trash is not reorderable; nothing unknown nor twice."""
     me = factories.UserFactory()
     url = "/api/v1.0/dashboard/sidebar/"
-    for order in (["trashbin"], ["recent", "recent"], "recent"):
+    # Labels moved to the Search screen: no item of its own any more
+    for order in (["trashbin"], ["recent", "recent"], "recent", ["labels"]):
         assert client_for(me).put(url, order, format="json").status_code == 400
+
+
+def test_api_sidebar_side_is_left_until_one_moves_it():
+    """Each collaborator puts the panel on the side they like."""
+    me, other = factories.UserFactory.create_batch(2)
+    url = "/api/v1.0/dashboard/sidebar/side/"
+
+    assert client_for(me).get(url).json() == {"side": "left"}
+    response = client_for(me).put(url, {"side": "right"}, format="json")
+    assert response.status_code == 200
+
+    assert client_for(me).get(url).json() == {"side": "right"}
+    assert client_for(other).get(url).json() == {"side": "left"}
+
+
+def test_api_sidebar_side_takes_left_or_right():
+    """Nothing else."""
+    me = factories.UserFactory()
+    url = "/api/v1.0/dashboard/sidebar/side/"
+    for data in ({"side": "top"}, {}, ["right"]):
+        assert client_for(me).put(url, data, format="json").status_code == 400
+    assert client_for(me).get(url).json() == {"side": "left"}

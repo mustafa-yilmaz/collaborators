@@ -42,9 +42,7 @@ def fixture_world():
         workspace=beta, user=bob, role=WorkspaceRoleChoices.OWNER
     )
     models.WorkspaceAccess.objects.create(workspace=beta, user=ada)
-    factories.DocumentFactory(
-        kind="space", title="Ada space", users=[(ada, "owner")]
-    )
+    factories.DocumentFactory(kind="space", title="Ada space", users=[(ada, "owner")])
     own_page = factories.DocumentFactory(title="Ada page", users=[(ada, "owner")])
     factories.DocumentFactory(parent=own_page, title="Sub-page")
     bob_space = factories.DocumentFactory(

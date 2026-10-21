@@ -213,3 +213,8 @@ def test_api_mention_in_the_first_block():
     )
 
     assert response.status_code == 201
+
+
+def test_new_accounts_get_no_notification_emails_until_they_ask():
+    """Off by default: the in-app inbox only."""
+    assert models.User().collaborator_email_notifications is False

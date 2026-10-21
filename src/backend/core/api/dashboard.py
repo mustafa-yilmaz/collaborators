@@ -276,7 +276,7 @@ class DocumentAssignmentsView(APIView):
 SIDEBAR_ITEMS = (
     "recent",
     "notifications",
-    "labels",
+    # The Search screen (formerly "Explore")
     "explore",
     "owned",
     "shared",
@@ -308,3 +308,25 @@ class SidebarOrderView(APIView):
         request.user.collaborator_sidebar = order
         request.user.save(update_fields=["collaborator_sidebar", "updated_at"])
         return drf.response.Response(order)
+
+
+class SidebarSideView(APIView):
+    """
+    GET, PUT /api/v1.0/dashboard/sidebar/side/ — {"side": "left" | "right"}:
+    which side of the screen the left panel stands on, mirrored on the right.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """The side chosen, left until one moves it."""
+        return drf.response.Response({"side": request.user.collaborator_sidebar_side})
+
+    def put(self, request):
+        """Move the panel to a side."""
+        side = request.data.get("side") if isinstance(request.data, dict) else None
+        if side not in ("left", "right"):
+            raise drf.exceptions.ValidationError({"side": "left, right"})
+        request.user.collaborator_sidebar_side = side
+        request.user.save(update_fields=["collaborator_sidebar_side", "updated_at"])
+        return drf.response.Response({"side": side})

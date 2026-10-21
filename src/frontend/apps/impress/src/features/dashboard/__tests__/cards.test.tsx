@@ -3,19 +3,26 @@ import { describe, expect, it, vi } from 'vitest';
 import { sections } from '../Dashboard';
 import { CARDS, DEFAULT_LAYOUT, mergeLayout } from '../cards';
 
-vi.mock('@/features/notifications/NotificationBell', () => ({
+vi.mock('@/features/notifications/hooks', () => ({
   useNotificationText: () => () => '',
+  useNotificationTarget: () => () => ({ href: '/' }),
 }));
 
 describe('dashboard layout', () => {
-  it('is lean by default: mentions and assignments beside labels, recent pages across', () => {
+  it('is lean by default: notifications across, then recent across', () => {
     expect(
       DEFAULT_LAYOUT.filter((card) => !card.hidden).map((card) => card.id),
-    ).toEqual(['notifications', 'labels', 'recent']);
+    ).toEqual(['notifications', 'recent']);
     expect(
       DEFAULT_LAYOUT.filter((card) => card.wide).map((card) => card.id),
-    ).toEqual(['recent']);
+    ).toEqual(['notifications', 'recent']);
     expect(DEFAULT_LAYOUT).toHaveLength(CARDS.length);
+  });
+
+  it('offers Starred, Owned by me and Shared with me to add', () => {
+    expect(
+      DEFAULT_LAYOUT.filter((card) => card.hidden).map((card) => card.id),
+    ).toEqual(['favorites', 'owned', 'shared']);
   });
 
   it('uses the default layout when nothing is saved', () => {
@@ -51,21 +58,44 @@ describe('dashboard layout', () => {
   });
 
   it('puts a card added since at its default place, the chosen order kept', () => {
-    // Saved before the labels card existed, recent pages moved first; the
-    // former Assigned to me card is now part of the notifications one
+    // Recent moved first; the former Assigned to me card is now part of the
+    // notifications one, Owned by me is new
     const merged = mergeLayout([
       { id: 'recent', hidden: false, collapsed: false, wide: true },
-      { id: 'notifications', hidden: false, collapsed: false },
+      { id: 'notifications', hidden: false, collapsed: false, wide: true },
       { id: 'assigned', hidden: false, collapsed: false },
+      { id: 'favorites', hidden: true, collapsed: false },
+      { id: 'shared', hidden: false, collapsed: false },
     ]);
 
-    expect(merged.slice(0, 3).map((card) => card.id)).toEqual([
-      'labels',
+    expect(merged.map((card) => card.id)).toEqual([
       'recent',
       'notifications',
+      'favorites',
+      'owned',
+      'shared',
     ]);
-    expect(merged.map((card) => card.id)).not.toContain('assigned');
-    expect(merged[0].hidden).toBe(false);
+    expect(merged.find((card) => card.id === 'owned')?.hidden).toBe(true);
+  });
+
+  it('drops the cards no longer offered, Notifications going across', () => {
+    // Saved with Notifications beside Labels, and the former list cards
+    const merged = mergeLayout([
+      { id: 'notifications', hidden: false, collapsed: false },
+      { id: 'labels', hidden: false, collapsed: false },
+      { id: 'recent', hidden: false, collapsed: false, wide: true },
+      { id: 'spaces', hidden: false, collapsed: false },
+      { id: 'pages', hidden: true, collapsed: false },
+    ]);
+
+    expect(merged.map((card) => card.id)).toEqual([
+      'notifications',
+      'recent',
+      'favorites',
+      'owned',
+      'shared',
+    ]);
+    expect(merged[0].wide).toBe(true);
   });
 
   it('lays wide cards across, the others two by two', () => {

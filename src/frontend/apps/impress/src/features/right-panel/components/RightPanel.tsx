@@ -6,6 +6,7 @@ import { Box } from '@/components';
 import { CommentSideBar } from '@/features/docs/doc-comments/components/CommentSideBar';
 import { useDocStore, useProviderStore } from '@/features/docs/doc-management';
 import { TableContentSideBar } from '@/features/docs/doc-table-content/components/TableContentSideBar';
+import { useSidebarSide } from '@/features/left-panel';
 import { useFocusStore, useResponsiveStore } from '@/stores';
 
 import {
@@ -21,6 +22,7 @@ export const RightPanel = () => {
   const { provider, isReady } = useProviderStore();
   const isProviderReady = isReady && provider && provider?.roomname === doc?.id;
   const { restoreFocus } = useFocusStore();
+  const { isRight: isMirrored } = useSidebarSide();
 
   /** Side panel must be explicitly opened for each document. */
   useEffect(() => {
@@ -86,6 +88,7 @@ export const RightPanel = () => {
       ref={panelRef}
       tabIndex={-1}
       className="--docs--right-panel"
+      dir="ltr"
       aria-label={panelLabel}
       inert={!isPanelOpen}
       $width="300px"
@@ -96,7 +99,9 @@ export const RightPanel = () => {
       $background="var(--c--contextuals--background--surface--secondary)"
       $css={css`
         flex-shrink: 0;
-        border-left: 1px solid var(--c--contextuals--border--surface--primary);
+        /* Collaborators: on the left when the left panel is on the right */
+        border-${isMirrored ? 'right' : 'left'}: 1px solid
+          var(--c--contextuals--border--surface--primary);
         transform: translateX(0%);
         top: 0;
         right: 0;
@@ -105,7 +110,7 @@ export const RightPanel = () => {
         ${
           !isPanelOpen &&
           css`
-            transform: translateX(200%);
+            transform: translateX(${isMirrored ? '-200%' : '200%'});
             opacity: 0;
             margin-left: 0rem;
             width: 0;

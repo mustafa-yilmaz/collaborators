@@ -77,4 +77,46 @@ describe('CollaborationsList', () => {
     expect(await screen.findByText('No workspace here yet.')).toBeVisible();
     expect(screen.queryByRole('button', { name: 'New page' })).toBeNull();
   });
+
+  test('as a summary: the first of each group, nothing to create', async () => {
+    const page = (n: number) => ({
+      id: `p-${n}`,
+      title: `Page ${n}`,
+      kind: 'page',
+      updated_at: '2026-10-20T08:00:00Z',
+      is_owned: true,
+      is_favorite: false,
+    });
+    fetchMock.get(`${API}/collaborations/?view=owned`, {
+      view: 'owned',
+      workspaces: [],
+      spaces: [],
+      pages: [1, 2, 3, 4, 5].map(page),
+    });
+
+    render(<CollaborationsList view="owned" summary={3} />, {
+      wrapper: AppWrapper,
+    });
+
+    expect(await screen.findByText('Page 3')).toBeVisible();
+    expect(screen.queryByText('Page 4')).toBeNull();
+    // Empty groups are left out of a summary
+    expect(screen.queryByText('No workspace here yet.')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'New page' })).toBeNull();
+  });
+
+  test('as a summary of nothing: says so once', async () => {
+    fetchMock.get(`${API}/collaborations/?view=starred`, {
+      view: 'starred',
+      workspaces: [],
+      spaces: [],
+      pages: [],
+    });
+
+    render(<CollaborationsList view="starred" summary={3} />, {
+      wrapper: AppWrapper,
+    });
+
+    expect(await screen.findByText('Nothing here yet.')).toBeVisible();
+  });
 });

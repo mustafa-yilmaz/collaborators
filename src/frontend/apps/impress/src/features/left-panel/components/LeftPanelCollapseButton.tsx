@@ -28,7 +28,14 @@ export const LeftPanelCollapseButton = ({
         aria-expanded={isPanelOpen}
         color="neutral"
         variant="tertiary"
-        icon={<LeftPanelIcon width={24} height={24} aria-hidden="true" />}
+        icon={
+          <LeftPanelIcon
+            width={24}
+            height={24}
+            aria-hidden="true"
+            className="--collaborators--mirror-icon"
+          />
+        }
         data-testid="floating-bar-toggle-left-panel"
       >
         {!isSmallMobile && !!buttonTitle && (

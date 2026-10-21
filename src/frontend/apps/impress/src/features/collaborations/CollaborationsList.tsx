@@ -78,38 +78,49 @@ const Group = ({
   empty,
   children,
   count,
+  compact,
 }: {
   title: string;
   action?: ReactNode;
   empty: string;
   children: ReactNode;
   count: number;
-}) => (
-  <Box $gap="2xs" as="section">
-    <Box
-      $direction="row"
-      $align="center"
-      $justify="space-between"
-      $gap="sm"
-      $css={css`
-        border-bottom: 1px solid var(--c--contextuals--border--surface--primary);
-        padding-bottom: var(--c--globals--spacings--3xs);
-      `}
-    >
-      <Text as="h2" $size="md" $weight="700" $margin="none">
-        {title}
-      </Text>
-      {action}
+  /** In a card: a smaller heading, and nothing said when it is empty */
+  compact?: boolean;
+}) =>
+  compact && !count ? null : (
+    <Box $gap="2xs" as="section" $css="min-width: 0;">
+      <Box
+        $direction="row"
+        $align="center"
+        $justify="space-between"
+        $gap="sm"
+        $css={css`
+          border-bottom: 1px solid
+            var(--c--contextuals--border--surface--primary);
+          padding-bottom: var(--c--globals--spacings--3xs);
+        `}
+      >
+        <Text
+          as={compact ? 'h3' : 'h2'}
+          $size={compact ? 'sm' : 'md'}
+          $weight="700"
+          $variation={compact ? 'secondary' : undefined}
+          $margin="none"
+        >
+          {title}
+        </Text>
+        {action}
+      </Box>
+      {count ? (
+        children
+      ) : (
+        <Text $size="sm" $variation="secondary" $padding={{ horizontal: 'xs' }}>
+          {empty}
+        </Text>
+      )}
     </Box>
-    {count ? (
-      children
-    ) : (
-      <Text $size="sm" $variation="secondary" $padding={{ horizontal: 'xs' }}>
-        {empty}
-      </Text>
-    )}
-  </Box>
-);
+  );
 
 const DocumentRow = ({ doc }: { doc: CollaborationDocument }) => {
   const { untitledDocument } = useTrans();
@@ -154,7 +165,20 @@ const DocumentRow = ({ doc }: { doc: CollaborationDocument }) => {
  * workspace and the pages outside any workspace or space one is involved in
  * (owns, recently, was let into, or starred).
  */
-export const CollaborationsList = ({ view }: { view: CollaborationsView }) => {
+export const CollaborationsList = ({
+  view,
+  summary,
+  wide,
+}: {
+  view: CollaborationsView;
+  /**
+   * On a dashboard card: at most this many of each group, without the
+   * buttons creating one.
+   */
+  summary?: number;
+  /** A summary across the dashboard: its groups side by side */
+  wide?: boolean;
+}) => {
   const { t } = useTranslation();
   const router = useRouter();
   const { relativeDate } = useDate();
@@ -165,10 +189,29 @@ export const CollaborationsList = ({ view }: { view: CollaborationsView }) => {
   const { mutate: createPage } = useCreateDoc({
     onSuccess: (doc) => void router.push(`/docs/${doc.id}/`),
   });
-  const canCreate = view === 'owned';
+  const canCreate = view === 'owned' && !summary;
+  const compact = !!summary;
 
   if (isLoading || !data) {
     return <Loading />;
+  }
+
+  const workspaces = data.workspaces.slice(0, summary);
+  const spaces = data.spaces.slice(0, summary);
+  const pages = data.pages.slice(0, summary);
+  if (compact && !workspaces.length && !spaces.length && !pages.length) {
+    return (
+      <Text
+        $size="sm"
+        $variation="secondary"
+        $padding={{ horizontal: 'xs' }}
+        data-testid={`collaborations-${view}`}
+      >
+        {t('Nothing here yet.', {
+          description: 'Empty summary of a list of My collaborations',
+        })}
+      </Text>
+    );
   }
 
   const roles: Record<string, string> = {
@@ -189,10 +232,23 @@ export const CollaborationsList = ({ view }: { view: CollaborationsView }) => {
     ) : undefined;
 
   return (
-    <Box $gap="md" data-testid={`collaborations-${view}`}>
+    <Box
+      $gap="md"
+      data-testid={`collaborations-${view}`}
+      $css={
+        wide
+          ? css`
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+              align-items: start;
+            `
+          : undefined
+      }
+    >
       <Group
         title={t('Workspaces', { description: 'Group of My collaborations' })}
-        count={data.workspaces.length}
+        count={workspaces.length}
+        compact={compact}
         empty={t('No workspace here yet.', {
           description: 'Empty group of My collaborations',
         })}
@@ -201,7 +257,7 @@ export const CollaborationsList = ({ view }: { view: CollaborationsView }) => {
           () => setCreating('workspace'),
         )}
       >
-        {data.workspaces.map((workspace) => (
+        {workspaces.map((workspace) => (
           <Box key={workspace.id} $direction="row" $align="center" $gap="2xs">
             <StyledLink
               href="/"
@@ -240,7 +296,8 @@ export const CollaborationsList = ({ view }: { view: CollaborationsView }) => {
         title={t('Spaces outside workspaces', {
           description: 'Group of My collaborations',
         })}
-        count={data.spaces.length}
+        count={spaces.length}
+        compact={compact}
         empty={t('No space here yet.', {
           description: 'Empty group of My collaborations',
         })}
@@ -249,7 +306,7 @@ export const CollaborationsList = ({ view }: { view: CollaborationsView }) => {
           () => setCreating('space'),
         )}
       >
-        {data.spaces.map((doc) => (
+        {spaces.map((doc) => (
           <DocumentRow key={doc.id} doc={doc} />
         ))}
       </Group>
@@ -258,7 +315,8 @@ export const CollaborationsList = ({ view }: { view: CollaborationsView }) => {
         title={t('Pages outside workspaces and spaces', {
           description: 'Group of My collaborations',
         })}
-        count={data.pages.length}
+        count={pages.length}
+        compact={compact}
         empty={t('No page here yet.', {
           description: 'Empty group of My collaborations',
         })}
@@ -267,7 +325,7 @@ export const CollaborationsList = ({ view }: { view: CollaborationsView }) => {
           () => createPage({}),
         )}
       >
-        {data.pages.map((doc) => (
+        {pages.map((doc) => (
           <DocumentRow key={doc.id} doc={doc} />
         ))}
       </Group>

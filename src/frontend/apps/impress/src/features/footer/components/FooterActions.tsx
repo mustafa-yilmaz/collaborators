@@ -8,6 +8,7 @@ import { useConfig } from '@/core';
 import { ButtonLogin, gotoLogout, useAuth } from '@/features/auth';
 import { HelpMenu } from '@/features/help';
 import { LanguagePicker } from '@/features/language/components/LanguagePicker';
+import { SidebarSideSwitch } from '@/features/left-panel/components/SidebarSideSwitch';
 
 const FooterActionsGlobalStyle = createGlobalStyle`
   .user-menu__actions .c__language-picker{
@@ -17,9 +18,14 @@ const FooterActionsGlobalStyle = createGlobalStyle`
 
 type FooterActionsProps = {
   withLogin?: boolean;
+  /** Collaborators: the slider moving the panel, between profile and help */
+  withSideSwitch?: boolean;
 };
 
-export const FooterActions = ({ withLogin }: FooterActionsProps) => {
+export const FooterActions = ({
+  withLogin,
+  withSideSwitch,
+}: FooterActionsProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { data: config } = useConfig();
@@ -112,6 +118,7 @@ export const FooterActions = ({ withLogin }: FooterActionsProps) => {
           <Waffle />
           {withLogin && <ButtonLogin />}
         </Box>
+        {withSideSwitch && <SidebarSideSwitch />}
         <HelpMenu />
       </Box>
     </>

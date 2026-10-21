@@ -86,12 +86,27 @@ export function useNotificationPreferences(enabled: boolean) {
     queryFn: () => request('notifications/preferences/'),
     enabled,
   });
-  const update = useMutation<{ email: boolean }, APIError, { email: boolean }>({
+  const update = useMutation<
+    { email: boolean },
+    APIError,
+    { email: boolean },
+    { email: boolean } | undefined
+  >({
     mutationFn: (data) =>
       request('notifications/preferences/', {
         method: 'PATCH',
         body: JSON.stringify(data),
       }),
+    // Every switch shows the choice at once; a failure puts it back
+    onMutate: (data) => {
+      const before = queryClient.getQueryData<{ email: boolean }>([
+        KEY_NOTIFICATION_PREFERENCES,
+      ]);
+      queryClient.setQueryData([KEY_NOTIFICATION_PREFERENCES], data);
+      return before;
+    },
+    onError: (_error, _data, before) =>
+      queryClient.setQueryData([KEY_NOTIFICATION_PREFERENCES], before),
     onSuccess: (data) =>
       queryClient.setQueryData([KEY_NOTIFICATION_PREFERENCES], data),
   });

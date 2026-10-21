@@ -191,8 +191,8 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
 
     full_name = models.CharField(_("full name"), max_length=100, null=True, blank=True)
     # Whether mentions and assignments are also sent by email (they always
-    # reach the in-app notification inbox)
-    collaborator_email_notifications = models.BooleanField(default=True)
+    # reach the in-app notification inbox): off until one asks for it
+    collaborator_email_notifications = models.BooleanField(default=False)
     # The identity provider vouched for the email at the last sign-in: it
     # can join workspaces by domain
     collaborator_email_verified = models.BooleanField(default=False)
@@ -211,6 +211,12 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
     collaborator_dashboard = models.JSONField(default=list, blank=True)
     # The order of the lists of "My collaborations" in the left panel
     collaborator_sidebar = models.JSONField(default=list, blank=True)
+    # Which side of the screen the panel stands on: "left" or "right"
+    collaborator_sidebar_side = models.CharField(
+        max_length=5,
+        choices=[("left", "left"), ("right", "right")],
+        default="left",
+    )
     # Derived from workspace and group memberships, see `teams`
     collaborator_teams = ArrayField(
         models.CharField(max_length=100), default=list, blank=True, editable=False

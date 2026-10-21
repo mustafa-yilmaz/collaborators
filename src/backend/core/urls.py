@@ -17,6 +17,7 @@ from core.api import (
     profiles,
     publishing,
     registrations,
+    search,
     signin_methods,
     viewsets,
     visibility,
@@ -170,6 +171,7 @@ urlpatterns = [
                     registrations.RegistrationDecisionView.as_view(decision="decline"),
                 ),
                 path("collaborations/", collaborations.CollaborationsView.as_view()),
+                path("search/", search.SearchView.as_view()),
                 path(
                     "workspaces/<uuid:workspace_id>/favorite/",
                     collaborations.WorkspaceFavoriteView.as_view(),
@@ -180,6 +182,7 @@ urlpatterns = [
                 path("join/<str:token>/", workspaces.JoinWorkspaceView.as_view()),
                 path("dashboard/layout/", dashboard.DashboardLayoutView.as_view()),
                 path("dashboard/sidebar/", dashboard.SidebarOrderView.as_view()),
+                path("dashboard/sidebar/side/", dashboard.SidebarSideView.as_view()),
                 path("dashboard/recent/", dashboard.DashboardRecentView.as_view()),
                 path("dashboard/assigned/", dashboard.DashboardAssignedView.as_view()),
                 path(

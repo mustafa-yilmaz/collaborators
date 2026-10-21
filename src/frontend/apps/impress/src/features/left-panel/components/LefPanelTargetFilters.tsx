@@ -14,11 +14,13 @@ import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
+import SearchIcon from '@/assets/icons/ui-kit/zoom-rounded.svg';
 import { Box, Icon, StyledLink, Text } from '@/components';
 import { useCunninghamTheme } from '@/cunningham';
 import { DocDefaultFilter, useTrans } from '@/docs/doc-management';
 import { orderItems, useSidebarOrder } from '@/features/dashboard/api';
 import { useLeftPanelStore } from '@/features/left-panel';
+import { SEARCH_PATH } from '@/features/search/api';
 import ClockIcon from '@/icons/clock.svg';
 import SharedIcon from '@/icons/shared.svg';
 import StarIcon from '@/icons/star.svg';
@@ -26,48 +28,101 @@ import TrashIcon from '@/icons/trash.svg';
 import UserIcon from '@/icons/user.svg';
 import { useResponsiveStore } from '@/stores/useResponsiveStore';
 
-/** An item one can drag above or below the others. */
+/**
+ * An item one can drag above or below the others, by its handle only: a
+ * click on the item opens it, the handle (shown on hover) moves it.
+ */
 const SortableItem = ({
   id,
+  label,
   children,
 }: {
   id: string;
+  label: string;
   children: ReactNode;
 }) => {
+  const { t } = useTranslation();
   const drag = useDraggable({ id });
   const drop = useDroppable({ id });
   return (
-    <div
-      ref={(node) => {
+    <Box
+      ref={(node: HTMLDivElement | null) => {
         drag.setNodeRef(node);
         drop.setNodeRef(node);
       }}
-      {...drag.listeners}
-      {...drag.attributes}
-      role={undefined}
-      tabIndex={undefined}
-      style={{
-        opacity: drag.isDragging ? 0.5 : 1,
-        transform: drag.transform
-          ? `translate(0, ${drag.transform.y}px)`
-          : undefined,
-        position: 'relative',
-        zIndex: drag.isDragging ? 10 : undefined,
-        borderRadius: 4,
-        boxShadow:
+      $position="relative"
+      $css={css`
+        border-radius: 4px;
+        opacity: ${drag.isDragging ? 0.5 : 1};
+        z-index: ${drag.isDragging ? 10 : 'auto'};
+        transform: ${
+          drag.transform ? `translate(0, ${drag.transform.y}px)` : 'none'
+        };
+        box-shadow: ${
           drop.isOver && !drag.isDragging
-            ? '0 0 0 2px var(--c--globals--colors--brand-400)'
-            : undefined,
-        touchAction: 'none',
-      }}
+            ? 'inset 0 2px 0 var(--c--globals--colors--brand-400)'
+            : 'none'
+        };
+        & > .--collaborators--drag-handle {
+          opacity: ${drag.isDragging ? 1 : 0};
+        }
+        &:hover > .--collaborators--drag-handle,
+        & > .--collaborators--drag-handle:focus-visible {
+          opacity: 1;
+        }
+        @media (hover: none) {
+          & > .--collaborators--drag-handle {
+            opacity: 1;
+          }
+        }
+      `}
     >
       {children}
-    </div>
+      <Box
+        ref={drag.setActivatorNodeRef}
+        {...drag.listeners}
+        {...drag.attributes}
+        className="--collaborators--drag-handle"
+        aria-label={t('Move {{item}}', {
+          description: 'Handle reordering an item of the left panel',
+          item: label,
+        })}
+        title={t('Drag to reorder', {
+          description: 'Tooltip of the handle reordering left panel items',
+        })}
+        $position="absolute"
+        $align="center"
+        $justify="center"
+        $css={css`
+          top: 50%;
+          inset-inline-end: 2px;
+          width: 22px;
+          height: 26px;
+          margin-top: -13px;
+          border-radius: 4px;
+          cursor: ${drag.isDragging ? 'grabbing' : 'grab'};
+          touch-action: none;
+          transition: opacity 0.15s;
+          &:hover {
+            background-color: var(
+              --c--contextuals--background--semantic--contextual--secondary
+            );
+          }
+          &:focus-visible {
+            outline: 2px solid var(--c--globals--colors--brand-400);
+          }
+        `}
+      >
+        <Icon
+          iconName="drag_indicator"
+          $size="18px"
+          $variation="tertiary"
+          aria-hidden="true"
+        />
+      </Box>
+    </Box>
   );
 };
-
-/** The directory of workspaces one may join */
-const DISCOVER_PATH = '/workspaces/discover/';
 
 export const LeftPanelTargetFilters = () => {
   const { t } = useTranslation();
@@ -114,34 +169,21 @@ export const LeftPanelTargetFilters = () => {
       label: transFilter(DocDefaultFilter.NOTIFICATIONS),
       targetQuery: DocDefaultFilter.NOTIFICATIONS,
     },
+    // The one search, with what is open to join and the labels
     {
       icon: (
         <Icon
-          iconName="sell"
-          $size="20px"
+          icon={<SearchIcon width={20} height={20} aria-hidden="true" />}
           $padding="4xs"
           $variation="tertiary"
         />
       ),
-      id: 'labels',
-      label: transFilter(DocDefaultFilter.LABELS),
-      targetQuery: DocDefaultFilter.LABELS,
-    },
-    // What is open to join or read: the "Explore collaborations" screen
-    {
-      icon: (
-        <Icon
-          iconName="travel_explore"
-          $size="20px"
-          $padding="4xs"
-          $variation="tertiary"
-        />
-      ),
+      // The id it had as "Explore", so saved orders keep its place
       id: 'explore',
-      label: t('Explore', {
-        description: 'Left panel entry opening the directory of collaborations',
+      label: t('Search', {
+        description: 'Left panel entry opening the Search screen',
       }),
-      href: DISCOVER_PATH,
+      href: SEARCH_PATH,
     },
     {
       icon: (
@@ -290,7 +332,7 @@ export const LeftPanelTargetFilters = () => {
           return query.id === 'trashbin' ? (
             <Box key={query.id}>{link}</Box>
           ) : (
-            <SortableItem key={query.id} id={query.id}>
+            <SortableItem key={query.id} id={query.id} label={query.label}>
               {link}
             </SortableItem>
           );

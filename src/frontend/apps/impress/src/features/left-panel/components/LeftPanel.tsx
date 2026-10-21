@@ -4,7 +4,7 @@ import { css } from 'styled-components';
 import { Box } from '@/components';
 import { useResponsiveStore } from '@/stores/useResponsiveStore';
 
-import { useLeftPanelStore } from '../stores';
+import { mirroredCss, useLeftPanelStore, useSidebarSide } from '../stores';
 
 import { LeftPanelContent } from './LeftPanelContent';
 import { LeftPanelFooter } from './LeftPanelFooter';
@@ -14,6 +14,8 @@ export const LeftPanel = ({ isResizable }: { isResizable?: boolean }) => {
   const { t } = useTranslation();
   const { isMobile } = useResponsiveStore();
   const { isPanelOpen, closePanel } = useLeftPanelStore();
+  // Collaborators: on the right, the panel is its own mirror image
+  const { isRight } = useSidebarSide();
 
   return (
     <>
@@ -43,6 +45,7 @@ export const LeftPanel = ({ isResizable }: { isResizable?: boolean }) => {
         $height="100dvh"
         $overflow="hidden"
         $css={css`
+          ${isRight ? mirroredCss : ''}
           z-index: 1;
           background-color: var(--c--contextuals--background--surface--primary);
           transition:
@@ -52,7 +55,7 @@ export const LeftPanel = ({ isResizable }: { isResizable?: boolean }) => {
           ${
             !isResizable
               ? css`
-                  border-right: 1px solid
+                  border-inline-end: 1px solid
                     var(--c--contextuals--border--surface--primary);
                 `
               : ''
@@ -66,7 +69,7 @@ export const LeftPanel = ({ isResizable }: { isResizable?: boolean }) => {
                   ${
                     !isPanelOpen
                       ? css`
-                          transform: translateX(${isPanelOpen ? '0' : '-100%'});
+                          transform: translateX(${isRight ? '100%' : '-100%'});
                           width: 0;
                         `
                       : ''
@@ -78,15 +81,16 @@ export const LeftPanel = ({ isResizable }: { isResizable?: boolean }) => {
           ${
             isMobile
               ? css`
-                  box-shadow: 10px 0px 10px 0px rgba(0, 0, 0, 0.05);
+                  box-shadow: ${isRight ? '-10px' : '10px'} 0px 10px 0px
+                    rgba(0, 0, 0, 0.05);
                   position: fixed;
                   z-index: 1000;
                   top: 0;
-                  left: 0;
+                  ${isRight ? 'right' : 'left'}: 0;
                   ${
                     !isPanelOpen
                       ? css`
-                          transform: translateX(-100%);
+                          transform: translateX(${isRight ? '100%' : '-100%'});
                           width: 0;
                         `
                       : ''

@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import fetchMock from 'fetch-mock';
 import { beforeEach, describe, expect, test } from 'vitest';
 
@@ -13,6 +14,7 @@ describe('Mentions, notifications and assignments card', () => {
   beforeEach(() => {
     fetchMock.hardReset();
     fetchMock.mockGlobal();
+    fetchMock.get(`${API}/notifications/preferences/`, { email: false });
   });
 
   test('says so when there is nothing yet', async () => {
@@ -79,5 +81,28 @@ describe('Mentions, notifications and assignments card', () => {
     expect(rows[0]).toContainElement(assignment);
     expect(rows[0]).toHaveTextContent('Assigned by Ada in Plan');
     expect(rows[0]).toHaveAttribute('href', '/docs/d-1#b-1');
+  });
+
+  test('ends with the email switch, off until one turns it on', async () => {
+    fetchMock.get(`${API}/notifications/`, []);
+    fetchMock.get(`${API}/dashboard/assigned/`, []);
+    fetchMock.patch(`${API}/notifications/preferences/`, { email: true });
+
+    render(<card.Body />, { wrapper: AppWrapper });
+
+    const toggle = await screen.findByRole('checkbox', {
+      name: 'Also send me an email',
+    });
+    await waitFor(() => expect(toggle).toBeEnabled());
+    expect(toggle).not.toBeChecked();
+
+    await userEvent.click(toggle);
+
+    expect(toggle).toBeChecked();
+    const call = fetchMock.callHistory.lastCall(
+      `${API}/notifications/preferences/`,
+    );
+    expect(call?.options.method).toBe('patch');
+    expect(call?.options.body).toBe(JSON.stringify({ email: true }));
   });
 });

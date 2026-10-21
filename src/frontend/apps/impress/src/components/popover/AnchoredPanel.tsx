@@ -39,10 +39,11 @@ export const AnchoredPanel = ({
       const rect = anchor.getBoundingClientRect();
       const width = panel?.offsetWidth ?? 320;
       const height = panel?.offsetHeight ?? 0;
-      const left = Math.max(
-        8,
-        Math.min(rect.left, window.innerWidth - width - 8),
-      );
+      // Collaborators: an anchor on the right (the left panel moved there)
+      // opens the panel towards the left
+      const start =
+        rect.left > window.innerWidth / 2 ? rect.right - width : rect.left;
+      const left = Math.max(8, Math.min(start, window.innerWidth - width - 8));
       let top = rect.bottom + 4;
       if (height && top + height > window.innerHeight - 8) {
         top = Math.max(8, rect.top - height - 4);

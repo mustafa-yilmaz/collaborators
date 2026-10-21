@@ -3,7 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import { Box, BoxType } from '@/components';
-import { LeftPanel, ResizableLeftPanel } from '@/features/left-panel';
+import {
+  LeftPanel,
+  ResizableLeftPanel,
+  useSidebarSide,
+} from '@/features/left-panel';
 import { RightPanel } from '@/features/right-panel/components/RightPanel';
 import { DocEditorSkeleton, Skeleton } from '@/features/skeletons';
 
@@ -22,8 +26,11 @@ export function MainLayout({
   propsLayout,
   propsContent,
 }: PropsWithChildren<MainLayoutProps>) {
+  // Collaborators: the panel on the right turns the frame around
+  const { isRight } = useSidebarSide();
   return (
     <Box
+      dir={isRight ? 'rtl' : undefined}
       className="--docs--main-layout"
       $direction="row"
       $width="100%"
@@ -89,6 +96,8 @@ export const MainContent = ({
   return (
     <Box
       as="main"
+      // The page itself reads left to right, wherever the panel stands
+      dir="ltr"
       role="main"
       aria-label={t('Main content', {
         description: 'Accessible name of the main area of the page',

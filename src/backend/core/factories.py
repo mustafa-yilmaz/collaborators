@@ -51,6 +51,9 @@ class UserFactory(factory.django.DjangoModelFactory):
     short_name = factory.Faker("first_name")
     language = factory.fuzzy.FuzzyChoice([lang[0] for lang in settings.LANGUAGES])
     password = make_password("password")
+    # Collaborators: notifications are emailed only when one asks for it;
+    # the tests about those emails ask for it
+    collaborator_email_notifications = True
 
     @factory.post_generation
     def with_owned_document(self, create, extracted, **kwargs):

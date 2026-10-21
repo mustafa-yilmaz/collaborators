@@ -1,9 +1,10 @@
 """
-The text of wiki pages, for the full-text search of published wikis.
+The text of pages, for the full-text search of published wikis and of the
+platform (core.api.search).
 
 The collaboration server owns the content of the pages; their text is read
-back from it and kept on the document (`text_content`) when a page of a
-published wiki changes, or when it is published.
+back from it and kept on the document (`text_content`) when a page changes,
+or when a wiki is published (manage.py refresh_texts reads them all).
 """
 
 from logging import getLogger
@@ -56,9 +57,12 @@ def is_in_published_wiki(document_id):
 
 
 def refresh_text_on_commit(document_id):
-    """Once the transaction is done, refresh the text of a wiki page."""
-    if is_in_published_wiki(document_id):
-        transaction.on_commit(lambda: refresh_text_task.delay(str(document_id)))
+    """
+    Once the transaction is done, refresh the text of a page: for the
+    full-text search of published wikis, and for the platform's search
+    (core.api.search), so of every page.
+    """
+    transaction.on_commit(lambda: refresh_text_task.delay(str(document_id)))
 
 
 def ensure_texts(documents, limit=30):

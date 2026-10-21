@@ -8,6 +8,16 @@ import { useDocStore } from '@/docs/doc-management';
 import { useAuth } from '@/features/auth';
 import { useCmdK } from '@/hooks/useCmdK';
 
+// Signed in: the one search (workspaces, spaces, pages, labels); on a
+// public page signed out, the search of that page's tree
+const SearchModal = dynamic(
+  () =>
+    import('@/features/search/SearchModal').then((mod) => ({
+      default: mod.SearchModal,
+    })),
+  { ssr: false },
+);
+
 const DocSearchModal = dynamic(
   () =>
     import('./DocSearchModal').then((mod) => ({
@@ -50,13 +60,16 @@ export const DocSearchButtonModal = ({ ...props }: ButtonProps) => {
         size="medium"
         color="brand"
         variant="tertiary"
-        aria-label={t('Search pages', {
+        aria-label={t('Search', {
           description: 'Accessible name of the button opening the doc search',
         })}
         icon={<SearchSVG aria-hidden="true" width={24} height={24} />}
         {...props}
       />
-      {isSearchModalOpen && (
+      {isSearchModalOpen && authenticated && (
+        <SearchModal onClose={closeSearchModal} />
+      )}
+      {isSearchModalOpen && !authenticated && (
         <DocSearchModal
           onClose={closeSearchModal}
           isOpen={isSearchModalOpen}

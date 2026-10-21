@@ -1,35 +1,14 @@
 import type { TFunction } from 'i18next';
-import { useRouter } from 'next/router';
 import { ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
-import { css } from 'styled-components';
 
-import { Box, BoxButton, Icon, StyledLink, Text } from '@/components';
-import { getEmojiAndTitle, useTrans } from '@/features/docs/doc-management';
-import { labelHref } from '@/features/labels/LabelEditor';
-import { useLabelCloud } from '@/features/labels/api';
-import {
-  useNotificationTarget,
-  useNotificationText,
-} from '@/features/notifications/NotificationBell';
-import {
-  useNotificationMutations,
-  useNotifications,
-} from '@/features/notifications/api';
-import {
-  useSpaces,
-  useWorkspaceStore,
-  useWorkspaces,
-} from '@/features/workspaces';
-import { useDate } from '@/hooks/useDate';
+import { Box } from '@/components';
+import { CollaborationsList } from '@/features/collaborations/CollaborationsList';
+import { CollaborationsView } from '@/features/collaborations/api';
+import { DocDefaultFilter } from '@/features/docs/doc-management';
+import { ForMeList } from '@/features/notifications/ForMeList';
 
-import {
-  CardLayout,
-  RecentDoc,
-  useAssignedRows,
-  useDocsList,
-  useRecentDocs,
-} from './api';
+import { SeeAll } from './CardParts';
+import { CardLayout } from './api';
 
 export interface CardDefinition {
   id: string;
@@ -47,649 +26,69 @@ export interface BodyProps {
   wide?: boolean;
 }
 
-/**
- * The inner alignment of the dashboard's notes, for the cards: a column of
- * 22px icons, then the text at the same gap. A card's body is pulled back by
- * its rows' padding (xs); text without an icon starts under the title.
- */
-export const CARD_ICON_SIZE = '22px';
-export const CARD_ICON_GAP = 'var(--c--globals--spacings--sm)';
-const TEXT_INDENT = `calc(var(--c--globals--spacings--xs) + ${CARD_ICON_SIZE} + ${CARD_ICON_GAP})`;
-
-const rowCss = css`
-  display: flex;
-  align-items: center;
-  gap: ${CARD_ICON_GAP};
-  padding: var(--c--globals--spacings--2xs) var(--c--globals--spacings--xs);
-  border-radius: var(--c--globals--spacings--3xs);
-  color: inherit;
-  text-decoration: none;
-  width: 100%;
-  &:hover {
-    background-color: var(
-      --c--contextuals--background--semantic--contextual--primary
-    );
-  }
-`;
-
-const Row = ({
-  href,
-  icon,
-  title,
-  detail,
-  onClick,
-}: {
-  href: string;
-  icon: string;
-  title: string;
-  detail?: string;
-  onClick?: () => void;
-}) => (
-  <StyledLink href={href} $css={rowCss} onClick={onClick}>
-    <Icon iconName={icon} $size={CARD_ICON_SIZE} $variation="secondary" />
-    <Box $flex={1} $css="min-width: 0;">
-      <Text $size="sm" $weight="500" $ellipsis>
-        {title}
-      </Text>
-      {detail && (
-        <Text $size="xs" $variation="secondary" $ellipsis>
-          {detail}
-        </Text>
-      )}
-    </Box>
-  </StyledLink>
-);
-
-const Empty = ({ children }: { children: ReactNode }) => (
-  <Text
-    $size="sm"
-    $variation="secondary"
-    $css={css`
-      padding-inline: ${TEXT_INDENT} var(--c--globals--spacings--xs);
-    `}
-  >
-    {children}
-  </Text>
-);
-
-/** A page as a tile: its emoji or icon, title, first words and space. */
-const RecentTile = ({ doc }: { doc: RecentDoc }) => {
-  const { untitledDocument } = useTrans();
-  const { relativeDate } = useDate();
-  const { emoji, titleWithoutEmoji } = getEmojiAndTitle(
-    doc.title || untitledDocument,
-  );
-  const isSpace = doc.kind === 'space';
-  return (
-    <StyledLink
-      href={`/docs/${doc.id}`}
-      $css={css`
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-        border: 1px solid var(--c--contextuals--border--surface--primary);
-        border-radius: var(--c--globals--spacings--xs);
-        overflow: hidden;
-        color: inherit;
-        text-decoration: none;
-        transition:
-          border-color 0.15s,
-          box-shadow 0.15s;
-        &:hover {
-          border-color: var(--c--globals--colors--brand-400);
-          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-        }
-      `}
-    >
-      <Box
-        $height="64px"
-        $align="center"
-        $justify="center"
-        $css={css`
-          background: ${
-            isSpace
-              ? 'var(--c--contextuals--background--semantic--brand--tertiary)'
-              : 'var(--c--contextuals--background--semantic--contextual--primary)'
-          };
-          font-size: 28px;
-        `}
-      >
-        {emoji ? (
-          <span aria-hidden="true">{emoji}</span>
-        ) : (
-          <Icon
-            iconName={isSpace ? 'folder' : 'description'}
-            $size="28px"
-            $variation="secondary"
-          />
-        )}
-      </Box>
-      <Box $padding="xs" $gap="4xs" $css="min-width: 0;">
-        <Text
-          $size="sm"
-          $weight="600"
-          $css={css`
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-          `}
-        >
-          {titleWithoutEmoji || untitledDocument}
-        </Text>
-        {doc.excerpt && (
-          <Text
-            $size="xs"
-            $variation="secondary"
-            $css={css`
-              display: -webkit-box;
-              -webkit-line-clamp: 2;
-              -webkit-box-orient: vertical;
-              overflow: hidden;
-            `}
-          >
-            {doc.excerpt}
-          </Text>
-        )}
-        <Text $size="xs" $variation="secondary" $ellipsis>
-          {[doc.space?.title, relativeDate(doc.updated_at)]
-            .filter(Boolean)
-            .join(' · ')}
-        </Text>
-      </Box>
-    </StyledLink>
-  );
-};
-
-const RecentBody = ({ wide }: BodyProps) => {
-  const { t } = useTranslation();
-  const { untitledDocument } = useTrans();
-  const { relativeDate } = useDate();
-  const { data = [], isLoading } = useRecentDocs(true);
-  if (!isLoading && !data.length) {
-    return (
-      <Empty>
-        {t('Pages you and your teams work on will appear here.', {
-          description: 'Empty Recent pages card',
-        })}
-      </Empty>
-    );
-  }
-  // With the room of both columns, pages show as tiles
-  if (wide) {
-    return (
-      <Box
-        $css={css`
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-          gap: var(--c--globals--spacings--xs);
-          padding-inline: ${TEXT_INDENT} var(--c--globals--spacings--xs);
-        `}
-      >
-        {data.map((doc) => (
-          <RecentTile key={doc.id} doc={doc} />
-        ))}
-      </Box>
-    );
-  }
-  return (
-    <>
-      {data.map((doc) => (
-        <Row
-          key={doc.id}
-          href={`/docs/${doc.id}`}
-          icon={doc.kind === 'space' ? 'folder' : 'description'}
-          title={doc.title || untitledDocument}
-          detail={[doc.space?.title, relativeDate(doc.updated_at)]
-            .filter(Boolean)
-            .join(' · ')}
-        />
-      ))}
-    </>
-  );
-};
-
-/** How many entries the "for me" card shows. */
-const FOR_ME_SIZE = 8;
+/** How many of each group (workspaces, spaces, pages) a list card shows. */
+export const LIST_CARD_SIZE = 3;
 
 /**
- * Mentions, notifications and what is assigned to me (in tables or anywhere
- * in a page, directly or through a group), newest first. Assignments come
- * from the current list, not from their notifications, so that one done or
- * taken back leaves the card.
+ * A card summing up a list of "My collaborations" in the left panel: the
+ * same lists, the first of each group, and a link to the whole of it.
  */
-/** Where the full lists of the cards are, in "My collaborations". */
-export const NOTIFICATIONS_HREF = '/?target=notifications';
-export const LABELS_HREF = '/?target=labels';
-
-const SeeAll = ({ href }: { href: string }) => {
-  const { t } = useTranslation();
-  return (
-    <Box $direction="row" $justify="flex-end" $padding={{ horizontal: 'xs' }}>
-      <StyledLink href={href}>
-        <Text $size="sm" $theme="brand">
-          {t('See all', { description: 'Link from a card to its full list' })}
-        </Text>
-      </StyledLink>
+const listCard =
+  (view: CollaborationsView, target: DocDefaultFilter) =>
+  ({ wide }: BodyProps) => (
+    <Box $gap="xs">
+      <CollaborationsList view={view} summary={LIST_CARD_SIZE} wide={wide} />
+      <SeeAll href={`/?target=${target}`} />
     </Box>
   );
-};
-
-const ForMeBody = () => <ForMeList />;
-
-/**
- * Mentions, notifications and assignments: a summary on the dashboard's
- * card, everything on its own screen.
- */
-export const ForMeList = ({ full = false }: { full?: boolean }) => {
-  const { t } = useTranslation();
-  const { relativeDate } = useDate();
-  const { untitledDocument } = useTrans();
-  const textOf = useNotificationText();
-  const targetOf = useNotificationTarget();
-  const { data: notifications = [], isLoading } = useNotifications(true);
-  const { data: assigned = [], isLoading: isAssignedLoading } =
-    useAssignedRows(true);
-  const { markRead, markAllRead } = useNotificationMutations();
-
-  const entries = [
-    ...notifications
-      .filter((notification) => notification.kind !== 'assignment')
-      .map((notification) => ({
-        key: `n-${notification.id}`,
-        date: notification.created_at,
-        notification,
-        row: undefined,
-      })),
-    ...assigned.map((row) => ({
-      key: `a-${row.id}`,
-      date: row.updated_at,
-      notification: undefined,
-      row,
-    })),
-  ].sort((a, b) => b.date.localeCompare(a.date));
-  const shown = full ? entries : entries.slice(0, FOR_ME_SIZE);
-  const unreadCount = notifications.filter((item) => !item.read_at).length;
-
-  if (!isLoading && !isAssignedLoading && !entries.length) {
-    return (
-      <Empty>
-        {t('No mentions or assignments yet.', {
-          description: 'Empty card of mentions, notifications and assignments',
-        })}
-      </Empty>
-    );
-  }
-
-  return (
-    <>
-      {full && unreadCount > 0 && (
-        <Box $direction="row" $justify="flex-end">
-          <BoxButton
-            onClick={() => markAllRead.mutate()}
-            $padding={{ horizontal: 'xs', vertical: '4xs' }}
-          >
-            <Text $size="sm" $theme="brand">
-              {t('Mark all as read', {
-                description: 'Button reading every notification',
-              })}
-            </Text>
-          </BoxButton>
-        </Box>
-      )}
-      {shown.map(({ key, notification, row }) => {
-        if (row) {
-          const doc = row.document.title || untitledDocument;
-          // Opening it also reads the notification it came with
-          const unread = notifications.filter(
-            (item) =>
-              item.kind === 'assignment' &&
-              !item.read_at &&
-              item.document?.id === row.document.id &&
-              item.anchor_id === row.anchor_id,
-          );
-          return (
-            <Row
-              key={key}
-              href={`/docs/${row.document.id}/#${row.anchor_id}`}
-              icon="assignment_ind"
-              title={
-                row.row_label ||
-                t('Something to do', {
-                  description: 'An assignment without text',
-                })
-              }
-              detail={[
-                row.assigned_by
-                  ? t('Assigned by {{name}} in {{doc}}', {
-                      description: 'Who assigned it, and where',
-                      name: row.assigned_by,
-                      doc,
-                    })
-                  : t('Assigned in {{doc}}', {
-                      description: 'Where it was assigned',
-                      doc,
-                    }),
-                row.team_label &&
-                  t('via {{group}}', {
-                    description: 'Assigned through a group',
-                    group: row.team_label,
-                  }),
-                relativeDate(row.updated_at),
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-              onClick={() =>
-                unread.forEach((item) => markRead.mutate({ id: item.id }))
-              }
-            />
-          );
-        }
-        if (!notification) {
-          return null;
-        }
-        const target = targetOf(notification);
-        return (
-          <Row
-            key={key}
-            href={target.href}
-            icon={
-              notification.read_at ? 'notifications' : 'notifications_active'
-            }
-            title={textOf(notification)}
-            detail={relativeDate(notification.created_at)}
-            onClick={() => {
-              target.beforeOpen?.();
-              if (!notification.read_at) {
-                markRead.mutate({ id: notification.id });
-              }
-            }}
-          />
-        );
-      })}
-      {!full && <SeeAll href={NOTIFICATIONS_HREF} />}
-    </>
-  );
-};
-
-const DocsBody = ({
-  listKey,
-  query,
-  empty,
-}: {
-  listKey: string;
-  query: string;
-  empty: string;
-}) => {
-  const { untitledDocument } = useTrans();
-  const { relativeDate } = useDate();
-  const { data = [], isLoading } = useDocsList(listKey, query, true);
-  if (!isLoading && !data.length) {
-    return <Empty>{empty}</Empty>;
-  }
-  return (
-    <>
-      {data.map((doc) => (
-        <Row
-          key={doc.id}
-          href={`/docs/${doc.id}`}
-          icon="description"
-          title={doc.title || untitledDocument}
-          detail={relativeDate(doc.updated_at)}
-        />
-      ))}
-    </>
-  );
-};
-
-const SpacesBody = () => {
-  const { t } = useTranslation();
-  const { data = [], isLoading } = useSpaces({ mine: true });
-  if (!isLoading && !data.length) {
-    return (
-      <Empty>
-        {t('Spaces you belong to will appear here.', {
-          description: 'Empty My spaces card',
-        })}
-      </Empty>
-    );
-  }
-  return (
-    <>
-      {data.slice(0, 8).map((space) => (
-        <Row
-          key={space.id}
-          href={`/docs/${space.id}`}
-          icon="folder"
-          title={
-            space.title ||
-            t('Untitled space', {
-              description: 'Name of a space without title',
-            })
-          }
-          detail={space.home_workspace?.name}
-        />
-      ))}
-    </>
-  );
-};
-
-const WorkspacesBody = () => {
-  const { t } = useTranslation();
-  const router = useRouter();
-  const { data = [], isLoading } = useWorkspaces();
-  const { setCurrentWorkspaceId } = useWorkspaceStore();
-  if (!isLoading && !data.length) {
-    return (
-      <Empty>
-        {t('Create or join a workspace from the left panel.', {
-          description: 'Empty My workspaces card',
-        })}
-      </Empty>
-    );
-  }
-  return (
-    <>
-      {data.map((workspace) => (
-        <Row
-          key={workspace.id}
-          href={`/workspaces/${workspace.id}/settings`}
-          icon="workspaces"
-          title={workspace.name}
-          detail={t('Open its spaces', {
-            description: 'Detail of a workspace in the dashboard',
-          })}
-          onClick={() => {
-            setCurrentWorkspaceId(workspace.id);
-            void router.push('/');
-          }}
-        />
-      ))}
-    </>
-  );
-};
 
 /**
  * Every card the dashboard can show, in their default order. Cards sit in two
  * columns, in turn left and right, and a wide card goes across both: by
- * default mentions, notifications and assignments on the left, Labels on the
- * right, and Recent pages across, under them.
+ * default Notifications across, then Recent across, under it. The others are
+ * added from "Add a card", in this order.
  */
-/** A cloud of the labels of what one can see: the more used, the bigger. */
-const LabelsBody = () => <LabelsOverview />;
-
-/** The labels of what one can see: a cloud, and on its screen a full list. */
-export const LabelsOverview = ({ full = false }: { full?: boolean }) => {
-  const { t } = useTranslation();
-  const { data = [], isLoading } = useLabelCloud();
-  if (!isLoading && !data.length) {
-    return (
-      <Empty>
-        {t('Labels you are involved with appear here.', {
-          description: 'Empty labels card',
-        })}
-      </Empty>
-    );
-  }
-  const max = Math.max(1, ...data.map((item) => item.count));
-  const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name));
-  const byUse = [...data].sort(
-    (a, b) => b.count - a.count || a.name.localeCompare(b.name),
-  );
-  return (
-    <>
-      <Box
-        $direction="row"
-        $align="baseline"
-        $gap="xs"
-        $css={css`
-          flex-wrap: wrap;
-          row-gap: 4px;
-          padding: var(--c--globals--spacings--xs);
-          padding-left: ${TEXT_INDENT};
-        `}
-        data-testid="label-cloud"
-      >
-        {sorted.map((item) => {
-          const weight = item.count / max;
-          return (
-            <StyledLink
-              key={item.name}
-              href={labelHref(item.name)}
-              title={t('{{count}} uses', {
-                description: 'How many items carry a label',
-                count: item.count,
-              })}
-              $css={css`
-                font-size: ${0.8 + weight * 0.9}rem;
-                font-weight: ${weight > 0.6 ? 700 : weight > 0.3 ? 600 : 400};
-                color: var(--c--contextuals--content--semantic--brand--primary);
-                opacity: ${0.6 + weight * 0.4};
-                text-decoration: none;
-                &:hover {
-                  text-decoration: underline;
-                }
-              `}
-            >
-              #{item.name}
-            </StyledLink>
-          );
-        })}
-      </Box>
-      {full ? (
-        <Box $gap="4xs" data-testid="label-list">
-          {byUse.map((item) => (
-            <Row
-              key={item.name}
-              href={labelHref(item.name)}
-              icon="sell"
-              title={`#${item.name}`}
-              detail={t('{{count}} uses', {
-                description: 'How many items carry a label',
-                count: item.count,
-              })}
-            />
-          ))}
-        </Box>
-      ) : (
-        <SeeAll href={LABELS_HREF} />
-      )}
-    </>
-  );
-};
-
 export const CARDS: CardDefinition[] = [
-  // Mentions, notifications and assignments in one card (it keeps the id of
-  // the notifications card, so saved layouts keep its place), beside Labels
+  // Mentions, notifications and assignments, as in the bell
   {
     id: 'notifications',
     icon: 'notifications',
     title: (t) => t('Notifications', { description: 'Dashboard card' }),
     defaultVisible: true,
-    Body: ForMeBody,
-  },
-  {
-    id: 'labels',
-    icon: 'sell',
-    title: (t) => t('Labels', { description: 'Dashboard card' }),
-    defaultVisible: true,
-    Body: LabelsBody,
+    defaultWide: true,
+    Body: function NotificationsBody() {
+      return <ForMeList />;
+    },
   },
   {
     id: 'recent',
     icon: 'schedule',
-    title: (t) => t('Recent pages', { description: 'Dashboard card' }),
+    title: (t) => t('Recent', { description: 'Dashboard card' }),
     defaultVisible: true,
     defaultWide: true,
-    Body: RecentBody,
+    Body: listCard('recent', DocDefaultFilter.ALL_DOCS),
   },
+  // The id of the former Favorites card, so saved layouts keep it
   {
     id: 'favorites',
     icon: 'star',
-    title: (t) => t('Favorites', { description: 'Dashboard card' }),
+    title: (t) => t('Starred', { description: 'Dashboard card' }),
     defaultVisible: false,
-    Body: function FavoritesBody() {
-      const { t } = useTranslation();
-      return (
-        <DocsBody
-          listKey="favorites"
-          query="documents/favorite_list/"
-          empty={t('Star a page to find it here.', {
-            description: 'Empty Favorites card',
-          })}
-        />
-      );
-    },
+    Body: listCard('starred', DocDefaultFilter.STARRED),
   },
   {
-    id: 'spaces',
-    icon: 'folder',
-    title: (t) => t('My spaces', { description: 'Dashboard card' }),
+    id: 'owned',
+    icon: 'person',
+    title: (t) => t('Owned by me', { description: 'Dashboard card' }),
     defaultVisible: false,
-    Body: SpacesBody,
-  },
-  {
-    id: 'workspaces',
-    icon: 'workspaces',
-    title: (t) => t('My workspaces', { description: 'Dashboard card' }),
-    defaultVisible: false,
-    Body: WorkspacesBody,
+    Body: listCard('owned', DocDefaultFilter.MY_DOCS),
   },
   {
     id: 'shared',
     icon: 'group',
     title: (t) => t('Shared with me', { description: 'Dashboard card' }),
     defaultVisible: false,
-    Body: function SharedBody() {
-      const { t } = useTranslation();
-      return (
-        <DocsBody
-          listKey="shared"
-          query="documents/?is_creator_me=false&ordering=-updated_at"
-          empty={t('Pages others share with you will appear here.', {
-            description: 'Empty Shared with me card',
-          })}
-        />
-      );
-    },
-  },
-  {
-    id: 'pages',
-    icon: 'description',
-    title: (t) => t('Independent pages', { description: 'Dashboard card' }),
-    defaultVisible: false,
-    Body: function PagesBody() {
-      const { t } = useTranslation();
-      return (
-        <DocsBody
-          listKey="pages"
-          query="documents/?ordering=-updated_at"
-          empty={t('Pages outside spaces will appear here.', {
-            description: 'Empty Independent pages card',
-          })}
-        />
-      );
-    },
+    Body: listCard('shared', DocDefaultFilter.SHARED_WITH_ME),
   },
 ];
 
@@ -704,10 +103,18 @@ export const DEFAULT_LAYOUT = CARDS.map((card) => ({
  * The saved layout, completed with the cards added since it was saved: those
  * shown on a fresh dashboard appear where they stand by default (before the
  * card that follows them there), the others stay hidden. The order someone
- * chose is kept.
+ * chose is kept; cards no longer offered (Labels, My spaces...) are dropped.
  */
 export const mergeLayout = (saved: CardLayout[]) => {
-  const known = saved.filter((card) => CARDS.some((def) => def.id === card.id));
+  // Saved while Labels stood beside it: Notifications now goes across
+  const besideLabels = saved.some((card) => card.id === 'labels');
+  const known = saved
+    .filter((card) => CARDS.some((def) => def.id === card.id))
+    .map((card) =>
+      besideLabels && card.id === 'notifications'
+        ? { ...card, wide: true }
+        : card,
+    );
   if (!known.length) {
     return DEFAULT_LAYOUT;
   }

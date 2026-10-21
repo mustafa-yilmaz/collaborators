@@ -1,7 +1,8 @@
 import { Box, SCREEN_MAX_WIDTH, Text } from '@/components';
-import { ForMeList, LabelsOverview } from '@/features/dashboard/cards';
 import { DocDefaultFilter, useTrans } from '@/features/docs/doc-management';
 import { DocsGrid } from '@/features/docs/docs-grid';
+import { LabelsOverview } from '@/features/labels/LabelsOverview';
+import { ForMeList } from '@/features/notifications/ForMeList';
 import { useResponsiveStore } from '@/stores/useResponsiveStore';
 
 import { CollaborationsList } from './CollaborationsList';
@@ -45,7 +46,7 @@ export const CollaborationsScreen = ({
       </Text>
       {view && <CollaborationsList view={view} />}
       {target === DocDefaultFilter.NOTIFICATIONS && <ForMeList full />}
-      {target === DocDefaultFilter.LABELS && <LabelsOverview full />}
+      {target === DocDefaultFilter.LABELS && <LabelsOverview />}
     </Box>
   );
 };

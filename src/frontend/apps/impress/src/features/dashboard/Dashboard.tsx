@@ -22,15 +22,10 @@ import { AccountHints } from '@/features/account/AccountHints';
 import { useAuth } from '@/features/auth';
 import { useResponsiveStore } from '@/stores';
 
+import { CARD_ICON_GAP, CARD_ICON_SIZE } from './CardParts';
 import { HierarchyNote } from './HierarchyNote';
 import { CardLayout, useDashboardLayout } from './api';
-import {
-  CARDS,
-  CARD_ICON_GAP,
-  CARD_ICON_SIZE,
-  DEFAULT_LAYOUT,
-  mergeLayout,
-} from './cards';
+import { CARDS, DEFAULT_LAYOUT, mergeLayout } from './cards';
 
 const IconButton = ({
   icon,
@@ -567,18 +562,14 @@ export const Dashboard = () => {
         {/* Hidden cards come back from here; the layout can be reset too */}
         <DropdownMenu
           options={[
-            ...hidden.flatMap((card) => {
-              const definition = CARDS.find((item) => item.id === card.id);
-              return definition
-                ? [
-                    {
-                      label: definition.title(t),
-                      icon: <Icon iconName={definition.icon} $size="18px" />,
-                      callback: () => change(card.id, { hidden: false }),
-                    },
-                  ]
-                : [];
-            }),
+            // In the order of the cards (Starred, Owned by me, Shared...)
+            ...CARDS.filter((definition) =>
+              hidden.some((card) => card.id === definition.id),
+            ).map((definition) => ({
+              label: definition.title(t),
+              icon: <Icon iconName={definition.icon} $size="18px" />,
+              callback: () => change(definition.id, { hidden: false }),
+            })),
             ...(hidden.length ? [{ type: 'separator' as const }] : []),
             {
               label: t('Reset the dashboard', {
@@ -648,7 +639,7 @@ export const Dashboard = () => {
       >
         <Icon iconName="search" $size="20px" $variation="secondary" />
         <Text $size="sm" $variation="secondary" $css="flex: 1;">
-          {t('Search pages…', { description: 'Dashboard search box' })}
+          {t('Search', { description: 'Dashboard search box' })}
         </Text>
         <Text $size="xs" $variation="secondary">
           ⌘K

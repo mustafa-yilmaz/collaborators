@@ -1,6 +1,11 @@
 import { PropsWithChildren } from 'react';
 import { css } from 'styled-components';
 
+import {
+  mirroredCss,
+  useSidebarSide,
+} from '@/features/left-panel/stores/useSidebarSide';
+
 import { Box, BoxType } from './Box';
 import { Card } from './Card';
 
@@ -37,9 +42,12 @@ export const FloatingBar = ({
   $css,
   ...props
 }: PropsWithChildren<BoxType>) => {
+  // Collaborators: with the panel on the right, the bar is mirrored too
+  const { isRight } = useSidebarSide();
   return (
     <Box
       as="header"
+      dir={isRight ? 'rtl' : undefined}
       className="--docs--floating-bar"
       data-testid="floating-bar"
       $direction="row"
@@ -48,6 +56,7 @@ export const FloatingBar = ({
       $padding="sm"
       $css={css`
         ${FLOATING_STYLES}
+        ${isRight ? mirroredCss : ''}
         ${$css}
       `}
       {...props}

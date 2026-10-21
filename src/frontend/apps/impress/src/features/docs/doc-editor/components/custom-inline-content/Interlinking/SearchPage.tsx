@@ -97,6 +97,12 @@ export const SearchPage = ({
     });
     contentRef(null);
     editor.focus();
+    const isPage = mainEditor === (editor as unknown);
+    // In a to-do item of a page, mentioning someone assigns it to them
+    const assign =
+      isPage &&
+      (editor as DocsBlockNoteEditor).getTextCursorPosition().block.type ===
+        'checkListItem';
     (editor as DocsBlockNoteEditor).insertInlineContent([
       {
         type: 'mention',
@@ -104,13 +110,14 @@ export const SearchPage = ({
           kind: candidate.kind,
           targetId: candidate.id,
           label: candidate.label,
+          assign,
         },
       },
       ' ',
     ]);
 
-    const isPage = mainEditor === (editor as unknown);
-    if (isPage && currentDoc) {
+    // An assignment notifies them itself (usePageAssignments)
+    if (isPage && currentDoc && !assign) {
       const anchorId = (editor as DocsBlockNoteEditor).getTextCursorPosition()
         .block.id;
       postMention({

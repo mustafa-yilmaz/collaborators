@@ -61,6 +61,7 @@ import {
   useUploadFile,
   useUploadStatus,
 } from '../hook';
+import { usePageAssignments } from '../hook/usePageAssignments';
 import { useEditorStore } from '../stores';
 import { DocsEditorStyle } from '../styles';
 import { type DocsBlockNoteEditor } from '../types';
@@ -373,6 +374,9 @@ export const BlockNoteEditor = ({ doc, provider }: BlockNoteEditorProps) => {
   useUploadStatus(editor);
 
   useLoopTableHandlesGuard(editor);
+
+  // Collaborators: assignments anywhere in the page (to-do items, mentions)
+  usePageAssignments(editor, doc.id, !!doc.abilities.partial_update);
 
   useScrollToBlockAnchor();
 

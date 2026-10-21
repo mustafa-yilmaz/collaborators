@@ -233,27 +233,112 @@ const RecentBody = ({ wide }: BodyProps) => {
   );
 };
 
-const NotificationsBody = () => {
+/** How many entries the "for me" card shows. */
+const FOR_ME_SIZE = 8;
+
+/**
+ * Mentions, notifications and what is assigned to me (in tables or anywhere
+ * in a page, directly or through a group), newest first. Assignments come
+ * from the current list, not from their notifications, so that one done or
+ * taken back leaves the card.
+ */
+const ForMeBody = () => {
   const { t } = useTranslation();
   const { relativeDate } = useDate();
+  const { untitledDocument } = useTrans();
   const textOf = useNotificationText();
   const targetOf = useNotificationTarget();
-  const { data = [], isLoading } = useNotifications(true);
+  const { data: notifications = [], isLoading } = useNotifications(true);
+  const { data: assigned = [], isLoading: isAssignedLoading } =
+    useAssignedRows(true);
   const { markRead } = useNotificationMutations();
-  if (!isLoading && !data.length) {
+
+  const entries = [
+    ...notifications
+      .filter((notification) => notification.kind !== 'assignment')
+      .map((notification) => ({
+        key: `n-${notification.id}`,
+        date: notification.created_at,
+        notification,
+        row: undefined,
+      })),
+    ...assigned.map((row) => ({
+      key: `a-${row.id}`,
+      date: row.updated_at,
+      notification: undefined,
+      row,
+    })),
+  ]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, FOR_ME_SIZE);
+
+  if (!isLoading && !isAssignedLoading && !entries.length) {
     return (
       <Empty>
-        {t('No mentions yet.', { description: 'Empty notifications card' })}
+        {t('No mentions or assignments yet.', {
+          description: 'Empty card of mentions, notifications and assignments',
+        })}
       </Empty>
     );
   }
+
   return (
     <>
-      {data.slice(0, 5).map((notification) => {
+      {entries.map(({ key, notification, row }) => {
+        if (row) {
+          const doc = row.document.title || untitledDocument;
+          // Opening it also reads the notification it came with
+          const unread = notifications.filter(
+            (item) =>
+              item.kind === 'assignment' &&
+              !item.read_at &&
+              item.document?.id === row.document.id &&
+              item.anchor_id === row.anchor_id,
+          );
+          return (
+            <Row
+              key={key}
+              href={`/docs/${row.document.id}/#${row.anchor_id}`}
+              icon="assignment_ind"
+              title={
+                row.row_label ||
+                t('Something to do', {
+                  description: 'An assignment without text',
+                })
+              }
+              detail={[
+                row.assigned_by
+                  ? t('Assigned by {{name}} in {{doc}}', {
+                      description: 'Who assigned it, and where',
+                      name: row.assigned_by,
+                      doc,
+                    })
+                  : t('Assigned in {{doc}}', {
+                      description: 'Where it was assigned',
+                      doc,
+                    }),
+                row.team_label &&
+                  t('via {{group}}', {
+                    description: 'Assigned through a group',
+                    group: row.team_label,
+                  }),
+                relativeDate(row.updated_at),
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+              onClick={() =>
+                unread.forEach((item) => markRead.mutate({ id: item.id }))
+              }
+            />
+          );
+        }
+        if (!notification) {
+          return null;
+        }
         const target = targetOf(notification);
         return (
           <Row
-            key={notification.id}
+            key={key}
             href={target.href}
             icon={
               notification.read_at ? 'notifications' : 'notifications_active'
@@ -269,46 +354,6 @@ const NotificationsBody = () => {
           />
         );
       })}
-    </>
-  );
-};
-
-const AssignedBody = () => {
-  const { t } = useTranslation();
-  const { untitledDocument } = useTrans();
-  const { data = [], isLoading } = useAssignedRows(true);
-  if (!isLoading && !data.length) {
-    return (
-      <Empty>
-        {t('Nothing is assigned to you or your groups in tables.', {
-          description: 'Empty Assigned to me card',
-        })}
-      </Empty>
-    );
-  }
-  return (
-    <>
-      {data.map((row) => (
-        <Row
-          key={row.id}
-          href={`/docs/${row.document.id}/#${row.anchor_id}`}
-          icon="assignment_ind"
-          title={
-            row.row_label ||
-            t('A table row', { description: 'Assigned row without text' })
-          }
-          detail={[
-            row.document.title || untitledDocument,
-            row.team_label &&
-              t('via {{group}}', {
-                description: 'Assigned through a group',
-                group: row.team_label,
-              }),
-          ]
-            .filter(Boolean)
-            .join(' · ')}
-        />
-      ))}
     </>
   );
 };
@@ -413,8 +458,8 @@ const WorkspacesBody = () => {
 /**
  * Every card the dashboard can show, in their default order. Cards sit in two
  * columns, in turn left and right, and a wide card goes across both: by
- * default Mentions & notifications on the left, Assigned to me on the right,
- * and Recent pages across, under them.
+ * default mentions, notifications and assignments on the left, Labels on the
+ * right, and Recent pages across, under them.
  */
 /** A cloud of the labels of what one can see: the more used, the bigger. */
 const LabelsBody = () => {
@@ -471,27 +516,23 @@ const LabelsBody = () => {
 };
 
 export const CARDS: CardDefinition[] = [
+  // Mentions, notifications and assignments in one card (it keeps the id of
+  // the notifications card, so saved layouts keep its place), beside Labels
   {
     id: 'notifications',
     icon: 'notifications',
     title: (t) =>
-      t('Mentions & notifications', { description: 'Dashboard card' }),
+      t('Mentions, notifications and assignments for me', {
+        description: 'Dashboard card',
+      }),
     defaultVisible: true,
-    Body: NotificationsBody,
-  },
-  {
-    id: 'assigned',
-    icon: 'assignment_ind',
-    title: (t) => t('Assigned to me', { description: 'Dashboard card' }),
-    defaultVisible: true,
-    Body: AssignedBody,
+    Body: ForMeBody,
   },
   {
     id: 'labels',
     icon: 'sell',
     title: (t) => t('Labels', { description: 'Dashboard card' }),
     defaultVisible: true,
-    defaultWide: true,
     Body: LabelsBody,
   },
   {

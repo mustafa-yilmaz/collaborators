@@ -1,6 +1,9 @@
 import { StyleSchema, createExtension } from '@blocknote/core';
 import { createReactInlineContentSpec } from '@blocknote/react';
+import { DropdownMenu } from '@gouvfr-lasuite/ui-components';
 import { Plugin } from '@tiptap/pm/state';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Icon } from '@/components';
 import { GroupHoverCard } from '@/features/people/GroupHoverCard';
@@ -14,6 +17,10 @@ import { searchOrigin } from '../Interlinking/searchSession';
  * `targetId` is a user id, or a team string for a group (e.g. "group:<id>").
  * The backend reads these props in comment bodies to notify the people
  * mentioned; in pages, the mention is reported when it is inserted.
+ *
+ * `assign`: in a page, the person or group is assigned the block (see
+ * usePageAssignments): set when mentioned in a to-do item, or from the
+ * mention's menu in any block.
  */
 export type MentionInlineContentType = {
   type: 'mention';
@@ -21,6 +28,7 @@ export type MentionInlineContentType = {
     kind: { default: 'user'; values: readonly ['user', 'group'] };
     targetId: { default: '' };
     label: { default: '' };
+    assign: { default: false };
   };
   content: 'none';
 };
@@ -31,6 +39,7 @@ const mentionConfig = {
     kind: { default: 'user', values: ['user', 'group'] },
     targetId: { default: '' },
     label: { default: '' },
+    assign: { default: false },
   },
   content: 'none',
 } as const;
@@ -39,11 +48,18 @@ const MentionChip = ({
   kind,
   targetId,
   label,
+  assign,
+  onAssign,
 }: {
   kind: 'user' | 'group';
   targetId: string;
   label: string;
+  assign?: boolean;
+  /** In an editable page: make the mention an assignment, or not */
+  onAssign?: (assign: boolean) => void;
 }) => {
+  const { t } = useTranslation();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const chip = (
     <span
       className="--collaborators--mention"
@@ -61,36 +77,104 @@ const MentionChip = ({
         whiteSpace: 'nowrap',
       }}
     >
+      {assign && (
+        <Icon
+          iconName="assignment_ind"
+          $size="14px"
+          $color="inherit"
+          aria-label={t('Assigned', {
+            description: 'Mark of a mention that is an assignment',
+          })}
+        />
+      )}
       {kind === 'group' && (
         <Icon iconName="groups" $size="14px" $color="inherit" />
       )}
       @{label}
     </span>
   );
+  // In an editable page, the mention's menu makes it an assignment
+  const withMenu = onAssign ? (
+    <DropdownMenu
+      isOpen={isMenuOpen}
+      onOpenChange={setIsMenuOpen}
+      options={[
+        assign
+          ? {
+              label: t('Remove the assignment', {
+                description: 'Menu of a mention that is an assignment',
+              }),
+              icon: <Icon iconName="assignment_return" $size="18px" />,
+              callback: () => onAssign(false),
+            }
+          : {
+              label: t('Assign this to {{name}}', {
+                description: 'Menu of a mention in a page',
+                name: label,
+              }),
+              icon: <Icon iconName="assignment_ind" $size="18px" />,
+              callback: () => onAssign(true),
+            },
+      ]}
+    >
+      <span
+        role="button"
+        tabIndex={-1}
+        onClick={() => setIsMenuOpen(true)}
+        style={{ cursor: 'pointer' }}
+      >
+        {chip}
+      </span>
+    </DropdownMenu>
+  ) : (
+    chip
+  );
   // Hovering a person shows their card; a group, who is in it
   return kind === 'user' ? (
     <PersonHoverCard userId={targetId} name={label}>
-      {chip}
+      {withMenu}
     </PersonHoverCard>
   ) : (
     <GroupHoverCard team={targetId} name={label}>
-      {chip}
+      {withMenu}
     </GroupHoverCard>
   );
 };
 
-const render = {
+type MentionProps = {
+  kind: 'user' | 'group';
+  targetId: string;
+  label: string;
+  assign: boolean;
+};
+
+const renderWith = (canAssign: boolean) => ({
   render: ({
     inlineContent,
+    updateInlineContent,
+    editor,
   }: {
-    inlineContent: {
-      props: { kind: 'user' | 'group'; targetId: string; label: string };
-    };
+    inlineContent: { type: 'mention'; props: MentionProps };
+    updateInlineContent: (update: {
+      type: 'mention';
+      props: MentionProps;
+    }) => void;
+    editor: { isEditable: boolean };
   }) => (
     <MentionChip
       kind={inlineContent.props.kind}
       targetId={inlineContent.props.targetId}
       label={inlineContent.props.label}
+      assign={inlineContent.props.assign}
+      onAssign={
+        canAssign && editor.isEditable
+          ? (assign) =>
+              updateInlineContent({
+                type: 'mention',
+                props: { ...inlineContent.props, assign },
+              })
+          : undefined
+      }
     />
   ),
   toExternalHTML: ({
@@ -98,13 +182,13 @@ const render = {
   }: {
     inlineContent: { props: { label: string } };
   }) => <span>@{inlineContent.props.label}</span>,
-};
+});
 
 /** The mention chip, for the page editor (its "@" is handled by useShortcuts). */
 export const MentionInlineContent = createReactInlineContentSpec<
   MentionInlineContentType,
   StyleSchema
->(mentionConfig, render);
+>(mentionConfig, renderWith(true));
 
 /**
  * Typing "@" (at the start of a word) opens the search for people, groups
@@ -146,4 +230,4 @@ const mentionTriggerExtension = createExtension(({ editor }) => ({
 export const MentionWithTriggerInlineContent = createReactInlineContentSpec<
   MentionInlineContentType,
   StyleSchema
->(mentionConfig, render, [mentionTriggerExtension()]);
+>(mentionConfig, renderWith(false), [mentionTriggerExtension()]);

@@ -17,7 +17,7 @@ from rest_framework.views import APIView
 from core import choices, models, notifications
 from core.api import permissions
 from core.api.utils import filter_root_paths
-from core.utils.anchors import CELL_ANCHOR_RE
+from core.utils.anchors import is_valid_anchor
 
 DASHBOARD_MAX_CARDS = 30
 RECENT_SIZE = 8
@@ -121,7 +121,7 @@ class DashboardRecentView(APIView):
 
 
 class DashboardAssignedView(APIView):
-    """Table rows assigned to me, or to one of my groups."""
+    """What is assigned to me or one of my groups: table rows, or page blocks."""
 
     permission_classes = [permissions.IsAuthenticated]
 
@@ -168,9 +168,19 @@ class DashboardAssignedView(APIView):
 
 
 class AssignmentSerializer(serializers.Serializer):
-    """A person or a group set in, or removed from, a Person cell."""
+    """
+    A person or a group set in, or removed from, a Person cell, or assigned
+    a block of the page (a mention marked as an assignment).
+    """
 
-    anchor_id = serializers.RegexField(CELL_ANCHOR_RE)
+    # A table cell, or a block anywhere in the page (to-do items...)
+    anchor_id = serializers.CharField(max_length=200)
+
+    def validate_anchor_id(self, value):
+        """A Loop table cell or a page block."""
+        if not is_valid_anchor(value):
+            raise serializers.ValidationError("Unknown place in the page.")
+        return value
     assignee_id = serializers.PrimaryKeyRelatedField(
         queryset=models.User.objects.filter(is_active=True),
         required=False,
@@ -194,7 +204,7 @@ class AssignmentSerializer(serializers.Serializer):
 
 
 class DocumentAssignmentsView(APIView):
-    """Record (and notify) or remove an assignment in a page's table."""
+    """Record (and notify) or remove an assignment in a page: a table's row or any block."""
 
     permission_classes = [permissions.IsAuthenticated]
 

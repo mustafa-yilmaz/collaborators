@@ -115,6 +115,36 @@ def test_api_assignments_index_and_notify_once():
     ] == [("Write the proposal", "Plan", anchor)]
 
 
+def test_api_assignments_of_any_block_of_a_page():
+    """A to-do item, or any block, can be assigned, then done and removed."""
+    author, assignee = factories.UserFactory.create_batch(2)
+    document = factories.DocumentFactory(
+        users=[(author, "editor"), (assignee, "reader")], title="Plan"
+    )
+    url = f"/api/v1.0/documents/{document.id}/assignments/"
+    block = str(uuid4())
+    payload = {
+        "anchor_id": block,
+        "assignee_id": str(assignee.id),
+        "row_label": "Book the room @Bob",
+    }
+
+    assert client_for(author).post(url, payload, format="json").status_code == 201
+    assigned = client_for(assignee).get("/api/v1.0/dashboard/assigned/").json()
+    assert [(a["row_label"], a["anchor_id"]) for a in assigned] == [
+        ("Book the room @Bob", block)
+    ]
+    assert models.Notification.objects.filter(kind="assignment").count() == 1
+
+    # Ticked off: the to-do item's assignment is removed
+    client_for(author).delete(url, payload, format="json")
+    assert client_for(assignee).get("/api/v1.0/dashboard/assigned/").json() == []
+
+    # Only a block or a table cell
+    bad = {**payload, "anchor_id": "somewhere"}
+    assert client_for(author).post(url, bad, format="json").status_code == 400
+
+
 def test_api_assignments_to_my_groups_and_removal():
     """Rows assigned to my group show up; removing the assignment clears them."""
     author, member = factories.UserFactory.create_batch(2)

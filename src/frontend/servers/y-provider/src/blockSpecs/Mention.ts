@@ -9,6 +9,8 @@ export const MentionInline = createInlineContentSpec(
       kind: { default: 'user' as const, values: ['user', 'group'] as const },
       targetId: { default: '' },
       label: { default: '' },
+      // In a page: the person or group is assigned the block
+      assign: { default: false },
     },
     content: 'none' as const,
   },

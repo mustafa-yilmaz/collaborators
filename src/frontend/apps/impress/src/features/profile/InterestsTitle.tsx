@@ -7,6 +7,7 @@ import { Title } from '@/components/Title';
 export const InterestsTitle = () => (
   <Text
     as="span"
+    dir="ltr"
     // inline: the words keep their spaces around the name
     $display="inline"
     $size="sm"

@@ -15,6 +15,8 @@ export const MyCollaboratorsName = ({ size = '1em' }: { size?: string }) => {
   return (
     <Text
       as="span"
+      // words in reading order, even in a panel mirrored on the right
+      dir="ltr"
       $display="inline-flex"
       $direction="row"
       $align="baseline"
@@ -42,6 +44,7 @@ export const WithBrand = ({
 }) => (
   <Text
     as="span"
+    dir="ltr"
     // inline: the words keep their spaces around the name
     $display="inline"
     $css="white-space: nowrap;"

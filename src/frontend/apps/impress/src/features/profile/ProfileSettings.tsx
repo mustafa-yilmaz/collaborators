@@ -233,14 +233,6 @@ export const ProfileSettings = () => {
       </Text>
       {/* The setting's name on the left, the choice on the right */}
       <Field
-        note={
-          <Text $size="xs" $variation="secondary">
-            {t(
-              'Others find you by name (to share with you, to invite you, in My Collaborators) only if you share something, unless you open it wider. It also limits who sees each piece below. Anyone can still invite your email address.',
-              { description: 'Explanation of the reach of a profile' },
-            )}
-          </Text>
-        }
         picker={
           <Select
             fullWidth
@@ -259,6 +251,13 @@ export const ProfileSettings = () => {
           {t('Who can find me and invite me', {
             description: 'Profile setting: who may find someone',
           })}
+        </Text>
+        {/* Its explanation in the left column too, under its name */}
+        <Text $size="xs" $variation="secondary" $css="line-height: 1.4;">
+          {t(
+            'Others find you by name (to share with you, to invite you, in My Collaborators) only if you share something, unless you open it wider. It also limits who sees each piece below. Anyone can still invite your email address.',
+            { description: 'Explanation of the reach of a profile' },
+          )}
         </Text>
       </Field>
       <Field

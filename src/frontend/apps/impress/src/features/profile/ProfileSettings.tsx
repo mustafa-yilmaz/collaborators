@@ -55,8 +55,9 @@ const AudiencePicker = ({
     },
     {
       value: 'platform',
-      label: t('Everyone on Collaborators', {
+      label: t('Everyone on {{brand}}', {
         description: 'Visibility: every signed-in collaborator',
+        brand: BRAND_NAME,
       }),
     },
     {
@@ -278,8 +279,9 @@ export const ProfileSettings = () => {
             },
             {
               value: 'platform',
-              label: t('Everyone on Collaborators', {
+              label: t('Everyone on {{brand}}', {
                 description: 'Reach: every signed-in collaborator',
+                brand: BRAND_NAME,
               }),
             },
             {

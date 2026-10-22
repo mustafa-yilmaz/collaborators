@@ -47,6 +47,8 @@ export type Reach = 'colleagues' | 'platform' | 'public';
 
 export interface MyProfile extends Profile {
   reach: Reach;
+  /** One's own addresses (with merged accounts), to show one as the email */
+  email_choices?: string[];
   visibility: Record<ProfileField, AudienceSetting>;
   workspace_choices: { id: string; name: string }[];
   space_choices: { id: string; title: string }[];
@@ -59,6 +61,7 @@ export type MyProfileUpdate = Partial<
   > & {
     visibility: Partial<Record<ProfileField, AudienceSetting>>;
     reach: Reach;
+    shown_email: string;
   }
 >;
 

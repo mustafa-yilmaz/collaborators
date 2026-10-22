@@ -3025,6 +3025,9 @@ class UserProfile(BaseModel):
     website = models.URLField(max_length=300, blank=True, default="")
     interests = models.ManyToManyField(Label, blank=True, related_name="profiles")
     visibility = models.JSONField(default=dict, blank=True)
+    # The address shown as the profile's email, among the person's own (the
+    # account's, and those of the accounts merged into it); empty: the account's
+    shown_email = models.EmailField(blank=True, default="")
     # Who can find this collaborator (search, "My Collaborators") and invite
     # them: the people they share a workspace, space or page with, or
     # everyone. It also caps the audience of each piece of the profile.

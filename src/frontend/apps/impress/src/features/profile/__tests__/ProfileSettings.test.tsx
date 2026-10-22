@@ -89,4 +89,40 @@ describe('ProfileSettings', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText('#Brand new')).not.toBeInTheDocument();
   });
+
+  test('with merged accounts, the email shown is chosen among them', async () => {
+    fetchMock.get(URL, {
+      ...me,
+      email_choices: ['ada@acme.org', 'ada@home.example'],
+    });
+    fetchMock.put(URL, me);
+
+    render(<ProfileSettings />, { wrapper: AppWrapper });
+
+    expect(
+      await screen.findByText('One of your addresses (your merged accounts).'),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(fetchMock.callHistory.called(URL, { method: 'PUT' })).toBe(true),
+    );
+    const body = JSON.parse(
+      fetchMock.callHistory.lastCall(URL, { method: 'PUT' })?.options
+        .body as string,
+    );
+    expect(body.shown_email).toBe('ada@acme.org');
+  });
+
+  test('with one address, the email is only shown', async () => {
+    fetchMock.get(URL, { ...me, email_choices: ['ada@acme.org'] });
+
+    render(<ProfileSettings />, { wrapper: AppWrapper });
+
+    expect(
+      await screen.findByText(
+        'The address you sign in with: it can’t be changed here.',
+      ),
+    ).toBeInTheDocument();
+  });
 });

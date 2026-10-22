@@ -205,6 +205,7 @@ export const ProfileSettings = () => {
   );
   const [visibility, setVisibility] = useState<Visibility>();
   const [reach, setReach] = useState<Reach>('colleagues');
+  const [shownEmail, setShownEmail] = useState('');
 
   useEffect(() => {
     if (profile) {
@@ -218,6 +219,7 @@ export const ProfileSettings = () => {
       setInterests(profile.interests);
       setVisibility(profile.visibility);
       setReach(profile.reach ?? 'colleagues');
+      setShownEmail(profile.email);
     }
   }, [profile]);
 
@@ -346,15 +348,33 @@ export const ProfileSettings = () => {
         title={t('Email', { description: 'Profile field' })}
         picker={picker('email')}
       >
-        <Input
-          fullWidth
-          label={t('Email', { description: 'Profile field' })}
-          value={profile.email}
-          disabled
-          text={t('The address you sign in with: it can’t be changed here.', {
-            description: 'Help of the read-only email of a profile',
-          })}
-        />
+        {(profile.email_choices ?? []).length > 1 ? (
+          // Collaborators: with merged accounts, the address to show
+          <Select
+            fullWidth
+            label={t('Email', { description: 'Profile field' })}
+            clearable={false}
+            options={(profile.email_choices ?? []).map((email) => ({
+              value: email,
+              label: email,
+            }))}
+            value={shownEmail}
+            onChange={(event) => setShownEmail(String(event.target.value))}
+            text={t('One of your addresses (your merged accounts).', {
+              description: 'Help of the email choice of a profile',
+            })}
+          />
+        ) : (
+          <Input
+            fullWidth
+            label={t('Email', { description: 'Profile field' })}
+            value={profile.email}
+            disabled
+            text={t('The address you sign in with: it can’t be changed here.', {
+              description: 'Help of the read-only email of a profile',
+            })}
+          />
+        )}
       </Field>
       <Field
         title={t('Website', { description: 'Profile field' })}
@@ -482,7 +502,15 @@ export const ProfileSettings = () => {
           disabled={update.isPending}
           onClick={() =>
             update.mutate(
-              { ...text, interests, visibility, reach },
+              {
+                ...text,
+                interests,
+                visibility,
+                reach,
+                ...((profile.email_choices ?? []).length > 1
+                  ? { shown_email: shownEmail }
+                  : {}),
+              },
               {
                 onSuccess: () =>
                   toast(

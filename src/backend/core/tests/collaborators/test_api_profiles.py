@@ -179,3 +179,25 @@ def test_interests_are_labels_already_used():
     assert response.status_code == 200
     assert response.json()["interests"] == ["Climate"]
     assert not models.Label.objects.filter(key="brand new idea").exists()
+
+
+def test_the_email_shown_is_one_of_the_owners_addresses():
+    """Merged accounts bring more addresses; any other is refused."""
+    owner, colleague, _stranger, _workspace = colleagues()
+    models.SignInIdentity.objects.create(
+        user=owner, provider="google", sub="g-2", account="ada@home.example"
+    )
+    me = client_for(owner).get("/api/v1.0/profiles/me/").json()
+    assert me["email_choices"] == [owner.email, "ada@home.example"]
+
+    response = client_for(owner).put(
+        "/api/v1.0/profiles/me/", {"shown_email": "ada@home.example"}, format="json"
+    )
+    assert response.status_code == 200
+    seen = client_for(colleague).get(f"/api/v1.0/profiles/{owner.id}/").json()
+    assert seen["email"] == "ada@home.example"
+
+    response = client_for(owner).put(
+        "/api/v1.0/profiles/me/", {"shown_email": "else@example.com"}, format="json"
+    )
+    assert response.status_code == 400

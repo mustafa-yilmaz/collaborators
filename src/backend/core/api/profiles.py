@@ -21,6 +21,7 @@ from rest_framework.views import APIView
 
 from core import choices, models
 from core.api import permissions
+from core.services import keycloak
 from core.utils.users import users_sharing_documents_with
 
 AUDIENCES = [choice.value for choice in models.ProfileAudience]
@@ -174,6 +175,29 @@ def visible_documents_of(owner, viewer):
     return result
 
 
+def email_choices(user):
+    """
+    The person's own addresses: the account's, those its sign-in providers
+    are linked with, and those of the accounts merged into it.
+    """
+    found = [user.email or ""]
+    if keycloak.is_configured():
+        try:
+            keycloak_id = keycloak.find_user_id(user.email or "")
+            if keycloak_id:
+                links, _password = keycloak.sign_in_methods(keycloak_id)
+                found.extend(links.values())
+        except keycloak.KeycloakError:
+            pass
+    found.extend(user.sign_in_identities.values_list("account", flat=True))
+    addresses = []
+    for raw in found:
+        email = (raw or "").strip()
+        if "@" in email and email.lower() not in {a.lower() for a in addresses}:
+            addresses.append(email)
+    return addresses
+
+
 def describe(owner, viewer):
     """The profile as the viewer may see it; None if hidden from them."""
     profile = profile_of(owner)
@@ -190,7 +214,7 @@ def describe(owner, viewer):
         "location": profile.location if shown["location"] else "",
         "bio": profile.bio if shown["bio"] else "",
         "website": profile.website if shown["website"] else "",
-        "email": (owner.email or "") if shown["email"] else "",
+        "email": (profile.shown_email or owner.email or "") if shown["email"] else "",
         "interests": [label.name for label in profile.interests.order_by("key")]
         if shown["interests"]
         else [],
@@ -229,6 +253,8 @@ class MyProfileView(APIView):
             **describe(user, user),
             # who may find them, see their profile and invite them by name
             "reach": profile.reach,
+            # the addresses one may show as the profile's email
+            "email_choices": email_choices(user),
             "visibility": {
                 field: profile.audience(field) for field in models.PROFILE_FIELDS
             },
@@ -262,6 +288,18 @@ class MyProfileView(APIView):
         data = request.data
         errors = {}
         _apply_texts(profile, data, errors)
+        if "shown_email" in data:
+            wanted = str(data["shown_email"] or "").strip()
+            own = {email.lower(): email for email in email_choices(user)}
+            if wanted.lower() not in own:
+                errors["shown_email"] = _("Choose one of your own addresses.")
+            else:
+                # the account's own: nothing to keep
+                profile.shown_email = (
+                    ""
+                    if wanted.lower() == (user.email or "").lower()
+                    else own[wanted.lower()]
+                )
         if "reach" in data:
             if data["reach"] not in REACHES:
                 errors["reach"] = _("Unknown audience.")

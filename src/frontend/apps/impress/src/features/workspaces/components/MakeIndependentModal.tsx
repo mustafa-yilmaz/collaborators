@@ -31,7 +31,7 @@ export const MakeIndependentModal = ({
 
   const onSuccess = () => {
     setCurrentWorkspaceId(null);
-    void router.replace(`/docs/${doc.id}/`);
+    void router.replace(`/page/${doc.id}/`);
   };
   const onError = () =>
     toast(

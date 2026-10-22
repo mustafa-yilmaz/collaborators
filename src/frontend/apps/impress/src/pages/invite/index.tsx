@@ -75,7 +75,7 @@ const Page: NextPageWithLayout = () => {
           setCurrentWorkspaceId(result.id);
           void router.replace('/');
         } else {
-          void router.replace(`/docs/${result.id}/`);
+          void router.replace(`/page/${result.id}/`);
         }
       },
       onError: () =>

@@ -93,7 +93,7 @@ export const useDuplicatedDoc = ({
 
       if (!isTopRoot) {
         addDocToTree(treeContext, doc.id, data);
-        void router.push(`/docs/${data.id}`);
+        void router.push(`/page/${data.id}`);
       }
     },
   });
@@ -241,7 +241,7 @@ export const ToastActions = ({
           deleteDocFromTreeAfterNavigate(
             treeContext,
             duplicatedDocId,
-            router.push(`/docs/${originalDocId}`),
+            router.push(`/page/${originalDocId}`),
           );
         }
       },
@@ -288,7 +288,7 @@ export const ToastActions = ({
       <ButtonLink
         ref={openRef}
         variant="tertiary"
-        href={`/docs/${isTopRoot ? duplicatedDocId : originalDocId}`}
+        href={`/page/${isTopRoot ? duplicatedDocId : originalDocId}`}
         onClick={onCloseToast}
       >
         {isTopRoot

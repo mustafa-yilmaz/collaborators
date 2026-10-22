@@ -151,7 +151,7 @@ export const PublishingSection = ({
                   href={
                     entry.details.slug && entry.action !== 'wiki_unpublished'
                       ? wikiUrl(entry.details.slug)
-                      : `/docs/${entry.document.id}/`
+                      : `/page/${entry.document.id}/`
                   }
                 >
                   <Text as="span" $size="sm" $weight="600">

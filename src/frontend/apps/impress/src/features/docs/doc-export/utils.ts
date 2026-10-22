@@ -86,7 +86,7 @@ export async function resolveInterlinkTitles(
 
   await Promise.all(
     docIds.map(async (docId) => {
-      const href = `/docs/${docId}/`;
+      const href = `/page/${docId}/`;
       try {
         const linkedDoc = await getDoc({ id: docId });
         titleMap.set(docId, linkedDoc.title || href);

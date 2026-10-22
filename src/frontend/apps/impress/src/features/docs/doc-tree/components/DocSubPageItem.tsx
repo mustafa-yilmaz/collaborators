@@ -151,7 +151,7 @@ const DocSubPageItemContent = (props: TreeViewNodeProps<Doc>) => {
         .then(() => {
           node.open();
 
-          void router.push(`/docs/${createdDoc.id}`);
+          void router.push(`/page/${createdDoc.id}`);
 
           if (isMobile) {
             closePanel();
@@ -167,7 +167,7 @@ const DocSubPageItemContent = (props: TreeViewNodeProps<Doc>) => {
       };
       treeContext?.treeData.addChild(node.data.value.id, newDoc);
       node.open();
-      void router.push(`/docs/${createdDoc.id}`);
+      void router.push(`/page/${createdDoc.id}`);
       if (isMobile) {
         closePanel();
       }
@@ -187,7 +187,7 @@ const DocSubPageItemContent = (props: TreeViewNodeProps<Doc>) => {
        * It should be disabled to have the DND working properly.
        */
       draggable={false}
-      href={`/docs/${doc.id}`}
+      href={`/page/${doc.id}`}
       tabIndex={-1}
       aria-label={
         isDeleted

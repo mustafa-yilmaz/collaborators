@@ -22,7 +22,7 @@ export const createInlineContentMappingInterlinkingLinkPDF =
       <Link
         src={
           window.location.origin +
-          `/docs/${inline.props.docId}/${inline.props.blockId ? `#${inline.props.blockId}` : ''}`
+          `/page/${inline.props.docId}/${inline.props.blockId ? `#${inline.props.blockId}` : ''}`
         }
         style={{
           textDecoration: 'none',

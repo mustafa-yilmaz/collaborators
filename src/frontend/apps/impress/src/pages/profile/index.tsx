@@ -205,7 +205,7 @@ const Page: NextPageWithLayout = () => {
                 (profile.spaces ?? []).map((item) => ({
                   id: item.id,
                   name: item.title,
-                  href: `/docs/${item.id}/`,
+                  href: `/page/${item.id}/`,
                 })),
               ],
               [
@@ -215,7 +215,7 @@ const Page: NextPageWithLayout = () => {
                 (profile.pages ?? []).map((item) => ({
                   id: item.id,
                   name: item.title,
-                  href: `/docs/${item.id}/`,
+                  href: `/page/${item.id}/`,
                 })),
               ],
             ] as const

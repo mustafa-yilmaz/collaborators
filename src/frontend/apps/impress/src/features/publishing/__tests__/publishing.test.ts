@@ -83,12 +83,12 @@ describe('wiki addresses', () => {
   });
 
   it('leads back to the app from a wiki address', () => {
-    expect(appUrl('/docs/p1/', config)).toBe('/docs/p1/');
+    expect(appUrl('/page/p1/', config)).toBe('/page/p1/');
     setWikiHostMode({ kind: 'workspace' });
-    expect(appUrl('/docs/p1/', config)).toBe(
+    expect(appUrl('/page/p1/', config)).toBe(
       `${window.location.protocol}//collaborators.community${
         window.location.port ? `:${window.location.port}` : ''
-      }/docs/p1/`,
+      }/page/p1/`,
     );
   });
 });

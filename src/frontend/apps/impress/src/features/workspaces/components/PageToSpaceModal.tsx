@@ -89,7 +89,7 @@ export const PageToSpaceModal = ({
                     onClose();
                     if (isMove) {
                       // The page is now in that space's tree
-                      void router.replace(`/docs/${page.id}/`);
+                      void router.replace(`/page/${page.id}/`);
                     }
                   },
                   onError: (error) =>

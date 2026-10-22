@@ -109,7 +109,7 @@ export const DocsGridItem = ({
               align-items: center;
               min-width: 0;
             `}
-            href={`/docs/${doc.id}`}
+            href={`/page/${doc.id}`}
             onKeyDown={handleKeyDown}
           >
             <DocsGridItemTitle doc={doc} withTooltip={!dragMode} />
@@ -118,7 +118,7 @@ export const DocsGridItem = ({
 
         {!isSmallMobile && (
           <StyledLink
-            href={`/docs/${doc.id}`}
+            href={`/page/${doc.id}`}
             tabIndex={-1}
             aria-label={t('{{title}}, updated {{date}}', {
               description:

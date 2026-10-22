@@ -41,7 +41,7 @@ export const LinkSelected = ({ docId, blockId }: LinkSelectedProps) => {
   const href =
     wiki && wiki.pageIds.has(docId)
       ? `${wikiUrl(wiki.slug, docId)}${anchor}`
-      : `/docs/${docId}/${anchor}`;
+      : `/page/${docId}/${anchor}`;
   // A page the reader can't open is named "Private page", nothing more
   const isPrivate = !isLoading && !doc;
   const label = doc

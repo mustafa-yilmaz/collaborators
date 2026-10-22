@@ -48,7 +48,7 @@ export const DocInheritedShareContent = ({
             })}
           </Text>
           <Box>
-            <StyledLink href={`/docs/${rawAccesses[0].document.id}`}>
+            <StyledLink href={`/page/${rawAccesses[0].document.id}`}>
               <Button
                 size="small"
                 icon={<Icon iconName="open_in_new" />}

@@ -38,7 +38,7 @@ export const DocTreeItemActions = ({
   const { mutate: createChildDoc } = useCreateChildDoc({
     onSuccess: (newDoc) => {
       onCreateSuccess?.(newDoc);
-      void router.push(`/docs/${newDoc.id}`);
+      void router.push(`/page/${newDoc.id}`);
     },
   });
 

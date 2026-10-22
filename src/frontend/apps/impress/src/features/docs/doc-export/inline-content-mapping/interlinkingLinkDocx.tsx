@@ -26,6 +26,6 @@ export const createInlineContentMappingInterlinkingLinkDocx =
       ],
       link:
         window.location.origin +
-        `/docs/${inline.props.docId}/${inline.props.blockId ? `#${inline.props.blockId}` : ''}`,
+        `/page/${inline.props.docId}/${inline.props.blockId ? `#${inline.props.blockId}` : ''}`,
     });
   };

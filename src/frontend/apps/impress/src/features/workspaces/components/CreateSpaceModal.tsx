@@ -69,7 +69,7 @@ export const CreateSpaceModal = ({
             ),
           );
           onClose();
-          void router.push(`/docs/${space.id}`);
+          void router.push(`/page/${space.id}`);
         },
         onError: () => {
           toast(

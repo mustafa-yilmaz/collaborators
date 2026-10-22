@@ -18,7 +18,7 @@ export const useCreateChildDocTree = (parentId?: string) => {
       };
       treeContext?.treeData.addChild(parentId || null, newDoc);
 
-      router.push(`/docs/${newDoc.id}`);
+      router.push(`/page/${newDoc.id}`);
       treeContext?.treeData.setSelectedNode(createdDoc);
     },
   });

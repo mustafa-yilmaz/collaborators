@@ -76,7 +76,7 @@ export const PageList = ({ workspaceId }: { workspaceId?: string }) => {
     (workspaceId ? inWorkspace.data : independent.data?.results) ?? [];
   const [placing, setPlacing] = useState<string>();
   const open = (pageId: string) => {
-    void router.push(`/docs/${pageId}/`);
+    void router.push(`/page/${pageId}/`);
     if (isMobile) {
       closePanel();
     }
@@ -161,7 +161,7 @@ export const PageList = ({ workspaceId }: { workspaceId?: string }) => {
       {pages.map((page) => (
         <StyledLink
           key={page.id}
-          href={`/docs/${page.id}/`}
+          href={`/page/${page.id}/`}
           onClick={() => isMobile && closePanel()}
           $css={css`
             align-items: center;

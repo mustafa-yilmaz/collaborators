@@ -61,7 +61,7 @@ export const NewDocButton = ({ onClose }: NewDocButtonProps) => {
   const [placing, setPlacing] = useState<string>();
 
   const open = (docId: string) => {
-    void router.push(`/docs/${docId}/`);
+    void router.push(`/page/${docId}/`);
     if (isMobile) {
       closePanel();
     }

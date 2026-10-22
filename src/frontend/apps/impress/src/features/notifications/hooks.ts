@@ -29,7 +29,7 @@ export const useNotificationTarget = () => {
       };
     }
     const anchor = notification.anchor_id ? `#${notification.anchor_id}` : '';
-    return { href: `/docs/${notification.document?.id}/${anchor}` };
+    return { href: `/page/${notification.document?.id}/${anchor}` };
   };
 };
 

@@ -46,7 +46,7 @@ export const PageAlsoIn = ({ doc }: { doc: Doc }) => {
           $padding={{ left: 'xs', right: '3xs', vertical: '4xs' }}
           $css={chipCss}
         >
-          <StyledLink href={`/docs/${link.space.id}/`}>
+          <StyledLink href={`/page/${link.space.id}/`}>
             <Text $size="xs">
               {link.space.title ||
                 t('Untitled space', {
@@ -111,7 +111,7 @@ export const SpaceLinkedPages = ({ space }: { space: Doc }) => {
       {pages.map((item) => (
         <StyledLink
           key={item.link_id}
-          href={`/docs/${item.page.id}/`}
+          href={`/page/${item.page.id}/`}
           onClick={() => isMobile && closePanel()}
           $css={css`
             align-items: center;

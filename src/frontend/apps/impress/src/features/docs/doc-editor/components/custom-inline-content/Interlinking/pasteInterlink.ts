@@ -2,7 +2,7 @@ import { validate as uuidValidate } from 'uuid';
 
 import { type DocsBlockNoteEditor } from '@/docs/doc-editor/types';
 
-const DOC_PATH_REGEX = /^\/docs\/([^/]+)\/?$/;
+const DOC_PATH_REGEX = /^\/(?:page|docs)\/([^/]+)\/?$/;
 
 export type PastedDocInterlink = {
   docId: string;

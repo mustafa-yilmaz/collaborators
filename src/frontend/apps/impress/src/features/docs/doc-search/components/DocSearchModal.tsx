@@ -73,7 +73,7 @@ const DocSearchModalGlobal = ({
   }, [defaultFilters, setFilter]);
 
   const handleSelect = (doc: Doc) => {
-    void router.push(`/docs/${doc.id}`);
+    void router.push(`/page/${doc.id}`);
     modalProps.onClose?.();
   };
 

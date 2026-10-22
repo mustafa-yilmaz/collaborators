@@ -615,7 +615,7 @@ export const WikiView = ({
           </Box>
           <Box $direction="row" $align="center" $gap="sm">
             {wiki.can_edit && (
-              <StyledLink href={appUrl(`/docs/${currentId}/`, config)}>
+              <StyledLink href={appUrl(`/page/${currentId}/`, config)}>
                 <Button
                   size="small"
                   variant="secondary"

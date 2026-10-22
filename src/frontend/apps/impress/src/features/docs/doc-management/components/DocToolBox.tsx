@@ -567,7 +567,7 @@ const DocToolBoxComponent = ({
               deleteDocFromTreeAfterNavigate(
                 treeContext,
                 doc.id,
-                router.push(`/docs/${parentId}`),
+                router.push(`/page/${parentId}`),
               );
             }
           }}

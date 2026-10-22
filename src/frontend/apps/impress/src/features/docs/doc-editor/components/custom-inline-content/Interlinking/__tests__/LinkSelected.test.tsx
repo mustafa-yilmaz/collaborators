@@ -113,7 +113,7 @@ describe('LinkSelected', () => {
 
     fireEvent.click(screen.getByRole('link'));
 
-    expect(push).toHaveBeenCalledWith(`/docs/${DOC_ID}/`);
+    expect(push).toHaveBeenCalledWith(`/page/${DOC_ID}/`);
     expect(openSpy).not.toHaveBeenCalled();
   });
 
@@ -128,7 +128,7 @@ describe('LinkSelected', () => {
 
       fireEvent.click(screen.getByRole('link'), modifier);
 
-      expect(openSpy).toHaveBeenCalledWith(`/docs/${DOC_ID}/`, '_blank');
+      expect(openSpy).toHaveBeenCalledWith(`/page/${DOC_ID}/`, '_blank');
       expect(push).not.toHaveBeenCalled();
     },
   );
@@ -160,7 +160,7 @@ describe('LinkSelected', () => {
         cancelable: true,
       }),
     );
-    expect(openSpy).toHaveBeenCalledWith(`/docs/${DOC_ID}/`, '_blank');
+    expect(openSpy).toHaveBeenCalledWith(`/page/${DOC_ID}/`, '_blank');
   });
 
   it('navigates on Enter but ignores other keys', () => {
@@ -176,7 +176,7 @@ describe('LinkSelected', () => {
     expect(push).not.toHaveBeenCalled();
 
     fireEvent.keyDown(link, { key: 'Enter' });
-    expect(push).toHaveBeenCalledWith(`/docs/${DOC_ID}/`);
+    expect(push).toHaveBeenCalledWith(`/page/${DOC_ID}/`);
   });
 
   it('includes the block id anchor in the href when provided', () => {
@@ -191,7 +191,7 @@ describe('LinkSelected', () => {
 
     fireEvent.click(screen.getByRole('link'));
 
-    expect(push).toHaveBeenCalledWith(`/docs/${DOC_ID}/#block-1`);
+    expect(push).toHaveBeenCalledWith(`/page/${DOC_ID}/#block-1`);
   });
 
   it('disables interaction when the current doc is deleted', () => {

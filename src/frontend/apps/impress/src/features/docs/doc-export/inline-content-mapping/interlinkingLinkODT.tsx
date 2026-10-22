@@ -18,7 +18,7 @@ export const createInlineContentMappingInterlinkingLinkODT =
     const { emoji, titleWithoutEmoji } = getEmojiAndTitle(title);
     const url =
       window.location.origin +
-      `/docs/${inline.props.docId}/${inline.props.blockId ? `#${inline.props.blockId}` : ''}`;
+      `/page/${inline.props.docId}/${inline.props.blockId ? `#${inline.props.blockId}` : ''}`;
 
     // Create ODT hyperlink using React.createElement to avoid TypeScript JSX namespace issues
     // Uses the same structure as BlockNote's default link mapping

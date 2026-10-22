@@ -161,7 +161,7 @@ export const ForMeList = ({
           return (
             <Row
               key={key}
-              href={`/docs/${row.document.id}/#${row.anchor_id}`}
+              href={`/page/${row.document.id}/#${row.anchor_id}`}
               icon="assignment_ind"
               title={
                 row.row_label ||

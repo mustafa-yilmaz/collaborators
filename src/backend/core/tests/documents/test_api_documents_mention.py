@@ -156,7 +156,7 @@ def test_api_documents_mention_authenticated_success(role):
     assert "Mentioning User mentioned you in the following page: My doc" in (
         email_content
     )
-    assert f"docs/{document.id!s}/#{anchor_id}" in email_content
+    assert f"page/{document.id!s}/#{anchor_id}" in email_content
 
 
 def test_api_documents_mention_via_link_role():
@@ -434,7 +434,7 @@ def test_api_documents_mention_thread():
         "Mentioning User mentioned you in a comment in the following document: My doc"
         in email_content
     )
-    assert f"docs/{document.id!s}/#{anchor_id}" in email_content
+    assert f"page/{document.id!s}/#{anchor_id}" in email_content
 
 
 def test_api_documents_mention_thread_other_document():

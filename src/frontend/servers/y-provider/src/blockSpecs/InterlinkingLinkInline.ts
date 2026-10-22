@@ -33,7 +33,7 @@ const instanceOrigin = COLLABORATION_SERVER_ORIGIN.split(',')[0].replace(
 // so the links resolve outside of the app (Docs-as-CMS, emails, etc.) rather than
 // against whatever host the exported HTML/markdown happens to be served from.
 const interlinkingHref = (docId: string) =>
-  `${instanceOrigin}/docs/${encodeURIComponent(docId)}/`;
+  `${instanceOrigin}/page/${encodeURIComponent(docId)}/`;
 
 export const InterlinkingLinkInline = createInlineContentSpec(
   interlinkingConfig,

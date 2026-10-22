@@ -129,7 +129,7 @@ const DocumentRow = ({ doc }: { doc: CollaborationDocument }) => {
   });
   return (
     <Box $direction="row" $align="center" $gap="2xs">
-      <StyledLink href={`/docs/${doc.id}/`} $css={rowCss}>
+      <StyledLink href={`/page/${doc.id}/`} $css={rowCss}>
         <Icon
           iconName={doc.kind === 'space' ? 'folder' : 'description'}
           $size={CARD_ICON_SIZE}
@@ -183,7 +183,7 @@ export const CollaborationsList = ({
   const { setCurrentWorkspaceId } = useWorkspaceStore();
   const [creating, setCreating] = useState<'workspace' | 'space'>();
   const { mutate: createPage } = useCreateDoc({
-    onSuccess: (doc) => void router.push(`/docs/${doc.id}/`),
+    onSuccess: (doc) => void router.push(`/page/${doc.id}/`),
   });
   const canCreate = view === 'owned' && !summary;
 

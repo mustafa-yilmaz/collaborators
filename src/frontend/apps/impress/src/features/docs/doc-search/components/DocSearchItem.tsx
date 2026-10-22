@@ -21,7 +21,7 @@ export const DocSearchItem = ({ doc }: DocSearchItemProps) => {
     <StyledLink
       data-testid={`doc-search-item-${doc.id}`}
       className="--docs--doc-search-item"
-      href={`/docs/${doc.id}`}
+      href={`/page/${doc.id}`}
       tabIndex={-1}
       $css={css`
         width: 100%;

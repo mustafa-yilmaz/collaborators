@@ -1659,7 +1659,7 @@ class Document(MP_Node, BaseModel):
             "brandname": settings.EMAIL_BRAND_NAME,
             "document": self,
             "domain": domain,
-            "link": f"{domain}/docs/{self.id}/?utm_source=docssharelink&utm_campaign={self.id}",
+            "link": f"{domain}/page/{self.id}/?utm_source=docssharelink&utm_campaign={self.id}",
             "link_label": self.title or str(_("Untitled page")),
             "button_label": _("Open"),
             "logo_img": settings.EMAIL_LOGO_IMG,
@@ -2450,7 +2450,7 @@ class Mention(BaseModel):
             context = {
                 "title": subject,
                 "message": message,
-                "link": f"{domain}/docs/{self.document_id}/#{self.anchor_id}",
+                "link": f"{domain}/page/{self.document_id}/#{self.anchor_id}",
             }
 
         sent = False

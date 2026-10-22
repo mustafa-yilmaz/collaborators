@@ -212,7 +212,7 @@ def test_api_document_accesses_create_authenticated_administrator_share_to_user(
         f"{user.full_name} ({user.email}) invited you with the role &quot;{role}&quot; "
         f"on the following document: {document.title}"
     ) in email_content
-    assert "docs/" + str(document.id) + "/" in email_content
+    assert "page/" + str(document.id) + "/" in email_content
 
 
 @pytest.mark.parametrize("depth", [1, 2, 3])
@@ -408,7 +408,7 @@ def test_api_document_accesses_create_authenticated_owner_share_to_user(
         f"{user.full_name} ({user.email}) invited you with the role &quot;{role}&quot; "
         f"on the following document: {document.title}"
     ) in email_content
-    assert "docs/" + str(document.id) + "/" in email_content
+    assert "page/" + str(document.id) + "/" in email_content
 
 
 @pytest.mark.parametrize("depth", [1, 2, 3])
@@ -593,7 +593,7 @@ def test_api_document_accesses_create_email_in_receivers_language(via, mock_user
                 f"{user.full_name} a partagé un document avec vous : {document.title}".lower()
                 in email_subject.lower()
             )
-        assert "docs/" + str(document.id) + "/" in email_content.lower()
+        assert "page/" + str(document.id) + "/" in email_content.lower()
 
 
 @pytest.mark.parametrize("via", VIA)

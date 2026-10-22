@@ -101,7 +101,7 @@ self.addEventListener('activate', function (event) {
  */
 const FALLBACK = {
   offline: '/offline/',
-  docs: '/docs/[id]/',
+  docs: '/page/[id]/',
   images: '/assets/img-not-found.svg',
 };
 const precacheResources = [

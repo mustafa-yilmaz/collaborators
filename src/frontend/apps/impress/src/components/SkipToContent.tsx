@@ -45,7 +45,7 @@ export const SkipToContent = () => {
 
   const leftBesideLogo = `calc(${spacingsTokens['sm']} + ${HEADER_ICON_WIDTH} + ${spacingsTokens['4xs']} + 70px + 12px)`;
   const isMobilePanelClosed = isMobile && !isPanelOpen;
-  const isDocEditorPage = pathname === '/docs/[id]';
+  const isDocEditorPage = pathname === '/page/[id]';
 
   const left = isMobilePanelClosed
     ? isDocEditorPage

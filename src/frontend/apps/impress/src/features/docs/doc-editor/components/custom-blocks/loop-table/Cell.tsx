@@ -406,7 +406,7 @@ const RichContent = ({ runs }: { runs: RichRun[] }) => {
 /** A page linked from a cell: its title, opening it on click. */
 const PageChip = ({ page }: { page: PageRef }) => (
   <a
-    href={`/docs/${page.id}/`}
+    href={`/page/${page.id}/`}
     className="loop-table__chip"
     style={{ background: '#E3EDF8', color: '#1F4E8C', textDecoration: 'none' }}
     title={page.label}

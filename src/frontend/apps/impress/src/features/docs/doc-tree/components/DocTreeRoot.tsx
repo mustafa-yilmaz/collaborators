@@ -105,7 +105,7 @@ export const DocTreeRoot = ({
           focusMainContentStart();
         } else if (root) {
           selectRoot();
-          void router.push(`/docs/${root.id}`);
+          void router.push(`/page/${root.id}`);
         }
       }
     },
@@ -173,7 +173,7 @@ export const DocTreeRoot = ({
         $css={css`
           width: 100%;
         `}
-        href={`/docs/${root.id}`}
+        href={`/page/${root.id}`}
         onClick={(e) => {
           if (!e.currentTarget.contains(e.target as Node)) {
             e.preventDefault();
@@ -182,7 +182,7 @@ export const DocTreeRoot = ({
           e.stopPropagation();
           e.preventDefault();
           selectRoot();
-          void router.push(`/docs/${root.id}`);
+          void router.push(`/page/${root.id}`);
         }}
         aria-label={`${t('Open root page', { description: 'Accessible name of the link opening the root doc' })}: ${title}`}
         tabIndex={-1} // the item itself is the tab stop

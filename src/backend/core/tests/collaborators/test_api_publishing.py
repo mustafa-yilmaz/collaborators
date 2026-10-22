@@ -170,15 +170,23 @@ def test_wiki_addresses_are_unique_and_unpublishing_closes_the_space():
     space, *_ = public_space(owner)
     other = factories.DocumentFactory(users=[(owner, "owner")], kind="space")
     client = client_for(owner)
-    client.put(f"/api/v1.0/spaces/{space.id}/wiki/", {"slug": "docs"}, format="json")
+    client.put(
+        f"/api/v1.0/spaces/{space.id}/wiki/", {"slug": "handbook"}, format="json"
+    )
 
     taken = client.put(
-        f"/api/v1.0/spaces/{other.id}/wiki/", {"slug": "docs"}, format="json"
+        f"/api/v1.0/spaces/{other.id}/wiki/", {"slug": "handbook"}, format="json"
     )
     assert taken.status_code == 400
+    # the app's page addresses are not wiki addresses
+    for reserved in ("page", "docs"):
+        response = client.put(
+            f"/api/v1.0/spaces/{other.id}/wiki/", {"slug": reserved}, format="json"
+        )
+        assert response.status_code == 400
 
     assert client.delete(f"/api/v1.0/spaces/{space.id}/wiki/").status_code == 204
-    assert client_for().get("/api/v1.0/wiki/docs/").status_code == 404
+    assert client_for().get("/api/v1.0/wiki/handbook/").status_code == 404
     space.refresh_from_db()
     assert space.link_reach == "restricted"
 

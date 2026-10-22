@@ -120,7 +120,7 @@ export const SearchResults = ({
       icon={doc.kind === 'space' ? 'folder' : 'description'}
       title={doc.title || untitled}
       detail={[doc.context, doc.snippet].filter(Boolean).join(' · ')}
-      onClick={() => go(`/docs/${doc.id}/`)}
+      onClick={() => go(`/page/${doc.id}/`)}
     />
   );
 

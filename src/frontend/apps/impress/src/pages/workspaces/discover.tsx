@@ -122,7 +122,7 @@ const WorkspaceCard = ({ workspace }: { workspace: DirectoryWorkspace }) => {
       {workspace.public_spaces.length > 0 && (
         <Box $direction="row" $gap="xs" $css="flex-wrap: wrap;">
           {workspace.public_spaces.map((space) => (
-            <StyledLink key={space.id} href={`/docs/${space.id}/`}>
+            <StyledLink key={space.id} href={`/page/${space.id}/`}>
               <Box $direction="row" $align="center" $gap="4xs">
                 <Icon iconName="folder" $size="16px" $variation="secondary" />
                 <Text $size="sm" $theme="brand">

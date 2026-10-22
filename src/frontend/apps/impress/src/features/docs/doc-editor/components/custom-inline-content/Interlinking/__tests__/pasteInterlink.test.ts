@@ -34,14 +34,14 @@ const makeClipboardEvent = (text: string | undefined) =>
 describe('getPastedDocInterlink', () => {
   it('returns null when the editor has a non-empty selection', () => {
     const editor = makeEditor({ selectionEmpty: false });
-    const url = `${window.location.origin}/docs/${VALID_DOC_ID}/`;
+    const url = `${window.location.origin}/page/${VALID_DOC_ID}/`;
 
     expect(getPastedDocInterlink(makeClipboardEvent(url), editor)).toBeNull();
   });
 
   it('returns null when the cursor is inside a code block', () => {
     const editor = makeEditor({ inCodeBlock: true });
-    const url = `${window.location.origin}/docs/${VALID_DOC_ID}/`;
+    const url = `${window.location.origin}/page/${VALID_DOC_ID}/`;
 
     expect(getPastedDocInterlink(makeClipboardEvent(url), editor)).toBeNull();
   });
@@ -58,7 +58,7 @@ describe('getPastedDocInterlink', () => {
 
   it('returns null when the pasted text contains whitespace', () => {
     const editor = makeEditor();
-    const url = `${window.location.origin}/docs/${VALID_DOC_ID}/`;
+    const url = `${window.location.origin}/page/${VALID_DOC_ID}/`;
 
     expect(
       getPastedDocInterlink(makeClipboardEvent(`some text ${url}`), editor),
@@ -89,14 +89,14 @@ describe('getPastedDocInterlink', () => {
 
   it('returns null when the doc id in the path is not a valid uuid', () => {
     const editor = makeEditor();
-    const url = `${window.location.origin}/docs/not-a-uuid/`;
+    const url = `${window.location.origin}/page/not-a-uuid/`;
 
     expect(getPastedDocInterlink(makeClipboardEvent(url), editor)).toBeNull();
   });
 
   it('returns the doc id for a same-origin doc URL with a trailing slash', () => {
     const editor = makeEditor();
-    const url = `${window.location.origin}/docs/${VALID_DOC_ID}/`;
+    const url = `${window.location.origin}/page/${VALID_DOC_ID}/`;
 
     expect(getPastedDocInterlink(makeClipboardEvent(url), editor)).toEqual({
       docId: VALID_DOC_ID,
@@ -105,7 +105,7 @@ describe('getPastedDocInterlink', () => {
 
   it('returns the doc id for a same-origin doc URL without a trailing slash', () => {
     const editor = makeEditor();
-    const url = `${window.location.origin}/docs/${VALID_DOC_ID}`;
+    const url = `${window.location.origin}/page/${VALID_DOC_ID}`;
 
     expect(getPastedDocInterlink(makeClipboardEvent(url), editor)).toEqual({
       docId: VALID_DOC_ID,
@@ -114,7 +114,7 @@ describe('getPastedDocInterlink', () => {
 
   it('returns the doc id when the URL has a query string or hash', () => {
     const editor = makeEditor();
-    const url = `${window.location.origin}/docs/${VALID_DOC_ID}/?foo=bar#section`;
+    const url = `${window.location.origin}/page/${VALID_DOC_ID}/?foo=bar#section`;
 
     expect(getPastedDocInterlink(makeClipboardEvent(url), editor)).toEqual({
       docId: VALID_DOC_ID,
@@ -125,7 +125,7 @@ describe('getPastedDocInterlink', () => {
   it('returns the block id from the URL hash when present', () => {
     const editor = makeEditor();
     const blockId = '0b0566d8-56d3-4901-8163-d887c3c3bc0c';
-    const url = `${window.location.origin}/docs/${VALID_DOC_ID}/#${blockId}`;
+    const url = `${window.location.origin}/page/${VALID_DOC_ID}/#${blockId}`;
 
     expect(getPastedDocInterlink(makeClipboardEvent(url), editor)).toEqual({
       docId: VALID_DOC_ID,

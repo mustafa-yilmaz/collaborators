@@ -101,6 +101,9 @@ def published_wiki(document):
     return root
 
 
+RESERVED_WIKI_SLUGS = {"page", "docs"}
+
+
 def published_space(slug):
     """The space published as a wiki at this address, or a 404."""
     space = (
@@ -283,6 +286,12 @@ class WikiSerializer(serializers.Serializer):
         slug = slugify(value)[:100]
         if not slug:
             raise serializers.ValidationError(_("Choose an address for the wiki."))
+        # the app's page addresses (/page/<id>/, formerly /docs/<id>/) stay
+        # the app's on a wiki's own address too
+        if slug in RESERVED_WIKI_SLUGS:
+            raise serializers.ValidationError(
+                _("This address is used by the platform: choose another one.")
+            )
         taken = models.Document.objects.filter(wiki_slug=slug).exclude(
             pk=self.context["space"].pk
         )

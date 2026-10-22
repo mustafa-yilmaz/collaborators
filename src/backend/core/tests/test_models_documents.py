@@ -947,7 +947,7 @@ def test_models_documents__email_invitation__success():
         f"on the following document: {document.title}" in email_content
     )
     assert (
-        f"docs/{document.id}/?utm_source=docssharelink&amp;utm_campaign={document.id}"
+        f"page/{document.id}/?utm_source=docssharelink&amp;utm_campaign={document.id}"
         in email_content
     )
 
@@ -980,14 +980,14 @@ def test_models_documents__email_invitation__url_app_param(email_url_app):
         # Determine expected domain
         if email_url_app:
             expected_url = (
-                f"https://test-example.com/docs/{document.id}/"
+                f"https://test-example.com/page/{document.id}/"
                 f"?utm_source=docssharelink&amp;utm_campaign={document.id}"
             )
             assert expected_url in email_content
         else:
             # Default Site domain is example.com
             expected_url = (
-                f"example.com/docs/{document.id}/"
+                f"example.com/page/{document.id}/"
                 f"?utm_source=docssharelink&amp;utm_campaign={document.id}"
             )
             assert expected_url in email_content
@@ -1022,7 +1022,7 @@ def test_models_documents__email_invitation__success_empty_title():
         "on the following document: Untitled page" in email_content
     )
     assert (
-        f"docs/{document.id}/?utm_source=docssharelink&amp;utm_campaign={document.id}"
+        f"page/{document.id}/?utm_source=docssharelink&amp;utm_campaign={document.id}"
         in email_content
     )
 
@@ -1060,7 +1060,7 @@ def test_models_documents__email_invitation__success_fr():
         f"sur le document suivant : {document.title}" in email_content
     )
     assert (
-        f"docs/{document.id}/?utm_source=docssharelink&amp;utm_campaign={document.id}"
+        f"page/{document.id}/?utm_source=docssharelink&amp;utm_campaign={document.id}"
         in email_content
     )
 

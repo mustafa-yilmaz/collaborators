@@ -85,7 +85,7 @@ export const SpaceList = () => {
         return (
           <StyledLink
             key={space.id}
-            href={`/docs/${space.id}`}
+            href={`/page/${space.id}`}
             onClick={() => isMobile && closePanel()}
             $css={css`
               align-items: center;

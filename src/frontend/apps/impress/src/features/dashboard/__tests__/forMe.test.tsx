@@ -80,7 +80,7 @@ describe('Mentions, notifications and assignments card', () => {
     expect(rows[2]).toHaveAttribute('href', '/?target=notifications');
     expect(rows[0]).toContainElement(assignment);
     expect(rows[0]).toHaveTextContent('Assigned by Ada in Plan');
-    expect(rows[0]).toHaveAttribute('href', '/docs/d-1#b-1');
+    expect(rows[0]).toHaveAttribute('href', '/page/d-1#b-1');
   });
 
   test('ends with the email switch, off until one turns it on', async () => {

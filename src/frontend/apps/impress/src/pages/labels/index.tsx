@@ -119,7 +119,7 @@ const Page: NextPageWithLayout = () => {
                   {data.spaces.map((space) => (
                     <StyledLink
                       key={space.id}
-                      href={`/docs/${space.id}/`}
+                      href={`/page/${space.id}/`}
                       $css={rowCss}
                     >
                       <Icon
@@ -141,7 +141,7 @@ const Page: NextPageWithLayout = () => {
                   {data.pages.map((page) => (
                     <StyledLink
                       key={page.id}
-                      href={`/docs/${page.id}/`}
+                      href={`/page/${page.id}/`}
                       $css={rowCss}
                     >
                       <Icon

@@ -292,20 +292,6 @@ export const ProfileSettings = () => {
         />
       </Field>
       <Field
-        title={t('Email', { description: 'Profile field' })}
-        picker={picker('email')}
-      >
-        <Input
-          fullWidth
-          label={t('Email', { description: 'Profile field' })}
-          value={profile.email}
-          disabled
-          text={t('The address you sign in with: it can’t be changed here.', {
-            description: 'Help of the read-only email of a profile',
-          })}
-        />
-      </Field>
-      <Field
         title={t('Name', { description: 'Profile field: the name' })}
         picker={picker('name')}
       >
@@ -316,6 +302,20 @@ export const ProfileSettings = () => {
           disabled
           text={t('From the account you sign in with.', {
             description: 'Help of the read-only name of a profile',
+          })}
+        />
+      </Field>
+      <Field
+        title={t('Email', { description: 'Profile field' })}
+        picker={picker('email')}
+      >
+        <Input
+          fullWidth
+          label={t('Email', { description: 'Profile field' })}
+          value={profile.email}
+          disabled
+          text={t('The address you sign in with: it can’t be changed here.', {
+            description: 'Help of the read-only email of a profile',
           })}
         />
       </Field>

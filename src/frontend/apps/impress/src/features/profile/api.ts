@@ -34,6 +34,8 @@ export interface Profile {
   website: string;
   email: string;
   interests: string[];
+  /** The pieces kept from the viewer: their title shows, not their content */
+  hidden?: ProfileField[];
   /** Each shown as its own visibility lets the viewer see it */
   workspaces: { id: string; name: string }[];
   spaces: { id: string; title: string }[];

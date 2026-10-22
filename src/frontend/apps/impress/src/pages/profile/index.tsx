@@ -47,9 +47,6 @@ const Page: NextPageWithLayout = () => {
       </Text>
     );
   } else {
-    const subtitle = [profile.headline, profile.organization]
-      .filter(Boolean)
-      .join(' · ');
     body = (
       <Box $gap="md" data-testid="profile">
         <Box $direction="row" $align="center" $gap="sm">
@@ -66,7 +63,6 @@ const Page: NextPageWithLayout = () => {
             <Text as="h1" $size="h3" $weight="700" $margin="none">
               {profile.full_name}
             </Text>
-            {subtitle && <Text $variation="secondary">{subtitle}</Text>}
           </Box>
           {profile.is_me && (
             <Button
@@ -81,41 +77,101 @@ const Page: NextPageWithLayout = () => {
             </Button>
           )}
         </Box>
-        {profile.bio && (
-          <Text $css="white-space: pre-wrap;">{profile.bio}</Text>
-        )}
-        <Box $gap="2xs">
-          {profile.location && (
-            <Detail icon="location_on">{profile.location}</Detail>
-          )}
-          {profile.email && <Detail icon="mail">{profile.email}</Detail>}
-          {profile.website && (
-            <Box $direction="row" $align="center" $gap="2xs">
-              <Icon iconName="link" $size="18px" $variation="secondary" />
-              <a
-                href={profile.website}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-              >
-                <Text $size="sm" $theme="brand">
-                  {profile.website.replace(/^https?:\/\//, '')}
+        {/* Collaborators: every piece's title; its content as its owner
+            lets the viewer see it */}
+        <Box $gap="sm" data-testid="profile-fields">
+          {(
+            [
+              [
+                'email',
+                t('Email', { description: 'Profile field' }),
+                profile.email && <Detail icon="mail">{profile.email}</Detail>,
+              ],
+              [
+                'website',
+                t('Website', { description: 'Profile field' }),
+                profile.website && (
+                  <Box $direction="row" $align="center" $gap="2xs">
+                    <Icon iconName="link" $size="18px" $variation="secondary" />
+                    <a
+                      href={profile.website}
+                      target="_blank"
+                      rel="noopener noreferrer nofollow"
+                    >
+                      <Text $size="sm" $theme="brand">
+                        {profile.website.replace(/^https?:\/\//, '')}
+                      </Text>
+                    </a>
+                  </Box>
+                ),
+              ],
+              [
+                'interests',
+                t('Interests', { description: 'Heading of profile interests' }),
+                profile.interests.length > 0 && (
+                  <Box $direction="row" $gap="2xs" $css="flex-wrap: wrap;">
+                    {profile.interests.map((name) => (
+                      <LabelChip key={name} name={name} />
+                    ))}
+                  </Box>
+                ),
+              ],
+              [
+                'headline',
+                t('Headline', { description: 'Profile field' }),
+                profile.headline && <Text $size="sm">{profile.headline}</Text>,
+              ],
+              [
+                'organization',
+                t('Organisation', { description: 'Profile field' }),
+                profile.organization && (
+                  <Text $size="sm">{profile.organization}</Text>
+                ),
+              ],
+              [
+                'location',
+                t('Location', { description: 'Profile field' }),
+                profile.location && (
+                  <Detail icon="location_on">{profile.location}</Detail>
+                ),
+              ],
+              [
+                'bio',
+                t('About', { description: 'Profile field: biography' }),
+                profile.bio && (
+                  <Text $size="sm" $css="white-space: pre-wrap;">
+                    {profile.bio}
+                  </Text>
+                ),
+              ],
+            ] as const
+          ).map(([field, title, content]) => {
+            const hidden = (profile.hidden ?? []).includes(field);
+            if (!hidden && !content) {
+              return null;
+            }
+            return (
+              <Box key={field} $gap="3xs">
+                <Text $size="sm" $weight="700">
+                  {title}
                 </Text>
-              </a>
-            </Box>
-          )}
+                {hidden ? (
+                  <Text
+                    $size="sm"
+                    $variation="secondary"
+                    $css="font-style: italic;"
+                  >
+                    {t('Not shared with you', {
+                      description: 'A profile piece hidden from the viewer',
+                    })}
+                  </Text>
+                ) : (
+                  content
+                )}
+              </Box>
+            );
+          })}
         </Box>
-        {profile.interests.length > 0 && (
-          <Box $gap="2xs">
-            <Text $size="sm" $weight="700">
-              {t('Interests', { description: 'Heading of profile interests' })}
-            </Text>
-            <Box $direction="row" $gap="2xs" $css="flex-wrap: wrap;">
-              {profile.interests.map((name) => (
-                <LabelChip key={name} name={name} />
-              ))}
-            </Box>
-          </Box>
-        )}
         {profile.workspaces.length > 0 && (
           <Box $gap="2xs">
             <Text $size="sm" $weight="700">

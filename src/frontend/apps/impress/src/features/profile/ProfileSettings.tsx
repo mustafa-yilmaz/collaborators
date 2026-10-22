@@ -8,10 +8,12 @@ import {
   useToastProvider,
 } from '@gouvfr-lasuite/ui-components';
 import { ReactNode, useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import { Box, BoxButton, Icon, Loading, StyledLink, Text } from '@/components';
+import { Title } from '@/components/Title';
+import { useLabelSuggestions } from '@/features/labels/api';
 
 import {
   Audience,
@@ -134,7 +136,7 @@ const Field = ({
   picker,
   note,
 }: {
-  title: string;
+  title: ReactNode;
   children?: ReactNode;
   /** The audience of the piece, in the right column */
   picker?: ReactNode;
@@ -173,6 +175,10 @@ export const ProfileSettings = () => {
   });
   const [interests, setInterests] = useState<string[]>([]);
   const [interest, setInterest] = useState('');
+  const { data: suggestions = [] } = useLabelSuggestions(
+    interest.trim().replace(/^#/, ''),
+    !!interest.trim(),
+  );
   const [visibility, setVisibility] = useState<Visibility>();
   const [reach, setReach] = useState<Reach>('colleagues');
 
@@ -211,16 +217,21 @@ export const ProfileSettings = () => {
       onChange={(event) => setText({ ...text, [key]: event.target.value })}
     />
   );
-  const addInterest = () => {
-    const name = interest.trim().replace(/^#/, '');
+  // Collaborators: interests are labels already used on the platform
+  const addInterest = (name: string) => {
     if (
-      name &&
       !interests.some((other) => other.toLowerCase() === name.toLowerCase())
     ) {
       setInterests([...interests, name]);
     }
     setInterest('');
   };
+  const labelChoices = suggestions.filter(
+    (item) =>
+      !interests.some(
+        (other) => other.toLowerCase() === item.name.toLowerCase(),
+      ),
+  );
 
   return (
     <Box $gap="sm" data-testid="profile-settings">
@@ -309,6 +320,98 @@ export const ProfileSettings = () => {
         />
       </Field>
       <Field
+        title={t('Website', { description: 'Profile field' })}
+        picker={picker('website')}
+      >
+        {input('website', 'https://…')}
+      </Field>
+      <Field
+        title={
+          <Trans
+            i18nKey="Interests (labels in <brand/>)"
+            tOptions={{ description: 'Heading of profile interests' }}
+            components={{
+              brand: <Title as="span" $size="1em" $display="inline" />,
+            }}
+          />
+        }
+        picker={picker('interests')}
+      >
+        <Box $direction="row" $gap="2xs" $css="flex-wrap: wrap;">
+          {interests.map((name) => (
+            <Box
+              key={name}
+              $direction="row"
+              $align="center"
+              $gap="4xs"
+              $padding={{ left: 'xs', right: '3xs', vertical: '4xs' }}
+              $css="border-radius: 999px; background: var(--c--contextuals--background--semantic--contextual--primary);"
+            >
+              <Text $size="xs" $theme="brand">
+                #{name}
+              </Text>
+              <BoxButton
+                aria-label={t('Remove the label {{name}}', {
+                  description: 'Button removing a label',
+                  name,
+                })}
+                $padding="4xs"
+                onClick={() =>
+                  setInterests(interests.filter((other) => other !== name))
+                }
+              >
+                <Icon iconName="close" $size="14px" $variation="secondary" />
+              </BoxButton>
+            </Box>
+          ))}
+        </Box>
+        <Input
+          fullWidth
+          label={t('Find a label to add', {
+            description: 'Label of the field adding a profile interest',
+          })}
+          value={interest}
+          onChange={(event) => setInterest(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              const typed = interest.trim().replace(/^#/, '').toLowerCase();
+              const match =
+                labelChoices.find(
+                  (item) => item.name.toLowerCase() === typed,
+                ) ?? labelChoices[0];
+              if (match) {
+                addInterest(match.name);
+              }
+            }
+          }}
+        />
+        {interest.trim() && (
+          <Box $direction="row" $gap="2xs" $css="flex-wrap: wrap;">
+            {labelChoices.map((item) => (
+              <BoxButton
+                key={item.name}
+                onClick={() => addInterest(item.name)}
+                $padding={{ horizontal: 'xs', vertical: '4xs' }}
+                $css="border-radius: 999px; border: 1px solid var(--c--contextuals--border--surface--primary);"
+              >
+                <Text $size="xs" $theme="brand">
+                  #{item.name}
+                </Text>
+              </BoxButton>
+            ))}
+            {!labelChoices.length && (
+              <Text $size="xs" $variation="secondary">
+                {t(
+                  'No such label yet: interests are chosen among the labels already used on the platform.',
+                  { description: 'Profile interests: no matching label' },
+                )}
+              </Text>
+            )}
+          </Box>
+        )}
+      </Field>
+      <Field
         title={t('Headline', { description: 'Profile field' })}
         picker={picker('headline')}
       >
@@ -346,59 +449,6 @@ export const ProfileSettings = () => {
           maxLength={2000}
           rows={4}
           onChange={(event) => setText({ ...text, bio: event.target.value })}
-        />
-      </Field>
-      <Field
-        title={t('Website', { description: 'Profile field' })}
-        picker={picker('website')}
-      >
-        {input('website', 'https://…')}
-      </Field>
-      <Field
-        title={t('Interests', { description: 'Heading of profile interests' })}
-        picker={picker('interests')}
-      >
-        <Box $direction="row" $gap="2xs" $css="flex-wrap: wrap;">
-          {interests.map((name) => (
-            <Box
-              key={name}
-              $direction="row"
-              $align="center"
-              $gap="4xs"
-              $padding={{ left: 'xs', right: '3xs', vertical: '4xs' }}
-              $css="border-radius: 999px; background: var(--c--contextuals--background--semantic--contextual--primary);"
-            >
-              <Text $size="xs" $theme="brand">
-                #{name}
-              </Text>
-              <BoxButton
-                aria-label={t('Remove the label {{name}}', {
-                  description: 'Button removing a label',
-                  name,
-                })}
-                $padding="4xs"
-                onClick={() =>
-                  setInterests(interests.filter((other) => other !== name))
-                }
-              >
-                <Icon iconName="close" $size="14px" $variation="secondary" />
-              </BoxButton>
-            </Box>
-          ))}
-        </Box>
-        <Input
-          fullWidth
-          label={t('Add an interest (a label), then Enter', {
-            description: 'Label of the field adding a profile interest',
-          })}
-          value={interest}
-          onChange={(event) => setInterest(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault();
-              addInterest();
-            }
-          }}
         />
       </Field>
       <Box $direction="row" $justify="flex-end" $css={fieldCss}>

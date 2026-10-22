@@ -194,6 +194,8 @@ def describe(owner, viewer):
         "interests": [label.name for label in profile.interests.order_by("key")]
         if shown["interests"]
         else [],
+        # the pieces kept from the viewer: their titles show, not their content
+        "hidden": [field for field in models.PROFILE_FIELDS if not shown[field]],
         # each shown as its own visibility allows the viewer
         "workspaces": visible_workspaces_of(owner, viewer),
         **visible_documents_of(owner, viewer),
@@ -273,7 +275,7 @@ class MyProfileView(APIView):
         with transaction.atomic():
             profile.save()
             if "interests" in data:
-                _set_interests(profile, data["interests"], user)
+                _set_interests(profile, data["interests"])
         return drf.response.Response(self._state(user))
 
 
@@ -323,13 +325,15 @@ def _apply_visibility(profile, wanted, user, errors):
     profile.visibility = {**(profile.visibility or {}), **visibility}
 
 
-def _set_interests(profile, raw_names, user):
-    """The interests, as labels of the shared vocabulary."""
-    names = []
+def _set_interests(profile, raw_names):
+    """
+    The interests, among the labels already used on the platform (none is
+    made from a profile): unknown names are left out.
+    """
+    labels = []
     for raw in raw_names or []:
         name = models.Label.normalize(raw)
-        if name and name.lower() not in {other.lower() for other in names}:
-            names.append(name)
-    profile.interests.set(
-        [models.Label.get_or_create_named(name, user) for name in names[:MAX_INTERESTS]]
-    )
+        label = models.Label.objects.filter(key=name.lower()).first() if name else None
+        if label and label not in labels:
+            labels.append(label)
+    profile.interests.set(labels[:MAX_INTERESTS])

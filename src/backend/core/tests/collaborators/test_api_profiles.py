@@ -31,6 +31,8 @@ def colleagues():
 def test_each_piece_shows_to_its_audience():
     """Defaults: most pieces for the platform, location and email for colleagues."""
     owner, colleague, stranger, workspace = colleagues()
+    for name in ("Climate", "AI"):
+        models.Label.get_or_create_named(name)
     client_for(owner).put(
         "/api/v1.0/profiles/me/",
         {
@@ -57,6 +59,9 @@ def test_each_piece_shows_to_its_audience():
     assert seen_by_stranger["location"] == ""
     assert seen_by_stranger["email"] == ""
     assert seen_by_stranger["workspaces"] == []
+    # what is kept from them is named, without its content
+    assert seen_by_stranger["hidden"] == ["location", "email"]
+    assert seen_by_colleague["hidden"] == []
 
     # signed out: nothing is public by default, so the profile is hidden
     assert client_for().get(url).status_code == 404
@@ -160,3 +165,17 @@ def test_profile_lists_what_each_item_lets_the_viewer_see():
     assert [item["title"] for item in seen_by_stranger["spaces"]] == ["Open space"]
     assert seen_by_stranger["pages"] == []
     assert [item["name"] for item in seen_by_stranger["workspaces"]] == ["Open guild"]
+
+
+def test_interests_are_labels_already_used():
+    """A profile picks among existing labels; it makes none."""
+    owner = factories.UserFactory()
+    models.Label.get_or_create_named("Climate")
+    response = client_for(owner).put(
+        "/api/v1.0/profiles/me/",
+        {"interests": ["#climate", "Brand new idea"]},
+        format="json",
+    )
+    assert response.status_code == 200
+    assert response.json()["interests"] == ["Climate"]
+    assert not models.Label.objects.filter(key="brand new idea").exists()

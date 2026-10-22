@@ -51,4 +51,31 @@ describe('Profile view', () => {
     expect(within(fields).queryByText('Website')).not.toBeInTheDocument();
     expect(screen.getByText('Open space')).toBeInTheDocument();
   });
+
+  test('ends with WorkSpaces, Spaces and Pages, even empty', async () => {
+    fetchMock.get(`${API}/profiles/u-2/`, {
+      id: 'u-2',
+      full_name: 'Ada Lovelace',
+      is_me: false,
+      headline: '',
+      organization: '',
+      location: '',
+      bio: '',
+      website: '',
+      email: '',
+      interests: [],
+      hidden: [],
+      workspaces: [],
+      spaces: [],
+      pages: [],
+    });
+
+    render(<ProfilePage />, { wrapper: AppWrapper });
+
+    const section = await screen.findByTestId('profile-collaborations');
+    for (const heading of ['WorkSpaces', 'Spaces', 'Pages']) {
+      expect(within(section).getByText(heading)).toBeInTheDocument();
+    }
+    expect(within(section).getAllByText('None to show')).toHaveLength(3);
+  });
 });

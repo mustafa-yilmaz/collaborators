@@ -173,54 +173,84 @@ const Page: NextPageWithLayout = () => {
             );
           })}
         </Box>
-        {profile.workspaces.length > 0 && (
-          <Box $gap="2xs">
-            <Text $size="sm" $weight="700">
-              {t('Workspaces', {
-                description: 'Heading of a list of workspaces',
-              })}
-            </Text>
-            {profile.workspaces.map((workspace) => (
-              <Detail key={workspace.id} icon="workspaces">
-                {workspace.name}
-              </Detail>
-            ))}
-          </Box>
-        )}
-        {/* Collaborators: what their own visibility lets the viewer see */}
-        {(
-          [
+        {/* Collaborators: last, always titled; each item as its own
+            visibility lets the viewer see it */}
+        <Box
+          $gap="sm"
+          data-testid="profile-collaborations"
+          $css={css`
+            border-top: 1px solid
+              var(--c--contextuals--border--surface--primary);
+            padding-top: var(--c--globals--spacings--sm);
+          `}
+        >
+          {(
             [
-              'spaces',
-              t('Spaces', { description: 'Heading of a list of spaces' }),
-              'folder',
-            ],
-            [
-              'pages',
-              t('Pages', { description: 'Heading of a list of pages' }),
-              'description',
-            ],
-          ] as const
-        ).map(
-          ([key, heading, icon]) =>
-            (profile[key] ?? []).length > 0 && (
-              <Box key={key} $gap="2xs">
-                <Text $size="sm" $weight="700">
-                  {heading}
+              [
+                'workspaces',
+                t('WorkSpaces', {
+                  description: 'Heading of a list of workspaces',
+                }),
+                'workspaces',
+                profile.workspaces.map((item) => ({
+                  id: item.id,
+                  name: item.name,
+                  href: '',
+                })),
+              ],
+              [
+                'spaces',
+                t('Spaces', { description: 'Heading of a list of spaces' }),
+                'folder',
+                (profile.spaces ?? []).map((item) => ({
+                  id: item.id,
+                  name: item.title,
+                  href: `/docs/${item.id}/`,
+                })),
+              ],
+              [
+                'pages',
+                t('Pages', { description: 'Heading of a list of pages' }),
+                'description',
+                (profile.pages ?? []).map((item) => ({
+                  id: item.id,
+                  name: item.title,
+                  href: `/docs/${item.id}/`,
+                })),
+              ],
+            ] as const
+          ).map(([key, heading, icon, items]) => (
+            <Box key={key} $gap="2xs">
+              <Text $size="sm" $weight="700">
+                {heading}
+              </Text>
+              {items.length === 0 && (
+                <Text $size="sm" $variation="secondary">
+                  {t('None to show', {
+                    description: 'Empty list of a profile',
+                  })}
                 </Text>
-                {(profile[key] ?? []).map((item) => (
-                  <StyledLink key={item.id} href={`/docs/${item.id}/`}>
-                    <Detail icon={icon}>
-                      {item.title ||
-                        t('Untitled page', {
-                          description: 'Name of a page without title',
-                        })}
-                    </Detail>
+              )}
+              {items.map((item) => {
+                const detail = (
+                  <Detail icon={icon}>
+                    {item.name ||
+                      t('Untitled page', {
+                        description: 'Name of a page without title',
+                      })}
+                  </Detail>
+                );
+                return item.href ? (
+                  <StyledLink key={item.id} href={item.href}>
+                    {detail}
                   </StyledLink>
-                ))}
-              </Box>
-            ),
-        )}
+                ) : (
+                  <Box key={item.id}>{detail}</Box>
+                );
+              })}
+            </Box>
+          ))}
+        </Box>
       </Box>
     );
   }

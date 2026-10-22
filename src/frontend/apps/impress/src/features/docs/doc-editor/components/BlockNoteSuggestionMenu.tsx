@@ -52,7 +52,17 @@ export const BlockNoteSuggestionMenu = ({
 
   const getSlashMenuItems = useMemo(() => {
     // We insert it after the "Code Block" item to have the interlinking block displayed after the basic blocks
-    const defaultMenu = getDefaultReactSlashMenuItems(editor);
+    // Collaborators: "Table" is our table; BlockNote's keeps its own name
+    const defaultMenu = getDefaultReactSlashMenuItems(editor).map((item) =>
+      (item as DefaultReactSuggestionItem & { key?: string }).key === 'table'
+        ? {
+            ...item,
+            title: t('Table - BlockNote.js Original', {
+              description: 'Name of the editor block type: BlockNote table',
+            }),
+          }
+        : item,
+    );
 
     const combinedMenu = combineByGroup(
       defaultMenu,

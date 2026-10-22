@@ -7,12 +7,11 @@ import { Title } from '@/components/Title';
 export const InterestsTitle = () => (
   <Text
     as="span"
-    $display="inline-flex"
-    $direction="row"
-    $align="baseline"
+    // inline: the words keep their spaces around the name
+    $display="inline"
     $size="sm"
     $weight="700"
-    $css="white-space: nowrap; gap: 0.25em;"
+    $css="white-space: nowrap;"
   >
     <Trans
       i18nKey="Interests (labels on <brand/>)"

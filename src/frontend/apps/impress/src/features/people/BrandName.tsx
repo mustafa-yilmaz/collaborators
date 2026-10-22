@@ -42,10 +42,9 @@ export const WithBrand = ({
 }) => (
   <Text
     as="span"
-    $display="inline-flex"
-    $direction="row"
-    $align="baseline"
-    $css="white-space: nowrap; gap: 0.25em;"
+    // inline: the words keep their spaces around the name
+    $display="inline"
+    $css="white-space: nowrap;"
   >
     <Trans
       i18nKey={i18nKey}

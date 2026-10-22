@@ -61,7 +61,7 @@ const AudiencePicker = ({
     },
     {
       value: 'colleagues',
-      label: t('People I work with in {{brand}}', {
+      label: t('People I work with on {{brand}}', {
         description: 'Visibility: people sharing a workspace or page',
         brand: BRAND_NAME,
       }),

@@ -52,9 +52,9 @@ export const HeaderRowControls = ({
 };
 
 /**
- * Collaborators: the handle of a column, just above it outside the table:
- * drag it to move the column sideways; its menu formats the whole column,
- * adds, hides or deletes columns.
+ * Collaborators: the handles of a column, on its top edge: "⋮⋮" moves the
+ * column sideways, "⋮" formats the whole column, adds, hides or deletes
+ * columns.
  */
 export const ColumnControls = ({
   column,
@@ -86,11 +86,7 @@ export const ColumnControls = ({
           {...drag.listeners}
           {...drag.attributes}
         >
-          <Icon
-            iconName="drag_indicator"
-            $size="16px"
-            $css="transform: rotate(90deg);"
-          />
+          <Icon iconName="drag_indicator" $size="16px" />
         </span>
         <DropdownMenu
           options={menuOptions}
@@ -106,7 +102,7 @@ export const ColumnControls = ({
             })}
             onClick={() => onMenuOpenChange(!isMenuOpen)}
           >
-            <Icon iconName="more_horiz" $size="16px" />
+            <Icon iconName="more_vert" $size="16px" />
           </button>
         </DropdownMenu>
       </div>

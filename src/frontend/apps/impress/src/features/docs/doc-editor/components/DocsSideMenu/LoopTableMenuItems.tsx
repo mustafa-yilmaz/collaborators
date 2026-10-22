@@ -2,13 +2,14 @@ import { SideMenuExtension } from '@blocknote/core/extensions';
 import {
   useBlockNoteEditor,
   useComponentsContext,
+  useExtension,
   useExtensionState,
 } from '@blocknote/react';
 import { DropdownMenuItem } from '@gouvfr-lasuite/ui-components';
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Box } from '@/components';
+import { Box, Icon } from '@/components';
 import { useProviderStore } from '@/docs/doc-management';
 
 import type { DocsBlockNoteEditor } from '../../types';
@@ -86,14 +87,15 @@ const MenuEntries = ({ items }: { items: DropdownMenuItem[] }) => {
 };
 
 /**
- * Collaborators: a Loop table's actions as a whole (add a row or a column,
- * filter, hidden columns, header row and numbers column) in its block's
- * "⋮⋮" menu, the one that shows when the pointer comes near the block.
+ * Collaborators: the "⋮" beside the "+" of a table, above it: the whole
+ * table (add rows and columns, filter, hidden columns, header row, numbers
+ * column, all cells). The "⋮⋮" next to it keeps the block's own actions.
  */
-export const LoopTableMenuItems = () => {
+export const LoopTableSideMenuButton = () => {
   const { t } = useTranslation();
   const Components = useComponentsContext();
   const editor: DocsBlockNoteEditor = useBlockNoteEditor();
+  const sideMenu = useExtension(SideMenuExtension);
   const block = useExtensionState(SideMenuExtension, {
     editor,
     selector: (state) => state?.block,
@@ -110,9 +112,28 @@ export const LoopTableMenuItems = () => {
   }
 
   return (
-    <>
-      <MenuEntries items={tableMenuItems(t, table, tableId, snapshot)} />
-      <Components.Generic.Menu.Divider />
-    </>
+    <Components.Generic.Menu.Root
+      onOpenChange={(open: boolean) => {
+        if (open) {
+          sideMenu.freezeMenu();
+        } else {
+          sideMenu.unfreezeMenu();
+        }
+      }}
+      position="bottom"
+    >
+      <Components.Generic.Menu.Trigger>
+        <Components.SideMenu.Button
+          label={t('Table actions', {
+            description: 'Accessible name of the whole table menu button',
+          })}
+          className="bn-button"
+          icon={<Icon iconName="more_vert" $size="22px" />}
+        />
+      </Components.Generic.Menu.Trigger>
+      <Components.Generic.Menu.Dropdown className="bn-menu-dropdown bn-drag-handle-menu">
+        <MenuEntries items={tableMenuItems(t, table, tableId, snapshot)} />
+      </Components.Generic.Menu.Dropdown>
+    </Components.Generic.Menu.Root>
   );
 };

@@ -5,6 +5,8 @@
 import type { Block } from '@blocknote/core';
 import { SideMenuExtension } from '@blocknote/core/extensions';
 import {
+  AddBlockButton,
+  DragHandleButton,
   SideMenu,
   SideMenuController,
   useBlockNoteEditor,
@@ -21,6 +23,7 @@ import type {
 } from '../../types';
 
 import { DocsDragHandleMenu } from './DocsDragHandleMenu';
+import { LoopTableSideMenuButton } from './LoopTableMenuItems';
 
 /**
  * Blocknote v0.54.0
@@ -105,7 +108,14 @@ export const DocsSideMenu = () => {
   return (
     <SideMenuController
       floatingUIOptions={floatingUIOptions}
-      sideMenu={() => <SideMenu dragHandleMenu={DocsDragHandleMenu} />}
+      sideMenu={() => (
+        <SideMenu>
+          <AddBlockButton />
+          {/* Collaborators: a table's "⋮", for the whole table */}
+          {block?.type === 'loopTable' && <LoopTableSideMenuButton />}
+          <DragHandleButton dragHandleMenu={DocsDragHandleMenu} />
+        </SideMenu>
+      )}
     />
   );
 };

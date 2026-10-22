@@ -1,6 +1,5 @@
 import {
   Button,
-  Checkbox,
   Input,
   Select,
   TextArea,
@@ -19,7 +18,6 @@ import { InterestsTitle } from './InterestsTitle';
 import {
   Audience,
   AudienceSetting,
-  MyProfile,
   ProfileField,
   Reach,
   profileHref,
@@ -33,29 +31,26 @@ const fieldCss = css`
   padding-top: var(--c--globals--spacings--sm);
 `;
 
-/** Who sees one piece of the profile. */
-const AudiencePicker = ({
-  field,
-  setting,
-  profile,
-  onChange,
-}: {
-  field: ProfileField;
-  setting: AudienceSetting;
-  profile: MyProfile;
-  onChange: (setting: AudienceSetting) => void;
-}) => {
+/**
+ * The three audiences, the same for every piece and for who can find one:
+ * the people one works with (the default), everyone on the platform, or
+ * anyone on the internet. The platform's name shows as its logo.
+ */
+const useAudienceOptions = () => {
   const { t } = useTranslation();
-  const options: {
-    value: Audience;
-    label: string;
-    render?: () => ReactNode;
-  }[] = [
+  return [
     {
-      value: 'public',
-      label: t('Public on the internet', {
-        description: 'Visibility: anyone, even without an account',
+      value: 'colleagues',
+      label: t('People I work with on {{brand}}', {
+        description: 'Visibility: people sharing a workspace or page',
+        brand: BRAND_NAME,
       }),
+      render: () => (
+        <WithBrand
+          i18nKey="People I work with on <brand/>"
+          description="Visibility: people sharing a workspace or page"
+        />
+      ),
     },
     {
       value: 'platform',
@@ -71,83 +66,46 @@ const AudiencePicker = ({
       ),
     },
     {
-      value: 'colleagues',
-      label: t('People I work with on {{brand}}', {
-        description: 'Visibility: people sharing a workspace or page',
-        brand: BRAND_NAME,
+      value: 'public',
+      label: t('Public on the internet', {
+        description: 'Visibility: anyone, even without an account',
       }),
       render: () => (
-        <WithBrand
-          i18nKey="People I work with on <brand/>"
-          description="Visibility: people sharing a workspace or page"
-        />
+        <span>
+          {t('Public on the internet', {
+            description: 'Visibility: anyone, even without an account',
+          })}
+        </span>
       ),
     },
-    {
-      value: 'selected',
-      label: t('Chosen workspaces and spaces', {
-        description: 'Visibility: members of chosen workspaces and spaces',
-      }),
-    },
   ];
-  const toggle = (key: 'workspaces' | 'spaces', id: string, on: boolean) =>
-    onChange({
-      ...setting,
-      [key]: on
-        ? [...setting[key], id]
-        : setting[key].filter((other) => other !== id),
-    });
+};
 
+/** Who sees one piece of the profile. */
+const AudiencePicker = ({
+  setting,
+  onChange,
+}: {
+  setting: AudienceSetting;
+  onChange: (setting: AudienceSetting) => void;
+}) => {
+  const { t } = useTranslation();
+  const options = useAudienceOptions();
   return (
-    <Box $gap="2xs">
-      <Select
-        fullWidth
-        // the chosen one as its option shows (the platform's name as its logo)
-        showLabelWhenSelected={false}
-        label={t('Who sees it', {
-          description: 'Label choosing who sees a piece of a profile',
-        })}
-        clearable={false}
-        options={options}
-        value={setting.level}
-        onChange={(event) =>
-          onChange({ ...setting, level: event.target.value as Audience })
-        }
-      />
-      {setting.level === 'selected' && (
-        <Box $gap="3xs" $padding={{ left: 'xs' }}>
-          {profile.workspace_choices.map((workspace) => (
-            <Checkbox
-              key={workspace.id}
-              label={workspace.name}
-              checked={setting.workspaces.includes(workspace.id)}
-              onChange={(event) =>
-                toggle('workspaces', workspace.id, event.target.checked)
-              }
-            />
-          ))}
-          {profile.space_choices.map((space) => (
-            <Checkbox
-              key={space.id}
-              label={`${space.title || '—'} (${t('space', {
-                description: 'Kind of a chosen audience',
-              })})`}
-              checked={setting.spaces.includes(space.id)}
-              onChange={(event) =>
-                toggle('spaces', space.id, event.target.checked)
-              }
-            />
-          ))}
-          {field === 'name' && (
-            <Text $size="xs" $variation="secondary">
-              {t('People you work with always see your name.', {
-                description: 'Rule: a profile cannot be fully hidden',
-              })}
-            </Text>
-          )}
-        </Box>
-      )}
-    </Box>
+    <Select
+      fullWidth
+      // the chosen one as its option shows (the platform's name as its logo)
+      showLabelWhenSelected={false}
+      label={t('Who sees it', {
+        description: 'Label choosing who sees a piece of a profile',
+      })}
+      clearable={false}
+      options={options}
+      value={setting.level}
+      onChange={(event) =>
+        onChange({ ...setting, level: event.target.value as Audience })
+      }
+    />
   );
 };
 
@@ -205,6 +163,7 @@ export const ProfileSettings = () => {
   );
   const [visibility, setVisibility] = useState<Visibility>();
   const [reach, setReach] = useState<Reach>('colleagues');
+  const audienceOptions = useAudienceOptions();
   const [shownEmail, setShownEmail] = useState('');
 
   useEffect(() => {
@@ -229,9 +188,7 @@ export const ProfileSettings = () => {
 
   const picker = (field: ProfileField) => (
     <AudiencePicker
-      field={field}
       setting={visibility[field]}
-      profile={profile}
       onChange={(setting) => setVisibility({ ...visibility, [field]: setting })}
     />
   );
@@ -292,33 +249,7 @@ export const ProfileSettings = () => {
               description: 'Label of the reach choice of a profile',
             })}
             clearable={false}
-            options={[
-              {
-                value: 'colleagues',
-                label: t('People I share a workspace, space or page with', {
-                  description: 'Reach: only the people one works with',
-                }),
-              },
-              {
-                value: 'platform',
-                label: t('Everyone on {{brand}}', {
-                  description: 'Reach: every signed-in collaborator',
-                  brand: BRAND_NAME,
-                }),
-                render: () => (
-                  <WithBrand
-                    i18nKey="Everyone on <brand/>"
-                    description="Reach: every signed-in collaborator"
-                  />
-                ),
-              },
-              {
-                value: 'public',
-                label: t('Public on the internet', {
-                  description: 'Reach: anyone, even without an account',
-                }),
-              },
-            ]}
+            options={audienceOptions}
             value={reach}
             onChange={(event) => setReach(event.target.value as Reach)}
           />

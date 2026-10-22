@@ -2994,16 +2994,17 @@ class ProfileAudience(models.TextChoices):
     SELECTED = "selected", _("Chosen workspaces and spaces")
 
 
-# The pieces of a profile, and who sees each one unless the person changes it
+# The pieces of a profile, and who sees each one unless the person changes it:
+# the people they work with (Collaborators: the same default everywhere)
 PROFILE_FIELDS = {
-    "name": ProfileAudience.PLATFORM,
-    "headline": ProfileAudience.PLATFORM,
-    "organization": ProfileAudience.PLATFORM,
+    "name": ProfileAudience.COLLEAGUES,
+    "headline": ProfileAudience.COLLEAGUES,
+    "organization": ProfileAudience.COLLEAGUES,
     "location": ProfileAudience.COLLEAGUES,
-    "bio": ProfileAudience.PLATFORM,
-    "website": ProfileAudience.PLATFORM,
+    "bio": ProfileAudience.COLLEAGUES,
+    "website": ProfileAudience.COLLEAGUES,
     "email": ProfileAudience.COLLEAGUES,
-    "interests": ProfileAudience.PLATFORM,
+    "interests": ProfileAudience.COLLEAGUES,
     # Collaborators: no "workspaces" piece: a profile lists the workspaces,
     # spaces and pages of the person that their own visibility lets show
 }

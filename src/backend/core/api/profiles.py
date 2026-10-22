@@ -24,7 +24,12 @@ from core.api import permissions
 from core.services import keycloak
 from core.utils.users import users_sharing_documents_with
 
-AUDIENCES = [choice.value for choice in models.ProfileAudience]
+# Collaborators: "chosen workspaces and spaces" is no longer offered
+AUDIENCES = [
+    models.ProfileAudience.COLLEAGUES,
+    models.ProfileAudience.PLATFORM,
+    models.ProfileAudience.PUBLIC,
+]
 REACHES = [
     models.ProfileAudience.COLLEAGUES,
     models.ProfileAudience.PLATFORM,

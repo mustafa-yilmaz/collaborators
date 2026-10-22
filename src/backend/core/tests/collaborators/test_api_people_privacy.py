@@ -117,7 +117,15 @@ def test_profile_pieces_stay_within_the_reach():
     """'Everyone on Collaborators' means colleagues until the reach is wider."""
     owner, stranger = factories.UserFactory.create_batch(2)
     client_for(owner).put(
-        "/api/v1.0/profiles/me/", {"headline": "Grant writer"}, format="json"
+        "/api/v1.0/profiles/me/",
+        {
+            "headline": "Grant writer",
+            "visibility": {
+                "name": {"level": "platform"},
+                "headline": {"level": "platform"},
+            },
+        },
+        format="json",
     )
     url = f"/api/v1.0/profiles/{owner.id}/"
     assert client_for(stranger).get(url).status_code == 404

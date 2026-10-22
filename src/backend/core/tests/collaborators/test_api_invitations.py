@@ -177,7 +177,9 @@ def test_workspace_logo_set_by_administrators_shown_on_the_invite_page(mailoutbo
 def test_page_logo_set_by_editors_and_checked():
     """Only real images, small ones."""
     owner, reader = factories.UserFactory.create_batch(2)
-    page = factories.DocumentFactory(users=[(owner, "owner"), (reader, "reader")])
+    page = factories.DocumentFactory(
+        link_reach="restricted", users=[(owner, "owner"), (reader, "reader")]
+    )
     url = f"/api/v1.0/documents/{page.id}/logo/"
     assert (
         client_for(reader).put(url, {"data": PNG_URL}, format="json").status_code == 403

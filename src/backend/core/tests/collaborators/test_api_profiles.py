@@ -29,7 +29,7 @@ def colleagues():
 
 
 def test_each_piece_shows_to_its_audience():
-    """Defaults: most pieces for the platform, location and email for colleagues."""
+    """Default: every piece for the people one works with."""
     owner, colleague, stranger, workspace = colleagues()
     for name in ("Climate", "AI"):
         models.Label.get_or_create_named(name)
@@ -54,14 +54,35 @@ def test_each_piece_shows_to_its_audience():
         {"id": str(workspace.id), "name": "Acme"}
     ]
 
+    # a stranger sees nothing, not even the name
+    assert client_for(stranger).get(url).status_code == 404
+    assert seen_by_colleague["hidden"] == []
+
+    # the name and the headline for everyone on the platform
+    client_for(owner).put(
+        "/api/v1.0/profiles/me/",
+        {
+            "visibility": {
+                "name": {"level": "platform"},
+                "headline": {"level": "platform"},
+            }
+        },
+        format="json",
+    )
     seen_by_stranger = client_for(stranger).get(url).json()
     assert seen_by_stranger["headline"] == "Grant writer"
     assert seen_by_stranger["location"] == ""
     assert seen_by_stranger["email"] == ""
     assert seen_by_stranger["workspaces"] == []
     # what is kept from them is named, without its content
-    assert seen_by_stranger["hidden"] == ["location", "email"]
-    assert seen_by_colleague["hidden"] == []
+    assert seen_by_stranger["hidden"] == [
+        "organization",
+        "location",
+        "bio",
+        "website",
+        "email",
+        "interests",
+    ]
 
     # signed out: nothing is public by default, so the profile is hidden
     assert client_for().get(url).status_code == 404
@@ -87,17 +108,14 @@ def test_public_pieces_and_the_name_floor():
     assert (anonymous["full_name"], anonymous["bio"]) == ("Ada Lovelace", "Hello")
     assert anonymous["headline"] == ""  # platform only
 
-    # chosen spaces only: colleagues still see the name, strangers nothing
-    space = factories.DocumentFactory(kind="space", link_reach="restricted")
-    client_for(owner).put(
+    # "chosen workspaces and spaces" is no longer offered
+    response = client_for(owner).put(
         "/api/v1.0/profiles/me/",
-        {"visibility": {"name": {"level": "selected", "spaces": [str(space.id)]}}},
+        {"visibility": {"name": {"level": "selected"}}},
         format="json",
     )
+    assert response.status_code == 400
     assert client_for(colleague).get(url).json()["full_name"] == "Ada Lovelace"
-    assert client_for(stranger).get(url).status_code == 404
-
-    models.DocumentAccess.objects.create(document=space, user=stranger)
     assert client_for(stranger).get(url).status_code == 200
 
 
@@ -145,7 +163,9 @@ def test_profile_lists_what_each_item_lets_the_viewer_see():
     )
     models.WorkspaceAccess.objects.create(workspace=open_workspace, user=owner)
     client_for(owner).put(
-        "/api/v1.0/profiles/me/", {"headline": "Grant writer"}, format="json"
+        "/api/v1.0/profiles/me/",
+        {"headline": "Grant writer", "visibility": {"name": {"level": "platform"}}},
+        format="json",
     )
     url = f"/api/v1.0/profiles/{owner.id}/"
 

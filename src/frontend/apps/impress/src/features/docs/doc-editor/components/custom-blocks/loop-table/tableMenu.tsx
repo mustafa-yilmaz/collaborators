@@ -106,12 +106,35 @@ export const tableMenuItems = (
     {
       label: t('Header row', { description: 'Loop table menu' }),
       icon: <Icon iconName="table_rows" $size="18px" />,
-      children: flatFormatEntries(
-        t,
-        snapshot.layout.header,
-        (patch) => setLayoutFormat(table, 'header', patch),
-        HEADER_DEFAULTS,
-      ),
+      children: [
+        // Collaborators: hidden from its handle, it comes back here
+        {
+          label: snapshot.layout.showHeader
+            ? t('Hide the header row', {
+                description: 'Loop table header row menu',
+              })
+            : t('Show the header row', {
+                description: 'Loop table corner menu',
+              }),
+          icon: (
+            <Icon
+              iconName={
+                snapshot.layout.showHeader ? 'visibility_off' : 'visibility'
+              }
+              $size="18px"
+            />
+          ),
+          callback: () =>
+            setLayout(table, { showHeader: !snapshot.layout.showHeader }),
+        },
+        { type: 'separator' },
+        ...flatFormatEntries(
+          t,
+          snapshot.layout.header,
+          (patch) => setLayoutFormat(table, 'header', patch),
+          HEADER_DEFAULTS,
+        ),
+      ],
     },
     {
       label: t('Numbers column', { description: 'Loop table menu' }),

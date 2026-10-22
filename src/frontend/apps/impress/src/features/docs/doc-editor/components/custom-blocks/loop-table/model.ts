@@ -193,6 +193,8 @@ export interface TableLayout {
   showSummary: boolean;
   /** Spread beyond the page's text column into the margins (T5) */
   expanded: boolean;
+  /** Collaborators: the header row can be hidden (its handle, the table menu) */
+  showHeader: boolean;
   /** All the body cells, under their columns', rows' and own formats */
   cells: CellFormat;
   header: CellFormat;
@@ -494,6 +496,7 @@ export const readTable = (table: Y.Map<unknown>): TableSnapshot => {
         (layout?.get('showSummary') as boolean | undefined) ??
         Object.values(summaries).some((kind) => kind !== SummaryKind.NONE),
       expanded: layout?.get('expanded') === true,
+      showHeader: layout?.get('showHeader') !== false,
       cells: (layout?.get('cells') as CellFormat) ?? {},
       header: (layout?.get('header') as CellFormat) ?? {},
       numbers: (layout?.get('numbers') as CellFormat) ?? {},

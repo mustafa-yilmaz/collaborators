@@ -1,5 +1,6 @@
-import { useDraggable, useDroppable } from '@dnd-kit/core';
+import { useDroppable } from '@dnd-kit/core';
 import { DropdownMenu, DropdownMenuItem } from '@gouvfr-lasuite/ui-components';
+import type { TFunction } from 'i18next';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Y from 'yjs';
@@ -41,7 +42,6 @@ interface ColumnHeaderProps {
   table: Y.Map<unknown>;
   snapshot: TableSnapshot;
   column: Column;
-  index: number;
   isEditable: boolean;
   /** Where a dragged column would land: 'is-drop-before' or 'is-drop-after' */
   dropSide: string;
@@ -52,7 +52,6 @@ export const ColumnHeader = ({
   table,
   snapshot,
   column,
-  index,
   isEditable,
   dropSide,
   isDragSource,
@@ -64,10 +63,7 @@ export const ColumnHeader = ({
   const [liveWidth, setLiveWidth] = useState<number | null>(null);
   const startRef = useRef<{ x: number; width: number } | null>(null);
 
-  const drag = useDraggable({
-    id: `col:${column.id}`,
-    disabled: !isEditable,
-  });
+  // Collaborators: moved by its handle above the table (ColumnControls)
   const drop = useDroppable({ id: `col:${column.id}` });
 
   const sort = snapshot.view.sort;
@@ -160,25 +156,6 @@ export const ColumnHeader = ({
                 },
               ),
             },
-            // ... or the column's cells under it (not its header)
-            {
-              label: t('Format the whole column', {
-                description: 'Loop table column menu',
-              }),
-              icon: <Icon iconName="view_column" $size="18px" />,
-              children: formatMenuItems(
-                t,
-                column.format,
-                (patch) => setColumnFormat(table, column.id, patch),
-                // What it inherits from all the cells, then the defaults
-                {
-                  shown: mergeFormats(
-                    snapshot.layout.cells,
-                    columnDefaults(column),
-                  ),
-                },
-              ),
-            },
           ]
         : []),
       { type: 'separator' },
@@ -217,38 +194,8 @@ export const ColumnHeader = ({
             ],
           }),
       },
-      { type: 'separator' },
-      {
-        label: t('Insert column left', {
-          description: 'Loop table column menu',
-        }),
-        icon: <Icon iconName="west" $size="18px" />,
-        isHidden: !isEditable,
-        callback: () => addColumn(table, index),
-      },
-      {
-        label: t('Insert column right', {
-          description: 'Loop table column menu',
-        }),
-        icon: <Icon iconName="east" $size="18px" />,
-        isHidden: !isEditable,
-        callback: () => addColumn(table, index + 1),
-      },
-      {
-        label: t('Hide column', { description: 'Loop table column menu' }),
-        icon: <Icon iconName="visibility_off" $size="18px" />,
-        isHidden: !isEditable,
-        callback: () => updateColumn(table, column.id, { hidden: true }),
-      },
-      {
-        label: t('Delete column', { description: 'Loop table column menu' }),
-        icon: <Icon iconName="delete" $size="18px" />,
-        variant: 'danger',
-        isHidden: !isEditable || snapshot.columns.length <= 1,
-        callback: () => deleteColumn(table, column.id),
-      },
     ];
-  }, [t, column, snapshot, table, index, isEditable, sortedHere]);
+  }, [t, column, snapshot, table, isEditable, sortedHere]);
 
   const width = liveWidth ?? column.width;
   // Its own format, then the header row's (Collaborators: not its column's)
@@ -274,6 +221,7 @@ export const ColumnHeader = ({
   return (
     <th
       ref={drop.setNodeRef}
+      data-column-id={column.id}
       style={{
         width,
         minWidth: width,
@@ -337,19 +285,6 @@ export const ColumnHeader = ({
               type: columnTypeLabel(t, column.type),
             })}
           >
-            <span
-              className="loop-table__handle"
-              aria-label={t('Move the {{name}} column', {
-                description: 'Accessible name of a column drag handle',
-                name: column.name,
-              })}
-              {...drag.listeners}
-              {...drag.attributes}
-              ref={drag.setNodeRef}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <Icon iconName="drag_indicator" $size="16px" />
-            </span>
             {headerContent}
             <Icon iconName="expand_more" $size="16px" />
           </div>
@@ -415,4 +350,59 @@ export const ColumnHeader = ({
       )}
     </th>
   );
+};
+
+/**
+ * Collaborators: what the handle above a column offers — the whole column
+ * (its cells, not its header), and adding, hiding or deleting columns.
+ */
+export const columnHandleMenuItems = (
+  t: TFunction<'translation', undefined>,
+  table: Y.Map<unknown>,
+  snapshot: TableSnapshot,
+  column: Column,
+): DropdownMenuItem[] => {
+  const index = snapshot.columns.findIndex((item) => item.id === column.id);
+  return [
+    {
+      label: t('Format the whole column', {
+        description: 'Loop table column menu',
+      }),
+      icon: <Icon iconName="view_column" $size="18px" />,
+      children: formatMenuItems(
+        t,
+        column.format,
+        (patch) => setColumnFormat(table, column.id, patch),
+        // What it inherits from all the cells, then the defaults
+        {
+          shown: mergeFormats(snapshot.layout.cells, columnDefaults(column)),
+        },
+      ),
+    },
+    { type: 'separator' },
+    {
+      label: t('Insert column left', { description: 'Loop table column menu' }),
+      icon: <Icon iconName="west" $size="18px" />,
+      callback: () => addColumn(table, index),
+    },
+    {
+      label: t('Insert column right', {
+        description: 'Loop table column menu',
+      }),
+      icon: <Icon iconName="east" $size="18px" />,
+      callback: () => addColumn(table, index + 1),
+    },
+    {
+      label: t('Hide column', { description: 'Loop table column menu' }),
+      icon: <Icon iconName="visibility_off" $size="18px" />,
+      callback: () => updateColumn(table, column.id, { hidden: true }),
+    },
+    {
+      label: t('Delete column', { description: 'Loop table column menu' }),
+      icon: <Icon iconName="delete" $size="18px" />,
+      variant: 'danger',
+      isHidden: snapshot.columns.length <= 1,
+      callback: () => deleteColumn(table, column.id),
+    },
+  ];
 };

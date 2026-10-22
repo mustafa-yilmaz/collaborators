@@ -374,6 +374,19 @@ export const layoutMenuItems = (
     callback: () =>
       setLayout(table, { showRowNumbers: !layout.showRowNumbers }),
   },
+  // Collaborators: the header row hides from its handle, and comes back here
+  {
+    label: layout.showHeader
+      ? t('Hide the header row', { description: 'Loop table header row menu' })
+      : t('Show the header row', { description: 'Loop table corner menu' }),
+    icon: (
+      <Icon
+        iconName={layout.showHeader ? 'visibility_off' : 'table_rows'}
+        $size="18px"
+      />
+    ),
+    callback: () => setLayout(table, { showHeader: !layout.showHeader }),
+  },
   summaryRowItem(t, table, layout),
   { type: 'separator' },
   {

@@ -134,6 +134,50 @@ export const LoopTableStyle = createGlobalStyle`
     padding: 7px 8px;
     font-variant-numeric: tabular-nums;
   }
+  /* Collaborators: a column's handle, on the top edge of its header,
+     outside the cells */
+  .loop-table__column-controls {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    transform: translateY(-50%);
+    z-index: 3;
+  }
+  .loop-table__column-controls-pill {
+    display: inline-flex;
+    align-items: center;
+    pointer-events: auto;
+    background: var(--c--contextuals--background--surface--primary, #fff);
+    border: 1px solid var(--lt-border, #e5e5e5);
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    padding: 0 2px;
+  }
+  .loop-table__column-controls .loop-table__handle {
+    visibility: visible;
+    padding: 0 2px;
+    border-radius: 4px;
+  }
+  .loop-table__column-controls .loop-table__handle:hover,
+  .loop-table__column-controls .loop-table__handle.is-open {
+    background: var(--lt-hover);
+  }
+  .loop-table__header-controls .loop-table__handle {
+    cursor: pointer;
+  }
+  /* A hidden header row keeps its cells (moving columns aims at them) */
+  .loop-table__grid thead.is-hidden-header th {
+    height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-top: none;
+    border-bottom: none;
+    line-height: 0;
+  }
+  .loop-table__grid thead.is-hidden-header th > * {
+    display: none;
+  }
   /* The handle and menu of a row, in the page margin left of the table */
   .loop-table__row-controls {
     position: absolute;

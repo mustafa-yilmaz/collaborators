@@ -32,13 +32,15 @@ import { useAuth } from '@/features/auth';
 import { useDocStore } from '@/features/docs/doc-management/stores/useDocStore';
 
 import { Cell, Direction } from './Cell';
-import { ColumnHeader } from './ColumnHeader';
+import { ColumnHeader, columnHandleMenuItems } from './ColumnHeader';
 import { CornerHeader } from './CornerHeader';
 import { ColumnDragPreview, RowDragPreview } from './DragPreview';
+import { ColumnControls, HeaderRowControls } from './HandleControls';
 import { SummaryRow } from './SummaryRow';
 import { Toolbar } from './Toolbar';
 import { labelOptionsOf } from './format';
 import {
+  HEADER_DEFAULTS,
   columnDefaults,
   formatMenuItems,
   formatStyle,
@@ -61,6 +63,8 @@ import {
   moveRow,
   setCellFormat,
   setCellValue,
+  setLayout,
+  setLayoutFormat,
   setRowFormat,
   setTextCell,
 } from './model';
@@ -264,6 +268,20 @@ export const LoopTableView = ({
   const [overId, setOverId] = useState<string | null>(null);
   // The row under the pointer, whose handle and menu show in the margin
   const [hoverRowId, setHoverRowId] = useState<string | null>(null);
+  // Collaborators: the header row's and the columns' handles
+  const [isOverHeader, setIsOverHeader] = useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [hoverColumnId, setHoverColumnId] = useState<string | null>(null);
+  const [columnMenuId, setColumnMenuId] = useState<string | null>(null);
+  const [headerBox, setHeaderBox] = useState<{
+    top: number;
+    height: number;
+  } | null>(null);
+  const [columnBox, setColumnBox] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const [controlsBox, setControlsBox] = useState<{
     top: number;
     height: number;
@@ -382,6 +400,73 @@ export const LoopTableView = ({
     );
   }, [controlsRowId]);
   useLayoutEffect(placeControls, [placeControls, snapshot, rows, columns]);
+
+  // Collaborators: the column whose handle shows (moved, menu open, under
+  // the pointer, or of the selected cell), and the header row's
+  const controlsColumnId = isEditable
+    ? ((dragId?.startsWith('col:') ? dragId.slice(4) : null) ??
+      columnMenuId ??
+      hoverColumnId ??
+      active?.columnId ??
+      null)
+    : null;
+  const showHeaderControls =
+    isEditable &&
+    !!snapshot?.layout.showHeader &&
+    (isOverHeader || headerMenuOpen);
+
+  const placeHandles = useCallback(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) {
+      return;
+    }
+    const origin = wrapper.getBoundingClientRect();
+    const headerRow = wrapper.querySelector('thead tr');
+    if (headerRow) {
+      const rect = headerRow.getBoundingClientRect();
+      const top = rect.top - origin.top;
+      setHeaderBox((box) =>
+        box?.top === top && box.height === rect.height
+          ? box
+          : { top, height: rect.height },
+      );
+    }
+    const th = controlsColumnId
+      ? wrapper.querySelector(`th[data-column-id="${controlsColumnId}"]`)
+      : null;
+    if (!th) {
+      setColumnBox(null);
+      return;
+    }
+    const rect = th.getBoundingClientRect();
+    const scroll = wrapper.querySelector('.loop-table__scroll');
+    const visible = scroll?.getBoundingClientRect();
+    // Only the part of the column in view (the table scrolls sideways)
+    const left = Math.max(rect.left, visible?.left ?? rect.left);
+    const right = Math.min(rect.right, visible?.right ?? rect.right);
+    if (right <= left) {
+      setColumnBox(null);
+      return;
+    }
+    const next = {
+      top: rect.top - origin.top,
+      left: left - origin.left,
+      width: right - left,
+    };
+    setColumnBox((box) =>
+      box?.top === next.top &&
+      box.left === next.left &&
+      box.width === next.width
+        ? box
+        : next,
+    );
+  }, [controlsColumnId]);
+  useLayoutEffect(placeHandles, [placeHandles, snapshot, rows, columns]);
+  useEffect(() => {
+    const scroll = wrapperRef.current?.querySelector('.loop-table__scroll');
+    scroll?.addEventListener('scroll', placeHandles, { passive: true });
+    return () => scroll?.removeEventListener('scroll', placeHandles);
+  }, [placeHandles]);
   // ...and again when the table moves inside its block, e.g. the toolbar
   // wraps on a narrower page or a row grows with its text
   useEffect(() => {
@@ -389,14 +474,17 @@ export const LoopTableView = ({
     if (!wrapper || typeof ResizeObserver === 'undefined') {
       return;
     }
-    const observer = new ResizeObserver(() => placeControls());
+    const observer = new ResizeObserver(() => {
+      placeControls();
+      placeHandles();
+    });
     observer.observe(wrapper);
     const grid = wrapper.querySelector('.loop-table__grid');
     if (grid) {
       observer.observe(grid);
     }
     return () => observer.disconnect();
-  }, [placeControls]);
+  }, [placeControls, placeHandles]);
 
   // A click anywhere else on the screen lets go of the selected cell (and its
   // blue frame), once the clicked spot has taken the focus, so that a cell
@@ -519,6 +607,34 @@ export const LoopTableView = ({
   const showNumbersColumn = snapshot.layout.showRowNumbers;
   const controlsRowIndex = rows.findIndex((row) => row.id === controlsRowId);
   const controlsRow = rows[controlsRowIndex];
+
+  const controlsColumn = columns.find((col) => col.id === controlsColumnId);
+  // Collaborators: the header row as a whole, from its handle
+  const headerRowMenuOptions: DropdownMenuItem[] = [
+    {
+      label: t('Format the whole header row', {
+        description: 'Loop table header row menu',
+      }),
+      icon: <Icon iconName="format_color_fill" $size="18px" />,
+      children: formatMenuItems(
+        t,
+        snapshot.layout.header,
+        (patch) => setLayoutFormat(table, 'header', patch),
+        { shown: HEADER_DEFAULTS },
+      ),
+    },
+    { type: 'separator' },
+    {
+      label: t('Hide the header row', {
+        description: 'Loop table header row menu',
+      }),
+      icon: <Icon iconName="visibility_off" $size="18px" />,
+      callback: () => {
+        setHeaderMenuOpen(false);
+        setLayout(table, { showHeader: false });
+      },
+    },
+  ];
 
   const rowMenuOptions = (row: Row): DropdownMenuItem[] => {
     const index = snapshot.rows.findIndex((item) => item.id === row.id);
@@ -774,6 +890,16 @@ export const LoopTableView = ({
       data-testid="loop-table"
       onMouseOver={(event) => {
         const target = event.target as HTMLElement;
+        // Collaborators: the column and the header row under the pointer
+        const cell = target.closest('[data-column-id]');
+        if (cell) {
+          setHoverColumnId(cell.getAttribute('data-column-id'));
+        }
+        if (target.closest('thead')) {
+          setIsOverHeader(true);
+        } else if (target.closest('tbody, tfoot')) {
+          setIsOverHeader(false);
+        }
         const tr = target.closest('tr[data-row-id]');
         if (tr) {
           setHoverRowId(tr.getAttribute('data-row-id'));
@@ -781,7 +907,11 @@ export const LoopTableView = ({
           setHoverRowId(null);
         }
       }}
-      onMouseLeave={() => setHoverRowId(null)}
+      onMouseLeave={() => {
+        setHoverRowId(null);
+        setHoverColumnId(null);
+        setIsOverHeader(false);
+      }}
       onKeyDown={onKeyDown}
       onPaste={onPaste}
       onCopy={(event) => event.stopPropagation()}
@@ -820,7 +950,11 @@ export const LoopTableView = ({
               description: 'Name of the editor block type: a Loop-style table',
             })}
           >
-            <thead>
+            <thead
+              className={
+                snapshot.layout.showHeader ? undefined : 'is-hidden-header'
+              }
+            >
               <tr>
                 {showNumbersColumn && (
                   <CornerHeader
@@ -835,9 +969,6 @@ export const LoopTableView = ({
                     table={table}
                     snapshot={snapshot}
                     column={column}
-                    index={snapshot.columns.findIndex(
-                      (c) => c.id === column.id,
-                    )}
                     isEditable={isEditable}
                     dropSide={dropSide('col', column.id)}
                     isDragSource={dragId === `col:${column.id}`}
@@ -1042,6 +1173,32 @@ export const LoopTableView = ({
             isMenuOpen={rowMenuId === controlsRow.id}
             onMenuOpenChange={(isOpen) =>
               setRowMenuId(isOpen ? controlsRow.id : null)
+            }
+          />
+        )}
+        {showHeaderControls && headerBox && (
+          <HeaderRowControls
+            box={headerBox}
+            menuOptions={headerRowMenuOptions}
+            isMenuOpen={headerMenuOpen}
+            onMenuOpenChange={setHeaderMenuOpen}
+          />
+        )}
+        {controlsColumn && columnBox && (
+          <ColumnControls
+            key={controlsColumn.id}
+            column={controlsColumn}
+            canDrag={isEditable}
+            box={columnBox}
+            menuOptions={columnHandleMenuItems(
+              t,
+              table,
+              snapshot,
+              controlsColumn,
+            )}
+            isMenuOpen={columnMenuId === controlsColumn.id}
+            onMenuOpenChange={(isOpen) =>
+              setColumnMenuId(isOpen ? controlsColumn.id : null)
             }
           />
         )}

@@ -109,6 +109,7 @@ describe('Loop table formats', () => {
       showRowNumbers: false,
       showSummary: false,
       expanded: false,
+      showHeader: true,
       cells: {},
       header: { background: '#f1f1ef' },
       numbers: { align: 'right' },
@@ -124,6 +125,15 @@ describe('Loop table formats', () => {
   it('starts new tables without the row numbers', () => {
     const { table } = setup();
     expect(readTable(table).layout.showRowNumbers).toBe(false);
+  });
+
+  it('hides the header row and shows it again', () => {
+    const { table } = setup();
+    expect(readTable(table).layout.showHeader).toBe(true);
+    setLayout(table, { showHeader: false });
+    expect(readTable(table).layout.showHeader).toBe(false);
+    setLayout(table, { showHeader: true });
+    expect(readTable(table).layout.showHeader).toBe(true);
   });
 
   it('starts new tables with a gray header row, and only that row', () => {
@@ -171,6 +181,7 @@ describe('Loop table formats', () => {
       showRowNumbers: true,
       showSummary: false,
       expanded: false,
+      showHeader: true,
       cells: {},
       header: {},
       numbers: {},

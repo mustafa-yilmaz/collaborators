@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import { Box, BoxButton, Icon, Text } from '@/components';
+import { docHref } from '@/features/docs/doc-management';
 import { labelHref } from '@/features/labels/LabelEditor';
 import { useWorkspaceStore } from '@/features/workspaces/stores/useWorkspaceStore';
 
@@ -120,7 +121,7 @@ export const SearchResults = ({
       icon={doc.kind === 'space' ? 'folder' : 'description'}
       title={doc.title || untitled}
       detail={[doc.context, doc.snippet].filter(Boolean).join(' · ')}
-      onClick={() => go(`/page/${doc.id}/`)}
+      onClick={() => go(docHref(doc.id, doc.kind))}
     />
   );
 
@@ -159,7 +160,7 @@ export const SearchResults = ({
                   onClick={() => {
                     if (involved) {
                       setCurrentWorkspaceId(workspace.id);
-                      go('/');
+                      go(`/workspace/${workspace.id}/`);
                     } else {
                       // Open to join: its card on the Search screen
                       go(searchHref(workspace.name));

@@ -24,7 +24,7 @@ export const useNotificationTarget = () => {
     if (notification.kind === 'join_approved' && notification.workspace) {
       const workspaceId = notification.workspace.id;
       return {
-        href: '/',
+        href: `/workspace/${workspaceId}/`,
         beforeOpen: () => setCurrentWorkspaceId(workspaceId),
       };
     }

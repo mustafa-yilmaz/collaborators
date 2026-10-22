@@ -948,7 +948,7 @@ const SpacesSection = ({ workspace }: { workspace: Workspace }) => {
             <Row>
               <Box $direction="row" $align="center" $gap="xs" $flex={1}>
                 <Icon iconName="folder" $size="20px" $variation="secondary" />
-                <StyledLink href={`/page/${space.id}`}>
+                <StyledLink href={`/space/${space.id}/`}>
                   <Text $weight="500">
                     {space.title ||
                       t('Untitled space', {

@@ -11,6 +11,7 @@ import {
   TEXT_INDENT,
 } from '@/features/dashboard/CardParts';
 import {
+  docHref,
   useCreateDoc,
   useCreateFavoriteDoc,
   useDeleteFavoriteDoc,
@@ -129,7 +130,7 @@ const DocumentRow = ({ doc }: { doc: CollaborationDocument }) => {
   });
   return (
     <Box $direction="row" $align="center" $gap="2xs">
-      <StyledLink href={`/page/${doc.id}/`} $css={rowCss}>
+      <StyledLink href={docHref(doc.id, doc.kind)} $css={rowCss}>
         <Icon
           iconName={doc.kind === 'space' ? 'folder' : 'description'}
           $size={CARD_ICON_SIZE}
@@ -232,7 +233,7 @@ export const CollaborationsList = ({
   const workspaceRow = (workspace: CollaborationWorkspace) => (
     <Box key={workspace.id} $direction="row" $align="center" $gap="2xs">
       <StyledLink
-        href="/"
+        href={`/workspace/${workspace.id}/`}
         $css={rowCss}
         onClick={() => setCurrentWorkspaceId(workspace.id)}
       >

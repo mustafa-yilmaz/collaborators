@@ -43,7 +43,7 @@ const WorkspaceCard = ({ workspace }: { workspace: DirectoryWorkspace }) => {
         variant="secondary"
         onClick={() => {
           setCurrentWorkspaceId(workspace.id);
-          void push('/');
+          void push(`/workspace/${workspace.id}/`);
         }}
       >
         {t('Open', { description: 'Button opening a workspace' })}
@@ -122,7 +122,7 @@ const WorkspaceCard = ({ workspace }: { workspace: DirectoryWorkspace }) => {
       {workspace.public_spaces.length > 0 && (
         <Box $direction="row" $gap="xs" $css="flex-wrap: wrap;">
           {workspace.public_spaces.map((space) => (
-            <StyledLink key={space.id} href={`/page/${space.id}/`}>
+            <StyledLink key={space.id} href={`/space/${space.id}/`}>
               <Box $direction="row" $align="center" $gap="4xs">
                 <Icon iconName="folder" $size="16px" $variation="secondary" />
                 <Text $size="sm" $theme="brand">

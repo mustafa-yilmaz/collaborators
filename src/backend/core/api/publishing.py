@@ -101,7 +101,7 @@ def published_wiki(document):
     return root
 
 
-RESERVED_WIKI_SLUGS = {"page", "docs"}
+RESERVED_WIKI_SLUGS = {"page", "space", "workspace", "docs"}
 
 
 def published_space(slug):

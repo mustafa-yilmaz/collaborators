@@ -6,6 +6,7 @@ import {
   VariantType,
   useToastProvider,
 } from '@gouvfr-lasuite/ui-components';
+import { useRouter } from 'next/router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
@@ -66,6 +67,7 @@ export const CreateWorkspaceModal = ({
   const [members, setMembers] = useState<User[]>([]);
   const [emails, setEmails] = useState<string[]>([]);
   const { setCurrentWorkspaceId } = useWorkspaceStore();
+  const router = useRouter();
   const { mutate: createWorkspace, isPending } = useCreateWorkspace();
 
   const onCreate = () => {
@@ -84,6 +86,7 @@ export const CreateWorkspaceModal = ({
           ]);
           setCurrentWorkspaceId(workspace.id);
           onClose();
+          void router.push(`/workspace/${workspace.id}/`);
         },
         onError: () => {
           toast(

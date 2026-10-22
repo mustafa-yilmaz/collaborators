@@ -38,3 +38,10 @@ export const getEmojiAndTitle = (title: string) => {
 
   return { emoji: null, titleWithoutEmoji: title };
 };
+
+/**
+ * Collaborators: where a page or a space lives: /page/<id>/ or /space/<id>/
+ * (a space reached at /page/ moves to its own address anyway).
+ */
+export const docHref = (id: string, kind?: string) =>
+  kind === 'space' ? `/space/${id}/` : `/page/${id}/`;

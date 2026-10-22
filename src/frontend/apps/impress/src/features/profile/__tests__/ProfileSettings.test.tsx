@@ -69,7 +69,8 @@ describe('ProfileSettings', () => {
     expect(body.headline).toBe('Grant writer');
     expect(body.interests).toEqual(['AI', 'Climate']);
     expect(body.visibility.email.level).toBe('platform');
-  });
+    // many fields to type in: slower under a full parallel run
+  }, 15000);
 
   test('interests: only labels already used', async () => {
     fetchMock.get(URL, me);

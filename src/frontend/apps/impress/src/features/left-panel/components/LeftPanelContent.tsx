@@ -20,7 +20,7 @@ import { LeftPanelTargetFilters } from './LefPanelTargetFilters';
 export const LeftPanelContent = () => {
   const router = useRouter();
   const isHome = router.pathname === '/';
-  const isDoc = router.pathname === '/page/[id]';
+  const isDoc = ['/page/[id]', '/space/[id]'].includes(router.pathname);
   const isWorkspacePage = router.pathname.startsWith('/workspaces/');
   const { currentWorkspaceId } = useWorkspaceStore();
 

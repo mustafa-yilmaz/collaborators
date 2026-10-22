@@ -46,7 +46,7 @@ export const PageAlsoIn = ({ doc }: { doc: Doc }) => {
           $padding={{ left: 'xs', right: '3xs', vertical: '4xs' }}
           $css={chipCss}
         >
-          <StyledLink href={`/page/${link.space.id}/`}>
+          <StyledLink href={`/space/${link.space.id}/`}>
             <Text $size="xs">
               {link.space.title ||
                 t('Untitled space', {

@@ -92,12 +92,12 @@ const Page: NextPageWithLayout = () => {
                   {data.workspaces.map((workspace) => (
                     <StyledLink
                       key={workspace.id}
-                      href="/"
+                      href={`/workspace/${workspace.id}/`}
                       $css={rowCss}
                       onClick={(event) => {
                         event.preventDefault();
                         setCurrentWorkspaceId(workspace.id);
-                        void push('/');
+                        void push(`/workspace/${workspace.id}/`);
                       }}
                     >
                       <Icon
@@ -119,7 +119,7 @@ const Page: NextPageWithLayout = () => {
                   {data.spaces.map((space) => (
                     <StyledLink
                       key={space.id}
-                      href={`/page/${space.id}/`}
+                      href={`/space/${space.id}/`}
                       $css={rowCss}
                     >
                       <Icon

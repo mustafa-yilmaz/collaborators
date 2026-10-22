@@ -27,7 +27,7 @@ const Page: NextPageWithLayout = () => {
   const open = () => {
     if (workspace) {
       setCurrentWorkspaceId(workspace.id);
-      void push('/');
+      void push(`/workspace/${workspace.id}/`);
     }
   };
 

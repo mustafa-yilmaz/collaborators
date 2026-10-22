@@ -1648,6 +1648,11 @@ class Document(MP_Node, BaseModel):
             "search": can_get,
         }
 
+    @property
+    def app_path(self):
+        """Collaborators: a space lives at /space/<id>/, a page at /page/<id>/."""
+        return "space" if self.kind == DocumentKindChoices.SPACE else "page"
+
     def send_email(self, subject, emails, context=None, language=None):
         """Generate and send email from a template.
 
@@ -1659,7 +1664,7 @@ class Document(MP_Node, BaseModel):
             "brandname": settings.EMAIL_BRAND_NAME,
             "document": self,
             "domain": domain,
-            "link": f"{domain}/page/{self.id}/?utm_source=docssharelink&utm_campaign={self.id}",
+            "link": f"{domain}/{self.app_path}/{self.id}/?utm_source=docssharelink&utm_campaign={self.id}",
             "link_label": self.title or str(_("Untitled page")),
             "button_label": _("Open"),
             "logo_img": settings.EMAIL_LOGO_IMG,
@@ -2450,7 +2455,7 @@ class Mention(BaseModel):
             context = {
                 "title": subject,
                 "message": message,
-                "link": f"{domain}/page/{self.document_id}/#{self.anchor_id}",
+                "link": f"{domain}/{self.document.app_path}/{self.document_id}/#{self.anchor_id}",
             }
 
         sent = False

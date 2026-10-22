@@ -129,7 +129,7 @@ const DocPage = ({ id }: DocProps) => {
   const [doc, setDoc] = useState<Doc>();
   const { setCurrentDoc } = useDocStore();
   const queryClient = useQueryClient();
-  const { replace, asPath } = useRouter();
+  const { replace, asPath, pathname } = useRouter();
   const { t } = useTranslation();
   const { authenticated } = useAuth();
   const { untitledDocument } = useTrans();
@@ -175,6 +175,21 @@ const DocPage = ({ id }: DocProps) => {
     setDoc(docQuery);
     setCurrentDoc(docQuery);
   }, [docQuery, setCurrentDoc, isFetching]);
+
+  /**
+   * Collaborators: a space lives at /space/<id>/, a page at /page/<id>/;
+   * reached by the other address (or an old /docs/ link), it moves to its
+   * own, keeping any #anchor or ?query
+   */
+  useEffect(() => {
+    if (!docQuery) {
+      return;
+    }
+    const wanted = docQuery.kind === 'space' ? 'space' : 'page';
+    if (!pathname.startsWith(`/${wanted}/`)) {
+      void replace(asPath.replace(/^\/(page|space)\//, `/${wanted}/`));
+    }
+  }, [docQuery, pathname, asPath, replace]);
 
   /**
    * Reset state when unmounting the component to avoid

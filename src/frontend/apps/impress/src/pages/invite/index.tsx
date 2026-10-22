@@ -73,9 +73,13 @@ const Page: NextPageWithLayout = () => {
         await queryClient.invalidateQueries({ queryKey: [KEY_AUTH] });
         if (result.kind === 'workspace') {
           setCurrentWorkspaceId(result.id);
-          void router.replace('/');
+          void router.replace(`/workspace/${result.id}/`);
         } else {
-          void router.replace(`/page/${result.id}/`);
+          void router.replace(
+            result.kind === 'space'
+              ? `/space/${result.id}/`
+              : `/page/${result.id}/`,
+          );
         }
       },
       onError: () =>

@@ -8,14 +8,14 @@ import {
   useToastProvider,
 } from '@gouvfr-lasuite/ui-components';
 import { ReactNode, useEffect, useState } from 'react';
-import { Trans, useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import { Box, BoxButton, Icon, Loading, StyledLink, Text } from '@/components';
-import { Title } from '@/components/Title';
 import { useLabelSuggestions } from '@/features/labels/api';
 import { BRAND_NAME } from '@/features/people/BrandName';
 
+import { InterestsTitle } from './InterestsTitle';
 import {
   Audience,
   AudienceSetting,
@@ -329,18 +329,7 @@ export const ProfileSettings = () => {
       >
         {input('website', 'https://…')}
       </Field>
-      <Field
-        title={
-          <Trans
-            i18nKey="Interests (labels in <brand/>)"
-            tOptions={{ description: 'Heading of profile interests' }}
-            components={{
-              brand: <Title as="span" $size="1em" $display="inline" />,
-            }}
-          />
-        }
-        picker={picker('interests')}
-      >
+      <Field title={<InterestsTitle />} picker={picker('interests')}>
         <Box $direction="row" $gap="2xs" $css="flex-wrap: wrap;">
           {interests.map((name) => (
             <Box

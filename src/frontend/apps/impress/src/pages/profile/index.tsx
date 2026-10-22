@@ -15,6 +15,7 @@ import {
 import { Title } from '@/components/Title';
 import { UserAvatar } from '@/features/auth';
 import { LabelChip } from '@/features/labels/LabelEditor';
+import { InterestsTitle } from '@/features/profile/InterestsTitle';
 import { useProfile } from '@/features/profile/api';
 import { NextPageWithLayout } from '@/types/next';
 
@@ -107,7 +108,7 @@ const Page: NextPageWithLayout = () => {
               ],
               [
                 'interests',
-                t('Interests', { description: 'Heading of profile interests' }),
+                <InterestsTitle key="title" />,
                 profile.interests.length > 0 && (
                   <Box $direction="row" $gap="2xs" $css="flex-wrap: wrap;">
                     {profile.interests.map((name) => (

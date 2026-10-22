@@ -13,7 +13,7 @@ import { css } from 'styled-components';
 
 import { Box, BoxButton, Icon, Loading, StyledLink, Text } from '@/components';
 import { useLabelSuggestions } from '@/features/labels/api';
-import { BRAND_NAME } from '@/features/people/BrandName';
+import { BRAND_NAME, WithBrand } from '@/features/people/BrandName';
 
 import { InterestsTitle } from './InterestsTitle';
 import {
@@ -46,7 +46,11 @@ const AudiencePicker = ({
   onChange: (setting: AudienceSetting) => void;
 }) => {
   const { t } = useTranslation();
-  const options: { value: Audience; label: string }[] = [
+  const options: {
+    value: Audience;
+    label: string;
+    render?: () => ReactNode;
+  }[] = [
     {
       value: 'public',
       label: t('Public on the internet', {
@@ -59,6 +63,12 @@ const AudiencePicker = ({
         description: 'Visibility: every signed-in collaborator',
         brand: BRAND_NAME,
       }),
+      render: () => (
+        <WithBrand
+          i18nKey="Everyone on <brand/>"
+          description="Visibility: every signed-in collaborator"
+        />
+      ),
     },
     {
       value: 'colleagues',
@@ -66,6 +76,12 @@ const AudiencePicker = ({
         description: 'Visibility: people sharing a workspace or page',
         brand: BRAND_NAME,
       }),
+      render: () => (
+        <WithBrand
+          i18nKey="People I work with on <brand/>"
+          description="Visibility: people sharing a workspace or page"
+        />
+      ),
     },
     {
       value: 'selected',
@@ -283,6 +299,12 @@ export const ProfileSettings = () => {
                 description: 'Reach: every signed-in collaborator',
                 brand: BRAND_NAME,
               }),
+              render: () => (
+                <WithBrand
+                  i18nKey="Everyone on <brand/>"
+                  description="Reach: every signed-in collaborator"
+                />
+              ),
             },
             {
               value: 'public',

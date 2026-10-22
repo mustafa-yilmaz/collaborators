@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { Text } from '@/components';
 import { Title } from '@/components/Title';
@@ -28,3 +28,29 @@ export const MyCollaboratorsName = ({ size = '1em' }: { size?: string }) => {
     </Text>
   );
 };
+
+/**
+ * A sentence naming the platform, the name styled as the logo (colour,
+ * italic, bold), on one row: its key holds "<brand/>".
+ */
+export const WithBrand = ({
+  i18nKey,
+  description,
+}: {
+  i18nKey: string;
+  description: string;
+}) => (
+  <Text
+    as="span"
+    $display="inline-flex"
+    $direction="row"
+    $align="baseline"
+    $css="white-space: nowrap; gap: 0.25em;"
+  >
+    <Trans
+      i18nKey={i18nKey}
+      tOptions={{ description }}
+      components={{ brand: <Title as="span" $size="1em" $display="inline" /> }}
+    />
+  </Text>
+);

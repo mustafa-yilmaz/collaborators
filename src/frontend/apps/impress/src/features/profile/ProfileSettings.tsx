@@ -102,6 +102,8 @@ const AudiencePicker = ({
     <Box $gap="2xs">
       <Select
         fullWidth
+        // the chosen one as its option shows (the platform's name as its logo)
+        showLabelWhenSelected={false}
         label={t('Who sees it', {
           description: 'Label choosing who sees a piece of a profile',
         })}
@@ -282,6 +284,7 @@ export const ProfileSettings = () => {
       >
         <Select
           fullWidth
+          showLabelWhenSelected={false}
           label={t('Who can find me', {
             description: 'Label of the reach choice of a profile',
           })}

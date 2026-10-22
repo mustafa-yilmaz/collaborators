@@ -118,3 +118,45 @@ def test_my_profile_validates_and_offers_choices():
     good = client_for(owner).put(url, {"website": "example.org"}, format="json")
     assert good.json()["website"] == "https://example.org"
     assert client_for().get(url).status_code == 401
+
+
+def test_profile_lists_what_each_item_lets_the_viewer_see():
+    """Workspaces, spaces and pages by their own visibility, not a setting."""
+    owner, colleague, stranger, _workspace = colleagues()
+    public_space = factories.DocumentFactory(
+        kind="space",
+        title="Open space",
+        link_reach="public",
+        users=[(owner, "owner")],
+    )
+    private_page = factories.DocumentFactory(
+        title="Private plan", link_reach="restricted", users=[(owner, "owner")]
+    )
+    models.DocumentAccess.objects.create(
+        document=private_page, user=colleague, role="reader"
+    )
+    open_workspace = models.Workspace.objects.create(
+        name="Open guild", visibility="platform"
+    )
+    models.WorkspaceAccess.objects.create(workspace=open_workspace, user=owner)
+    client_for(owner).put(
+        "/api/v1.0/profiles/me/", {"headline": "Grant writer"}, format="json"
+    )
+    url = f"/api/v1.0/profiles/{owner.id}/"
+
+    seen_by_colleague = client_for(colleague).get(url).json()
+    assert seen_by_colleague["spaces"] == [
+        {"id": str(public_space.id), "title": "Open space"}
+    ]
+    assert seen_by_colleague["pages"] == [
+        {"id": str(private_page.id), "title": "Private plan"}
+    ]
+    assert [item["name"] for item in seen_by_colleague["workspaces"]] == [
+        "Acme",
+        "Open guild",
+    ]
+
+    seen_by_stranger = client_for(stranger).get(url).json()
+    assert [item["title"] for item in seen_by_stranger["spaces"]] == ["Open space"]
+    assert seen_by_stranger["pages"] == []
+    assert [item["name"] for item in seen_by_stranger["workspaces"]] == ["Open guild"]

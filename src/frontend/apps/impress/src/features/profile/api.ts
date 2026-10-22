@@ -13,7 +13,6 @@ export const PROFILE_FIELDS = [
   'website',
   'email',
   'interests',
-  'workspaces',
 ] as const;
 export type ProfileField = (typeof PROFILE_FIELDS)[number];
 
@@ -35,7 +34,10 @@ export interface Profile {
   website: string;
   email: string;
   interests: string[];
+  /** Each shown as its own visibility lets the viewer see it */
   workspaces: { id: string; name: string }[];
+  spaces: { id: string; title: string }[];
+  pages: { id: string; title: string }[];
 }
 
 /** Who may find someone by name, see their profile and invite them. */

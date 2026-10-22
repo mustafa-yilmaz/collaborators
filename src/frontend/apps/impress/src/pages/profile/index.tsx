@@ -130,6 +130,40 @@ const Page: NextPageWithLayout = () => {
             ))}
           </Box>
         )}
+        {/* Collaborators: what their own visibility lets the viewer see */}
+        {(
+          [
+            [
+              'spaces',
+              t('Spaces', { description: 'Heading of a list of spaces' }),
+              'folder',
+            ],
+            [
+              'pages',
+              t('Pages', { description: 'Heading of a list of pages' }),
+              'description',
+            ],
+          ] as const
+        ).map(
+          ([key, heading, icon]) =>
+            (profile[key] ?? []).length > 0 && (
+              <Box key={key} $gap="2xs">
+                <Text $size="sm" $weight="700">
+                  {heading}
+                </Text>
+                {(profile[key] ?? []).map((item) => (
+                  <StyledLink key={item.id} href={`/docs/${item.id}/`}>
+                    <Detail icon={icon}>
+                      {item.title ||
+                        t('Untitled page', {
+                          description: 'Name of a page without title',
+                        })}
+                    </Detail>
+                  </StyledLink>
+                ))}
+              </Box>
+            ),
+        )}
       </Box>
     );
   }

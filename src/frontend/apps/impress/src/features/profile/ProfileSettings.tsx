@@ -132,23 +132,29 @@ const Field = ({
   title,
   children,
   picker,
+  note,
 }: {
   title: string;
   children?: ReactNode;
-  picker: ReactNode;
+  /** The audience of the piece, in the right column */
+  picker?: ReactNode;
+  /** Explanations under both columns */
+  note?: ReactNode;
 }) => (
   <Box $gap="xs" $css={fieldCss}>
     <Text $weight="700" $size="sm">
       {title}
     </Text>
+    {/* Two columns: the piece, and who sees it (an empty one keeps it half) */}
     <Box
       $direction="row"
       $gap="sm"
       $css="flex-wrap: wrap; & > * { flex: 1 1 260px; }"
     >
-      {children && <Box $gap="2xs">{children}</Box>}
+      <Box $gap="2xs">{children}</Box>
       <Box>{picker}</Box>
     </Box>
+    {note}
   </Box>
 );
 
@@ -235,54 +241,73 @@ export const ProfileSettings = () => {
         title={t('Who can find me and invite me', {
           description: 'Profile setting: who may find someone',
         })}
-        picker={
-          <Box $gap="3xs">
-            <Select
-              fullWidth
-              label={t('Who can find me', {
-                description: 'Label of the reach choice of a profile',
-              })}
-              hideLabel
-              clearable={false}
-              options={[
-                {
-                  value: 'colleagues',
-                  label: t('People I share a workspace, space or page with', {
-                    description: 'Reach: only the people one works with',
-                  }),
-                },
-                {
-                  value: 'platform',
-                  label: t('Everyone on Collaborators', {
-                    description: 'Reach: every signed-in collaborator',
-                  }),
-                },
-                {
-                  value: 'public',
-                  label: t('Public on the internet', {
-                    description: 'Reach: anyone, even without an account',
-                  }),
-                },
-              ]}
-              value={reach}
-              onChange={(event) => setReach(event.target.value as Reach)}
-            />
-            <Text $size="xs" $variation="secondary">
-              {t(
-                'Others find you by name (to share with you, to invite you, in My Collaborators) only if you share something, unless you open it wider. It also limits who sees each piece below. Anyone can still invite your email address.',
-                { description: 'Explanation of the reach of a profile' },
-              )}
-            </Text>
-          </Box>
+        note={
+          <Text $size="xs" $variation="secondary">
+            {t(
+              'Others find you by name (to share with you, to invite you, in My Collaborators) only if you share something, unless you open it wider. It also limits who sees each piece below. Anyone can still invite your email address.',
+              { description: 'Explanation of the reach of a profile' },
+            )}
+          </Text>
         }
-      />
+      >
+        <Select
+          fullWidth
+          label={t('Who can find me', {
+            description: 'Label of the reach choice of a profile',
+          })}
+          clearable={false}
+          options={[
+            {
+              value: 'colleagues',
+              label: t('People I share a workspace, space or page with', {
+                description: 'Reach: only the people one works with',
+              }),
+            },
+            {
+              value: 'platform',
+              label: t('Everyone on Collaborators', {
+                description: 'Reach: every signed-in collaborator',
+              }),
+            },
+            {
+              value: 'public',
+              label: t('Public on the internet', {
+                description: 'Reach: anyone, even without an account',
+              }),
+            },
+          ]}
+          value={reach}
+          onChange={(event) => setReach(event.target.value as Reach)}
+        />
+      </Field>
       <Field
-        title={t('Name: {{name}}', {
-          description: 'Profile field: the name',
-          name: profile.full_name,
-        })}
+        title={t('Email', { description: 'Profile field' })}
+        picker={picker('email')}
+      >
+        <Input
+          fullWidth
+          label={t('Email', { description: 'Profile field' })}
+          value={profile.email}
+          disabled
+          text={t('The address you sign in with: it can’t be changed here.', {
+            description: 'Help of the read-only email of a profile',
+          })}
+        />
+      </Field>
+      <Field
+        title={t('Name', { description: 'Profile field: the name' })}
         picker={picker('name')}
-      />
+      >
+        <Input
+          fullWidth
+          label={t('Name', { description: 'Profile field: the name' })}
+          value={profile.full_name}
+          disabled
+          text={t('From the account you sign in with.', {
+            description: 'Help of the read-only name of a profile',
+          })}
+        />
+      </Field>
       <Field
         title={t('Headline', { description: 'Profile field' })}
         picker={picker('headline')}
@@ -330,13 +355,6 @@ export const ProfileSettings = () => {
         {input('website', 'https://…')}
       </Field>
       <Field
-        title={t('Email: {{email}}', {
-          description: 'Profile field: the email',
-          email: profile.email,
-        })}
-        picker={picker('email')}
-      />
-      <Field
         title={t('Interests', { description: 'Heading of profile interests' })}
         picker={picker('interests')}
       >
@@ -383,10 +401,6 @@ export const ProfileSettings = () => {
           }}
         />
       </Field>
-      <Field
-        title={t('My workspaces', { description: 'Profile field' })}
-        picker={picker('workspaces')}
-      />
       <Box $direction="row" $justify="flex-end" $css={fieldCss}>
         <Button
           disabled={update.isPending}

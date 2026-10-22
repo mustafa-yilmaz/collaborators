@@ -3004,7 +3004,8 @@ PROFILE_FIELDS = {
     "website": ProfileAudience.PLATFORM,
     "email": ProfileAudience.COLLEAGUES,
     "interests": ProfileAudience.PLATFORM,
-    "workspaces": ProfileAudience.COLLEAGUES,
+    # Collaborators: no "workspaces" piece: a profile lists the workspaces,
+    # spaces and pages of the person that their own visibility lets show
 }
 
 

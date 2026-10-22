@@ -144,6 +144,36 @@ def visible_workspaces_of(owner, viewer):
     ]
 
 
+# How many spaces and pages a profile lists at most
+PROFILE_DOCUMENTS_LIMIT = 30
+
+
+def visible_documents_of(owner, viewer):
+    """
+    {"spaces", "pages"}: those the owner has a role on that the viewer may
+    open (public, open to everyone signed in, or shared with them).
+    """
+    documents = (
+        models.Document.objects.filter(
+            accesses__user=owner,
+            deleted_at__isnull=True,
+            ancestors_deleted_at__isnull=True,
+        )
+        .distinct()
+        .order_by("-updated_at")[: PROFILE_DOCUMENTS_LIMIT * 4]
+    )
+    result = {"spaces": [], "pages": []}
+    for document in documents:
+        kind = (
+            "spaces" if document.kind == choices.DocumentKindChoices.SPACE else "pages"
+        )
+        if len(result[kind]) >= PROFILE_DOCUMENTS_LIMIT:
+            continue
+        if document.get_abilities(viewer).get("retrieve"):
+            result[kind].append({"id": str(document.id), "title": document.title or ""})
+    return result
+
+
 def describe(owner, viewer):
     """The profile as the viewer may see it; None if hidden from them."""
     profile = profile_of(owner)
@@ -164,9 +194,9 @@ def describe(owner, viewer):
         "interests": [label.name for label in profile.interests.order_by("key")]
         if shown["interests"]
         else [],
-        "workspaces": visible_workspaces_of(owner, viewer)
-        if shown["workspaces"]
-        else [],
+        # each shown as its own visibility allows the viewer
+        "workspaces": visible_workspaces_of(owner, viewer),
+        **visible_documents_of(owner, viewer),
     }
 
 

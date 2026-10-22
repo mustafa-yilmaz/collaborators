@@ -33,9 +33,10 @@ import { useDocStore } from '@/features/docs/doc-management/stores/useDocStore';
 
 import { Cell, Direction } from './Cell';
 import { ColumnHeader, columnHandleMenuItems } from './ColumnHeader';
-import { CornerHeader } from './CornerHeader';
+import { CornerHeader, NUMBERS_COLUMN_ID } from './CornerHeader';
 import { ColumnDragPreview, RowDragPreview } from './DragPreview';
 import { ColumnControls, HeaderRowControls } from './HandleControls';
+import { LabelGroupEditor } from './LabelGroupEditor';
 import { SummaryRow } from './SummaryRow';
 import { Toolbar } from './Toolbar';
 import { labelOptionsOf } from './format';
@@ -56,6 +57,7 @@ import {
   addColumn,
   addRow,
   cellLook,
+  changeColumnType,
   deleteRows,
   duplicateRow,
   mergeFormats,
@@ -99,6 +101,35 @@ const useMyTeams = (enabled: boolean) =>
     staleTime: 60_000,
   });
 
+/** Collaborators: a cell's "⌄", opening its format menu. */
+const CellChevron = ({
+  isActive,
+  onClick,
+}: {
+  isActive: boolean;
+  onClick: () => void;
+}) => {
+  const { t } = useTranslation();
+  return (
+    <button
+      type="button"
+      className={`loop-table__cell-chevron ${isActive ? 'is-active' : ''}`}
+      aria-label={t('Format this cell', {
+        description: 'Accessible name of the Loop table cell menu',
+      })}
+      title={t('Format this cell', {
+        description: 'Accessible name of the Loop table cell menu',
+      })}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+    >
+      <Icon iconName="expand_more" $size="16px" />
+    </button>
+  );
+};
+
 /** A row's number, aligned like the cells of any other column. */
 const RowNumberCell = ({
   index,
@@ -107,7 +138,11 @@ const RowNumberCell = ({
   index: number;
   look: CellFormat;
 }) => (
-  <td className="loop-table__rownum" style={formatStyle(look)}>
+  <td
+    className="loop-table__rownum"
+    data-column-id={NUMBERS_COLUMN_ID}
+    style={formatStyle(look)}
+  >
     <div className="loop-table__rownum-number">{index + 1}</div>
   </td>
 );
@@ -273,6 +308,9 @@ export const LoopTableView = ({
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [hoverColumnId, setHoverColumnId] = useState<string | null>(null);
   const [columnMenuId, setColumnMenuId] = useState<string | null>(null);
+  const [labelGroupColumnId, setLabelGroupColumnId] = useState<string | null>(
+    null,
+  );
   const [headerBox, setHeaderBox] = useState<{
     top: number;
     height: number;
@@ -611,18 +649,20 @@ export const LoopTableView = ({
   const controlsColumn = columns.find((col) => col.id === controlsColumnId);
   // Collaborators: the header row as a whole, from its handle
   const headerRowMenuOptions: DropdownMenuItem[] = [
-    {
-      label: t('Format the whole header row', {
-        description: 'Loop table header row menu',
-      }),
-      icon: <Icon iconName="format_color_fill" $size="18px" />,
-      children: formatMenuItems(
-        t,
-        snapshot.layout.header,
-        (patch) => setLayoutFormat(table, 'header', patch),
-        { shown: HEADER_DEFAULTS },
-      ),
-    },
+    // The whole header row
+    ...formatMenuItems(
+      t,
+      snapshot.layout.header,
+      (patch) => setLayoutFormat(table, 'header', patch),
+      {
+        shown: HEADER_DEFAULTS,
+        labels: {
+          clear: t('Clear header row formatting', {
+            description: 'Loop table header row menu',
+          }),
+        },
+      },
+    ),
     { type: 'separator' },
     {
       label: t('Hide the header row', {
@@ -634,6 +674,34 @@ export const LoopTableView = ({
         setLayout(table, { showHeader: false });
       },
     },
+  ];
+
+  // Collaborators: the numbers column, from its handle: hide it, or format
+  // it as a whole
+  const numbersColumnMenuOptions: DropdownMenuItem[] = [
+    {
+      label: t('Hide the numbers column', {
+        description: 'Loop table corner menu',
+      }),
+      icon: <Icon iconName="visibility_off" $size="18px" />,
+      callback: () => {
+        setColumnMenuId(null);
+        setLayout(table, { showRowNumbers: false });
+      },
+    },
+    { type: 'separator' },
+    ...formatMenuItems(
+      t,
+      snapshot.layout.numbers,
+      (patch) => setLayoutFormat(table, 'numbers', patch),
+      {
+        labels: {
+          clear: t('Clear column formatting', {
+            description: 'Loop table column menu',
+          }),
+        },
+      },
+    ),
   ];
 
   const rowMenuOptions = (row: Row): DropdownMenuItem[] => {
@@ -1038,12 +1106,14 @@ export const LoopTableView = ({
                               : '',
                             dropSide('col', column.id),
                           ].join(' ')}
+                          // Collaborators: a click types in the cell; its
+                          // format is in its "⌄" (or a right-click)
                           onClick={() => {
-                            if (isActive && isEditable && !isEditing) {
-                              setIsEditing(true);
-                            } else if (!isActive) {
+                            if (!isActive) {
                               setActive({ rowId: row.id, columnId: column.id });
-                              setIsEditing(false);
+                            }
+                            if (isEditable && !(isActive && isEditing)) {
+                              setIsEditing(true);
                             }
                           }}
                         >
@@ -1070,70 +1140,58 @@ export const LoopTableView = ({
                               }
                             }}
                           />
-                          {/* Collaborators: also while typing in the cell
-                              (right-click opens it too) */}
-                          {isActive && isEditable && (
-                            <DropdownMenu
-                              options={formatMenuItems(
-                                t,
-                                row.cellFormats?.[column.id],
-                                (patch) =>
-                                  setCellFormat(
-                                    table,
-                                    row.id,
-                                    column.id,
-                                    patch,
-                                  ),
-                                {
-                                  // What the cell inherits from its row and
-                                  // column, then the defaults
-                                  shown: mergeFormats(
-                                    row.format,
-                                    column.format,
-                                    snapshot.layout.cells,
-                                    columnDefaults(column),
-                                  ),
-                                  labels: {
-                                    clear: t('Clear cell formatting', {
-                                      description: 'Loop table cell menu',
-                                    }),
+                          {/* Collaborators: every cell's "⌄", shown on
+                              hover or when selected; its menu is built only
+                              when it opens (right-click opens it too) */}
+                          {isEditable &&
+                            (cellMenuFor === `${row.id}:${column.id}` ? (
+                              <DropdownMenu
+                                options={formatMenuItems(
+                                  t,
+                                  row.cellFormats?.[column.id],
+                                  (patch) =>
+                                    setCellFormat(
+                                      table,
+                                      row.id,
+                                      column.id,
+                                      patch,
+                                    ),
+                                  {
+                                    // What the cell inherits from its row and
+                                    // column, then the defaults
+                                    shown: mergeFormats(
+                                      row.format,
+                                      column.format,
+                                      snapshot.layout.cells,
+                                      columnDefaults(column),
+                                    ),
+                                    labels: {
+                                      clear: t('Clear cell formatting', {
+                                        description: 'Loop table cell menu',
+                                      }),
+                                    },
                                   },
-                                },
-                              )}
-                              isOpen={cellMenuFor === `${row.id}:${column.id}`}
-                              onOpenChange={(isOpen) =>
-                                setCellMenuFor(
-                                  isOpen ? `${row.id}:${column.id}` : null,
-                                )
-                              }
-                            >
-                              <button
-                                type="button"
-                                className="loop-table__cell-menu"
-                                aria-label={t('Format this cell', {
-                                  description:
-                                    'Accessible name of the Loop table cell menu',
-                                })}
-                                title={t('Format this cell', {
-                                  description:
-                                    'Accessible name of the Loop table cell menu',
-                                })}
-                                onClick={(event) => {
-                                  event.stopPropagation();
+                                )}
+                                isOpen
+                                onOpenChange={(isOpen) =>
                                   setCellMenuFor(
-                                    cellMenuFor === `${row.id}:${column.id}`
-                                      ? null
-                                      : `${row.id}:${column.id}`,
-                                  );
-                                }}
+                                    isOpen ? `${row.id}:${column.id}` : null,
+                                  )
+                                }
                               >
-                                <Icon
-                                  iconName="format_color_fill"
-                                  $size="16px"
+                                <CellChevron
+                                  isActive={isActive}
+                                  onClick={() => setCellMenuFor(null)}
                                 />
-                              </button>
-                            </DropdownMenu>
-                          )}
+                              </DropdownMenu>
+                            ) : (
+                              <CellChevron
+                                isActive={isActive}
+                                onClick={() =>
+                                  setCellMenuFor(`${row.id}:${column.id}`)
+                                }
+                              />
+                            ))}
                         </td>
                       );
                     })}
@@ -1186,10 +1244,25 @@ export const LoopTableView = ({
             onMenuOpenChange={setHeaderMenuOpen}
           />
         )}
+        {controlsColumnId === NUMBERS_COLUMN_ID && columnBox && (
+          <ColumnControls
+            key={NUMBERS_COLUMN_ID}
+            id={NUMBERS_COLUMN_ID}
+            name={t('Numbers', { description: 'Loop table numbers column' })}
+            canDrag={false}
+            box={columnBox}
+            menuOptions={numbersColumnMenuOptions}
+            isMenuOpen={columnMenuId === NUMBERS_COLUMN_ID}
+            onMenuOpenChange={(isOpen) =>
+              setColumnMenuId(isOpen ? NUMBERS_COLUMN_ID : null)
+            }
+          />
+        )}
         {controlsColumn && columnBox && (
           <ColumnControls
             key={controlsColumn.id}
-            column={controlsColumn}
+            id={controlsColumn.id}
+            name={controlsColumn.name}
             canDrag={isEditable}
             box={columnBox}
             menuOptions={columnHandleMenuItems(
@@ -1197,11 +1270,26 @@ export const LoopTableView = ({
               table,
               snapshot,
               controlsColumn,
+              () => setLabelGroupColumnId(controlsColumn.id),
             )}
             isMenuOpen={columnMenuId === controlsColumn.id}
             onMenuOpenChange={(isOpen) =>
               setColumnMenuId(isOpen ? controlsColumn.id : null)
             }
+          />
+        )}
+        {labelGroupColumnId && (
+          <LabelGroupEditor
+            table={table}
+            onCreated={(groupId) =>
+              changeColumnType(
+                table,
+                labelGroupColumnId,
+                ColumnType.LABEL,
+                groupId,
+              )
+            }
+            onClose={() => setLabelGroupColumnId(null)}
           />
         )}
         <DragOverlay dropAnimation={null}>

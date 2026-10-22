@@ -130,14 +130,56 @@ export const LoopTableStyle = createGlobalStyle`
   /* Row numbers sit like any cell: left and in the middle unless chosen
      otherwise */
   .loop-table__rownum {
-    width: 44px;
-    min-width: 44px;
+    /* Collaborators: its header cell sets its width (resizable) */
     color: var(--lt-muted);
     font-size: 12px;
   }
   .loop-table__rownum-number {
     padding: 7px 8px;
     font-variant-numeric: tabular-nums;
+  }
+  /* Collaborators: every cell's "⌄" (its format menu), at its right, shown
+     on hover or when the cell is selected; header cells too */
+  .loop-table__grid td,
+  .loop-table__grid th {
+    position: relative;
+  }
+  .loop-table__cell-chevron {
+    position: absolute;
+    top: 50%;
+    right: 2px;
+    transform: translateY(-50%);
+    display: inline-flex;
+    border: none;
+    background: transparent;
+    color: var(--lt-muted);
+    cursor: pointer;
+    padding: 1px;
+    border-radius: 4px;
+    opacity: 0;
+    z-index: 2;
+  }
+  .loop-table__grid td:hover > .loop-table__cell-chevron,
+  .loop-table__grid th:hover .loop-table__cell-chevron,
+  .loop-table__grid td > .c__dropdown-menu-trigger .loop-table__cell-chevron,
+  .loop-table__cell-chevron.is-active,
+  .loop-table__grid th .loop-table__cell-chevron,
+  .loop-table__cell-chevron:focus-visible {
+    opacity: 1;
+  }
+  .loop-table__cell-chevron:hover {
+    background: var(--lt-hover);
+  }
+  /* A header cell: its name (typed in on a click) and its "⌄" */
+  .loop-table__header-cell {
+    display: flex;
+    align-items: center;
+    padding-right: 20px;
+  }
+  .loop-table__header-cell > .loop-table__header {
+    flex: 1;
+    min-width: 0;
+    cursor: text;
   }
   /* Collaborators: a column's handle, on the top edge of its header,
      outside the cells */

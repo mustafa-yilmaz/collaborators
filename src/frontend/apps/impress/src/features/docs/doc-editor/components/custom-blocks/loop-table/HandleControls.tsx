@@ -4,8 +4,6 @@ import { useTranslation } from 'react-i18next';
 
 import { Icon } from '@/components';
 
-import { Column } from './model';
-
 /**
  * Collaborators: the handle of the header row, in the page margin left of
  * it like a row's. The header row stays on top: it isn't moved, only
@@ -57,14 +55,17 @@ export const HeaderRowControls = ({
  * columns.
  */
 export const ColumnControls = ({
-  column,
+  id,
+  name,
   canDrag,
   box,
   menuOptions,
   isMenuOpen,
   onMenuOpenChange,
 }: {
-  column: Column;
+  id: string;
+  name: string;
+  /** A column moves; the numbers column doesn't (no "⋮⋮" then) */
   canDrag: boolean;
   box: { top: number; left: number; width: number };
   menuOptions: DropdownMenuItem[];
@@ -72,22 +73,24 @@ export const ColumnControls = ({
   onMenuOpenChange: (isOpen: boolean) => void;
 }) => {
   const { t } = useTranslation();
-  const drag = useDraggable({ id: `col:${column.id}`, disabled: !canDrag });
+  const drag = useDraggable({ id: `col:${id}`, disabled: !canDrag });
   return (
     <div className="loop-table__column-controls" style={box}>
       <div className="loop-table__column-controls-pill">
-        <span
-          className="loop-table__handle"
-          aria-label={t('Move the {{name}} column', {
-            description: 'Accessible name of a column drag handle',
-            name: column.name,
-          })}
-          ref={drag.setNodeRef}
-          {...drag.listeners}
-          {...drag.attributes}
-        >
-          <Icon iconName="drag_indicator" $size="16px" />
-        </span>
+        {canDrag && (
+          <span
+            className="loop-table__handle"
+            aria-label={t('Move the {{name}} column', {
+              description: 'Accessible name of a column drag handle',
+              name,
+            })}
+            ref={drag.setNodeRef}
+            {...drag.listeners}
+            {...drag.attributes}
+          >
+            <Icon iconName="drag_indicator" $size="16px" />
+          </span>
+        )}
         <DropdownMenu
           options={menuOptions}
           isOpen={isMenuOpen}
@@ -98,7 +101,7 @@ export const ColumnControls = ({
             className={`loop-table__handle ${isMenuOpen ? 'is-open' : ''}`}
             aria-label={t('{{name}} column actions', {
               description: 'Accessible name of a column menu button',
-              name: column.name,
+              name,
             })}
             onClick={() => onMenuOpenChange(!isMenuOpen)}
           >

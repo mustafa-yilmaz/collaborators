@@ -1,13 +1,12 @@
 import { useDroppable } from '@dnd-kit/core';
 import { DropdownMenu, DropdownMenuItem } from '@gouvfr-lasuite/ui-components';
 import type { TFunction } from 'i18next';
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Y from 'yjs';
 
 import { Icon } from '@/components';
 
-import { LabelGroupEditor } from './LabelGroupEditor';
 import {
   columnTypeIcon,
   columnTypeLabel,
@@ -59,7 +58,6 @@ export const ColumnHeader = ({
   const { t } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
-  const [isNewLabelGroup, setIsNewLabelGroup] = useState(false);
   const [liveWidth, setLiveWidth] = useState<number | null>(null);
   const startRef = useRef<{ x: number; width: number } | null>(null);
 
@@ -69,133 +67,22 @@ export const ColumnHeader = ({
   const sort = snapshot.view.sort;
   const sortedHere = sort?.columnId === column.id ? sort.direction : null;
 
-  const options = useMemo<DropdownMenuItem[]>(() => {
-    const types = Object.values(ColumnType).map((type) => {
-      if (type === ColumnType.LABEL) {
-        return {
-          label: columnTypeLabel(t, type),
-          icon: <Icon iconName={columnTypeIcon[type]} $size="18px" />,
-          isChecked: column.type === type,
-          children: [
-            ...allLabelGroups(snapshot).map((group) => ({
-              label: group.name,
-              isChecked:
-                column.type === ColumnType.LABEL &&
-                column.labelGroupId === group.id,
-              callback: () =>
-                changeColumnType(table, column.id, ColumnType.LABEL, group.id),
-            })),
-            { type: 'separator' as const },
-            {
-              label: t('New label group…', {
-                description: 'Menu entry creating custom labels',
-              }),
-              icon: <Icon iconName="add" $size="18px" />,
-              callback: () => setIsNewLabelGroup(true),
-            },
-          ],
-        };
-      }
-      return {
-        label: columnTypeLabel(t, type),
-        icon: <Icon iconName={columnTypeIcon[type]} $size="18px" />,
-        isChecked: column.type === type,
-        callback: () => {
-          if (column.type !== type) {
-            changeColumnType(table, column.id, type);
-          }
-        },
-      };
-    });
-
-    return [
-      {
-        label: t('Rename', { description: 'Loop table column menu' }),
-        icon: <Icon iconName="edit" $size="18px" />,
-        callback: () => setIsRenaming(true),
-        isHidden: !isEditable,
-      },
-      {
-        label: t('Column type', { description: 'Loop table column menu' }),
-        icon: <Icon iconName="category" $size="18px" />,
-        isHidden: !isEditable,
-        children: types,
-      },
-      {
-        label: t('Number format', { description: 'Loop table column menu' }),
-        icon: <Icon iconName="tag" $size="18px" />,
-        isHidden: !isEditable || column.type !== ColumnType.NUMBER,
-        children: Object.values(NumberFormat).map((format) => ({
-          label: numberFormatLabel(t, format),
-          isChecked: (column.numberFormat ?? NumberFormat.PLAIN) === format,
-          callback: () =>
-            updateColumn(table, column.id, { numberFormat: format }),
-        })),
-      },
-      ...(isEditable
-        ? [
-            { type: 'separator' as const },
-            // Collaborators: this header cell on its own...
-            {
-              label: t('Format this header cell', {
-                description: 'Loop table column menu',
-              }),
-              icon: <Icon iconName="format_color_fill" $size="18px" />,
-              children: formatMenuItems(
-                t,
-                column.headerFormat,
-                (patch) => setHeaderCellFormat(table, column.id, patch),
-                // What it inherits from the header row, then the defaults
-                {
-                  shown: mergeFormats(snapshot.layout.header, HEADER_DEFAULTS),
-                  labels: {
-                    clear: t('Clear header cell formatting', {
-                      description: 'Loop table column menu',
-                    }),
-                  },
-                },
-              ),
-            },
-          ]
-        : []),
-      { type: 'separator' },
-      {
-        label: t('Sort ascending', { description: 'Loop table column menu' }),
-        icon: <Icon iconName="arrow_upward" $size="18px" />,
-        isChecked: sortedHere === 'asc',
-        isHidden: !isEditable,
-        callback: () =>
-          setView(table, { sort: { columnId: column.id, direction: 'asc' } }),
-      },
-      {
-        label: t('Sort descending', { description: 'Loop table column menu' }),
-        icon: <Icon iconName="arrow_downward" $size="18px" />,
-        isChecked: sortedHere === 'desc',
-        isHidden: !isEditable,
-        callback: () =>
-          setView(table, { sort: { columnId: column.id, direction: 'desc' } }),
-      },
-      {
-        label: t('Filter by this column', {
-          description: 'Loop table column menu',
+  // Collaborators: the same menu as every other cell — this header cell's
+  // own format; renaming is typing in it
+  const cellMenu = formatMenuItems(
+    t,
+    column.headerFormat,
+    (patch) => setHeaderCellFormat(table, column.id, patch),
+    {
+      // What it inherits from the header row, then the defaults
+      shown: mergeFormats(snapshot.layout.header, HEADER_DEFAULTS),
+      labels: {
+        clear: t('Clear cell formatting', {
+          description: 'Loop table cell menu',
         }),
-        icon: <Icon iconName="filter_list" $size="18px" />,
-        isHidden: !isEditable,
-        callback: () =>
-          setView(table, {
-            filters: [
-              ...snapshot.view.filters,
-              {
-                id: newId(),
-                columnId: column.id,
-                operator: operatorsFor(column.type)[0],
-                value: '',
-              },
-            ],
-          }),
       },
-    ];
-  }, [t, column, snapshot, table, isEditable, sortedHere]);
+    },
+  );
 
   const width = liveWidth ?? column.width;
   // Its own format, then the header row's (Collaborators: not its column's)
@@ -262,33 +149,49 @@ export const ColumnHeader = ({
         // Reading: the column's name only, nothing opens a menu
         <div className="loop-table__header is-readonly">{headerContent}</div>
       ) : (
-        <DropdownMenu
-          options={options}
-          isOpen={isMenuOpen}
-          onOpenChange={setIsMenuOpen}
-        >
+        <div className="loop-table__header-cell">
           <div
             className="loop-table__header"
             role="button"
             tabIndex={0}
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            onDoubleClick={() => isEditable && setIsRenaming(true)}
+            onClick={() => setIsRenaming(true)}
             onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
+              if (event.key === 'Enter' || event.key === 'F2') {
                 event.preventDefault();
-                setIsMenuOpen(true);
+                setIsRenaming(true);
               }
             }}
-            aria-label={t('{{name}} column, {{type}}. Open the column menu', {
+            aria-label={t('{{name}} column, {{type}}. Type to rename it', {
               description: 'Accessible name of a Loop table column header',
               name: column.name,
               type: columnTypeLabel(t, column.type),
             })}
           >
             {headerContent}
-            <Icon iconName="expand_more" $size="16px" />
           </div>
-        </DropdownMenu>
+          <DropdownMenu
+            options={cellMenu}
+            isOpen={isMenuOpen}
+            onOpenChange={setIsMenuOpen}
+          >
+            <button
+              type="button"
+              className="loop-table__cell-chevron"
+              aria-label={t('Format this cell', {
+                description: 'Accessible name of the Loop table cell menu',
+              })}
+              title={t('Format this cell', {
+                description: 'Accessible name of the Loop table cell menu',
+              })}
+              onClick={(event) => {
+                event.stopPropagation();
+                setIsMenuOpen(!isMenuOpen);
+              }}
+            >
+              <Icon iconName="expand_more" $size="16px" />
+            </button>
+          </DropdownMenu>
+        </div>
       )}
 
       {isEditable && (
@@ -338,16 +241,6 @@ export const ColumnHeader = ({
           }}
         />
       )}
-
-      {isNewLabelGroup && (
-        <LabelGroupEditor
-          table={table}
-          onCreated={(groupId) =>
-            changeColumnType(table, column.id, ColumnType.LABEL, groupId)
-          }
-          onClose={() => setIsNewLabelGroup(false)}
-        />
-      )}
     </th>
   );
 };
@@ -361,23 +254,113 @@ export const columnHandleMenuItems = (
   table: Y.Map<unknown>,
   snapshot: TableSnapshot,
   column: Column,
+  onNewLabelGroup: () => void,
 ): DropdownMenuItem[] => {
   const index = snapshot.columns.findIndex((item) => item.id === column.id);
+  const sort = snapshot.view.sort;
+  const sortedHere = sort?.columnId === column.id ? sort.direction : null;
+  const types = Object.values(ColumnType).map((type) => {
+    if (type === ColumnType.LABEL) {
+      return {
+        label: columnTypeLabel(t, type),
+        icon: <Icon iconName={columnTypeIcon[type]} $size="18px" />,
+        isChecked: column.type === type,
+        children: [
+          ...allLabelGroups(snapshot).map((group) => ({
+            label: group.name,
+            isChecked:
+              column.type === ColumnType.LABEL &&
+              column.labelGroupId === group.id,
+            callback: () =>
+              changeColumnType(table, column.id, ColumnType.LABEL, group.id),
+          })),
+          { type: 'separator' as const },
+          {
+            label: t('New label group…', {
+              description: 'Menu entry creating custom labels',
+            }),
+            icon: <Icon iconName="add" $size="18px" />,
+            callback: onNewLabelGroup,
+          },
+        ],
+      };
+    }
+    return {
+      label: columnTypeLabel(t, type),
+      icon: <Icon iconName={columnTypeIcon[type]} $size="18px" />,
+      isChecked: column.type === type,
+      callback: () => {
+        if (column.type !== type) {
+          changeColumnType(table, column.id, type);
+        }
+      },
+    };
+  });
   return [
+    // The whole column: its cells, not its header
+    ...formatMenuItems(
+      t,
+      column.format,
+      (patch) => setColumnFormat(table, column.id, patch),
+      // What it inherits from all the cells, then the defaults
+      {
+        shown: mergeFormats(snapshot.layout.cells, columnDefaults(column)),
+        labels: {
+          clear: t('Clear column formatting', {
+            description: 'Loop table column menu',
+          }),
+        },
+      },
+    ),
+    { type: 'separator' },
     {
-      label: t('Format the whole column', {
+      label: t('Column type', { description: 'Loop table column menu' }),
+      icon: <Icon iconName="category" $size="18px" />,
+      children: types,
+    },
+    {
+      label: t('Number format', { description: 'Loop table column menu' }),
+      icon: <Icon iconName="tag" $size="18px" />,
+      isHidden: column.type !== ColumnType.NUMBER,
+      children: Object.values(NumberFormat).map((format) => ({
+        label: numberFormatLabel(t, format),
+        isChecked: (column.numberFormat ?? NumberFormat.PLAIN) === format,
+        callback: () =>
+          updateColumn(table, column.id, { numberFormat: format }),
+      })),
+    },
+    { type: 'separator' },
+    {
+      label: t('Sort ascending', { description: 'Loop table column menu' }),
+      icon: <Icon iconName="arrow_upward" $size="18px" />,
+      isChecked: sortedHere === 'asc',
+      callback: () =>
+        setView(table, { sort: { columnId: column.id, direction: 'asc' } }),
+    },
+    {
+      label: t('Sort descending', { description: 'Loop table column menu' }),
+      icon: <Icon iconName="arrow_downward" $size="18px" />,
+      isChecked: sortedHere === 'desc',
+      callback: () =>
+        setView(table, { sort: { columnId: column.id, direction: 'desc' } }),
+    },
+    {
+      label: t('Filter by this column', {
         description: 'Loop table column menu',
       }),
-      icon: <Icon iconName="view_column" $size="18px" />,
-      children: formatMenuItems(
-        t,
-        column.format,
-        (patch) => setColumnFormat(table, column.id, patch),
-        // What it inherits from all the cells, then the defaults
-        {
-          shown: mergeFormats(snapshot.layout.cells, columnDefaults(column)),
-        },
-      ),
+      icon: <Icon iconName="filter_list" $size="18px" />,
+      callback: () =>
+        setView(table, {
+          filters: [
+            ...snapshot.view.filters,
+            {
+              id: newId(),
+              columnId: column.id,
+              operator: operatorsFor(column.type)[0],
+              value: '',
+            },
+          ],
+        }),
     },
     { type: 'separator' },
     {

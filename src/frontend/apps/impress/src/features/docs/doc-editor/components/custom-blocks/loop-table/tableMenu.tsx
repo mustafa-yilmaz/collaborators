@@ -5,11 +5,7 @@ import { create } from 'zustand';
 
 import { Icon } from '@/components';
 
-import {
-  HEADER_DEFAULTS,
-  flatFormatEntries,
-  summaryRowItem,
-} from './formatMenu';
+import { flatFormatEntries, summaryRowItem } from './formatMenu';
 import {
   TableSnapshot,
   addColumn,
@@ -103,65 +99,39 @@ export const tableMenuItems = (
         setLayoutFormat(table, 'cells', patch),
       ),
     },
+    // Collaborators: under "All cells", showing or hiding the header row
+    // and the numbers column; their formats are on their own handles
     {
-      label: t('Header row', { description: 'Loop table menu' }),
-      icon: <Icon iconName="table_rows" $size="18px" />,
-      children: [
-        // Collaborators: hidden from its handle, it comes back here
-        {
-          label: snapshot.layout.showHeader
-            ? t('Hide the header row', {
-                description: 'Loop table header row menu',
-              })
-            : t('Show the header row', {
-                description: 'Loop table corner menu',
-              }),
-          icon: (
-            <Icon
-              iconName={
-                snapshot.layout.showHeader ? 'visibility_off' : 'visibility'
-              }
-              $size="18px"
-            />
-          ),
-          callback: () =>
-            setLayout(table, { showHeader: !snapshot.layout.showHeader }),
-        },
-        { type: 'separator' },
-        ...flatFormatEntries(
-          t,
-          snapshot.layout.header,
-          (patch) => setLayoutFormat(table, 'header', patch),
-          HEADER_DEFAULTS,
-        ),
-      ],
+      label: snapshot.layout.showHeader
+        ? t('Hide the header row', {
+            description: 'Loop table header row menu',
+          })
+        : t('Show the header row', { description: 'Loop table corner menu' }),
+      icon: (
+        <Icon
+          iconName={
+            snapshot.layout.showHeader ? 'visibility_off' : 'visibility'
+          }
+          $size="18px"
+        />
+      ),
+      callback: () =>
+        setLayout(table, { showHeader: !snapshot.layout.showHeader }),
     },
     {
-      label: t('Numbers column', { description: 'Loop table menu' }),
-      icon: <Icon iconName="format_list_numbered" $size="18px" />,
-      children: [
-        {
-          label: snapshot.layout.showRowNumbers
-            ? t('Hide the numbers column', { description: 'Loop table menu' })
-            : t('Show the numbers column', { description: 'Loop table menu' }),
-          icon: (
-            <Icon
-              iconName={
-                snapshot.layout.showRowNumbers ? 'visibility_off' : 'visibility'
-              }
-              $size="18px"
-            />
-          ),
-          callback: () =>
-            setLayout(table, {
-              showRowNumbers: !snapshot.layout.showRowNumbers,
-            }),
-        },
-        { type: 'separator' },
-        ...flatFormatEntries(t, snapshot.layout.numbers, (patch) =>
-          setLayoutFormat(table, 'numbers', patch),
-        ),
-      ],
+      label: snapshot.layout.showRowNumbers
+        ? t('Hide the numbers column', { description: 'Loop table menu' })
+        : t('Show the numbers column', { description: 'Loop table menu' }),
+      icon: (
+        <Icon
+          iconName={
+            snapshot.layout.showRowNumbers ? 'visibility_off' : 'visibility'
+          }
+          $size="18px"
+        />
+      ),
+      callback: () =>
+        setLayout(table, { showRowNumbers: !snapshot.layout.showRowNumbers }),
     },
   ];
 };

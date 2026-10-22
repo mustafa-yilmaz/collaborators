@@ -199,7 +199,15 @@ export interface TableLayout {
   cells: CellFormat;
   header: CellFormat;
   numbers: CellFormat;
+  /** Collaborators: the numbers column's header cell — its own format, */
+  corner: CellFormat;
+  /** ... its title (empty unless typed in) and the column's width */
+  numbersTitle: string;
+  numbersWidth: number;
 }
+
+/** The numbers column's width unless resized. */
+export const NUMBERS_COLUMN_WIDTH = 44;
 
 export interface TableSnapshot {
   columns: Column[];
@@ -500,6 +508,10 @@ export const readTable = (table: Y.Map<unknown>): TableSnapshot => {
       cells: (layout?.get('cells') as CellFormat) ?? {},
       header: (layout?.get('header') as CellFormat) ?? {},
       numbers: (layout?.get('numbers') as CellFormat) ?? {},
+      corner: (layout?.get('corner') as CellFormat) ?? {},
+      numbersTitle: (layout?.get('numbersTitle') as string) ?? '',
+      numbersWidth:
+        (layout?.get('numbersWidth') as number) ?? NUMBERS_COLUMN_WIDTH,
     },
   };
 };
@@ -1061,7 +1073,7 @@ export const setLayout = (
 /** Change the format of all the cells, the header row or the numbers column. */
 export const setLayoutFormat = (
   table: Y.Map<unknown>,
-  part: 'cells' | 'header' | 'numbers',
+  part: 'cells' | 'header' | 'numbers' | 'corner',
   patch: FormatPatch,
 ) => {
   const current = readTable(table).layout[part];

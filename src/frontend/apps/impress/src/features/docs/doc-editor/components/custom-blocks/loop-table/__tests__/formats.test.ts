@@ -113,6 +113,9 @@ describe('Loop table formats', () => {
       cells: {},
       header: { background: '#f1f1ef' },
       numbers: { align: 'right' },
+      corner: {},
+      numbersTitle: '',
+      numbersWidth: 44,
     });
 
     setCellFormat(table, rowId, columnId, CLEAR_FORMAT);
@@ -185,6 +188,9 @@ describe('Loop table formats', () => {
       cells: {},
       header: {},
       numbers: {},
+      corner: {},
+      numbersTitle: '',
+      numbersWidth: 44,
     });
   });
 

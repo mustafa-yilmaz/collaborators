@@ -93,16 +93,18 @@ describe('LoopTableView', () => {
     expect(
       screen.getByRole('button', { name: 'Row 2 actions' }),
     ).toBeInTheDocument();
-    // The table menu shows the numbers again
-    const layout = tableMenuItems(
+    // The table menu shows the numbers again (and the header row hides)
+    const labels = tableMenuItems(
       ((key: string) => key) as never,
       table,
       'id',
       readTable(table),
-    ).find((entry) => 'label' in entry && entry.label === 'Numbers column');
-    expect(
-      (layout as { children: { label: string }[] }).children[0].label,
-    ).toBe('Show the numbers column');
+    ).map((entry) => ('label' in entry ? entry.label : '-'));
+    expect(labels.slice(-3)).toEqual([
+      'All cells',
+      'Hide the header row',
+      'Show the numbers column',
+    ]);
   });
 
   it('gives readers neither the table menu nor the row controls', () => {

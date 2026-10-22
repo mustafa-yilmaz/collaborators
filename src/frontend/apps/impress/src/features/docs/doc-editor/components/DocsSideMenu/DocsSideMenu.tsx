@@ -112,9 +112,9 @@ export const DocsSideMenu = () => {
       sideMenu={() => (
         <SideMenu>
           <AddBlockButton />
+          <DragHandleButton dragHandleMenu={DocsDragHandleMenu} />
           {/* Collaborators: a table's "⋮", for the whole table */}
           {block?.type === 'loopTable' && <LoopTableSideMenuButton />}
-          <DragHandleButton dragHandleMenu={DocsDragHandleMenu} />
         </SideMenu>
       )}
     />

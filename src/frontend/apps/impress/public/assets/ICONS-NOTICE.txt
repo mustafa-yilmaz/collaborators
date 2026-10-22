@@ -1,0 +1,4 @@
+favicon.ico, apple-touch-icon.png, icon-192.png and icon-512.png show the
+"writing hand" emoji (U+270D) drawn from Noto Color Emoji
+(https://github.com/googlefonts/noto-emoji), licensed under the Apache
+License 2.0 (images) and the SIL Open Font License 1.1 (font).

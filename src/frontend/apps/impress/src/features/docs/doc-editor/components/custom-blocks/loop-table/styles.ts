@@ -25,6 +25,11 @@ export const LoopTableStyle = createGlobalStyle`
   .loop-table {
     position: relative;
   }
+  /* Collaborators: a band above the table, part of its block, where the
+     table's own "+ ⋮ ⋮⋮" and the columns' handles sit within reach */
+  .loop-table.is-editable {
+    padding-top: 26px;
+  }
   /* Spread into the margins: its width and offset are set on the element */
   /* The room of the rows of a very large table that are not drawn */
   .loop-table__grid tr.loop-table__spacer td {

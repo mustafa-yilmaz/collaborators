@@ -70,10 +70,11 @@ function getBlockOffset(
     return 15;
   }
 
-  // Collaborators: a table's own handle sits above it, leaving the margin
-  // left of its header row to the header row's handle
+  // Collaborators: a table's own "+ ⋮ ⋮⋮" sit in the band above it (part
+  // of its block), leaving the margin left of its header row to the header
+  // row's handle
   if (block.type === 'loopTable') {
-    return -30;
+    return -2;
   }
 
   return 0;

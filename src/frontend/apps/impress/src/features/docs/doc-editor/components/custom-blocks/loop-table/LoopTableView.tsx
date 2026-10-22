@@ -884,7 +884,9 @@ export const LoopTableView = ({
   return (
     <div
       ref={wrapperRef}
-      className={`loop-table ${expandStyle ? 'is-expanded' : ''}`}
+      className={`loop-table ${expandStyle ? 'is-expanded' : ''} ${
+        isEditable ? 'is-editable' : ''
+      }`}
       style={expandStyle ?? undefined}
       contentEditable={false}
       data-testid="loop-table"

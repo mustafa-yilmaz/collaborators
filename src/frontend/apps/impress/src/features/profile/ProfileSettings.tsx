@@ -14,6 +14,7 @@ import { css } from 'styled-components';
 import { Box, BoxButton, Icon, Loading, StyledLink, Text } from '@/components';
 import { Title } from '@/components/Title';
 import { useLabelSuggestions } from '@/features/labels/api';
+import { BRAND_NAME } from '@/features/people/BrandName';
 
 import {
   Audience,
@@ -60,8 +61,9 @@ const AudiencePicker = ({
     },
     {
       value: 'colleagues',
-      label: t('People I work with', {
+      label: t('People I work with in {{brand}}', {
         description: 'Visibility: people sharing a workspace or page',
+        brand: BRAND_NAME,
       }),
     },
     {

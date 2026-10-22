@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { Text } from '@/components';
 import { Title } from '@/components/Title';
 
+/** The platform's name as its logo spells it, where only text fits. */
+export const BRAND_NAME = 'CO✍️✍️ABORATORS';
+
 /**
  * "My CO✍️✍️ABORATORS": the list of the people one may see, named in the
  * style of the logo.

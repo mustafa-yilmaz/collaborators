@@ -157,7 +157,8 @@ const Field = ({
   picker,
   note,
 }: {
-  title: ReactNode;
+  /** Above both columns; none when the left column names the piece */
+  title?: ReactNode;
   children?: ReactNode;
   /** The audience of the piece, in the right column */
   picker?: ReactNode;
@@ -165,9 +166,11 @@ const Field = ({
   note?: ReactNode;
 }) => (
   <Box $gap="xs" $css={fieldCss}>
-    <Text $weight="700" $size="sm">
-      {title}
-    </Text>
+    {title && (
+      <Text $weight="700" $size="sm">
+        {title}
+      </Text>
+    )}
     {/* Two columns: the piece, and who sees it (an empty one keeps it half) */}
     <Box
       $direction="row"
@@ -269,10 +272,8 @@ export const ProfileSettings = () => {
           </Text>
         </StyledLink>
       </Text>
+      {/* The setting's name on the left, the choice on the right */}
       <Field
-        title={t('Who can find me and invite me', {
-          description: 'Profile setting: who may find someone',
-        })}
         note={
           <Text $size="xs" $variation="secondary">
             {t(
@@ -281,44 +282,51 @@ export const ProfileSettings = () => {
             )}
           </Text>
         }
+        picker={
+          <Select
+            fullWidth
+            showLabelWhenSelected={false}
+            label={t('Who can find me', {
+              description: 'Label of the reach choice of a profile',
+            })}
+            clearable={false}
+            options={[
+              {
+                value: 'colleagues',
+                label: t('People I share a workspace, space or page with', {
+                  description: 'Reach: only the people one works with',
+                }),
+              },
+              {
+                value: 'platform',
+                label: t('Everyone on {{brand}}', {
+                  description: 'Reach: every signed-in collaborator',
+                  brand: BRAND_NAME,
+                }),
+                render: () => (
+                  <WithBrand
+                    i18nKey="Everyone on <brand/>"
+                    description="Reach: every signed-in collaborator"
+                  />
+                ),
+              },
+              {
+                value: 'public',
+                label: t('Public on the internet', {
+                  description: 'Reach: anyone, even without an account',
+                }),
+              },
+            ]}
+            value={reach}
+            onChange={(event) => setReach(event.target.value as Reach)}
+          />
+        }
       >
-        <Select
-          fullWidth
-          showLabelWhenSelected={false}
-          label={t('Who can find me', {
-            description: 'Label of the reach choice of a profile',
+        <Text $weight="700" $size="sm">
+          {t('Who can find me and invite me', {
+            description: 'Profile setting: who may find someone',
           })}
-          clearable={false}
-          options={[
-            {
-              value: 'colleagues',
-              label: t('People I share a workspace, space or page with', {
-                description: 'Reach: only the people one works with',
-              }),
-            },
-            {
-              value: 'platform',
-              label: t('Everyone on {{brand}}', {
-                description: 'Reach: every signed-in collaborator',
-                brand: BRAND_NAME,
-              }),
-              render: () => (
-                <WithBrand
-                  i18nKey="Everyone on <brand/>"
-                  description="Reach: every signed-in collaborator"
-                />
-              ),
-            },
-            {
-              value: 'public',
-              label: t('Public on the internet', {
-                description: 'Reach: anyone, even without an account',
-              }),
-            },
-          ]}
-          value={reach}
-          onChange={(event) => setReach(event.target.value as Reach)}
-        />
+        </Text>
       </Field>
       <Field
         title={t('Name', { description: 'Profile field: the name' })}
@@ -435,7 +443,7 @@ export const ProfileSettings = () => {
       >
         {input(
           'headline',
-          t('e.g. Grant writer, open science', {
+          t('e.g. Proposal writer, open science', {
             description: 'Placeholder of the profile headline',
           }),
         )}

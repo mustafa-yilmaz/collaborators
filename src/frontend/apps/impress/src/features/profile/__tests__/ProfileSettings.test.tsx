@@ -50,7 +50,7 @@ describe('ProfileSettings', () => {
     render(<ProfileSettings />, { wrapper: AppWrapper });
 
     await userEvent.type(
-      await screen.findByLabelText('e.g. Grant writer, open science'),
+      await screen.findByLabelText('e.g. Proposal writer, open science'),
       'Grant writer',
     );
     await userEvent.type(screen.getByLabelText('Find a label to add'), 'clim');

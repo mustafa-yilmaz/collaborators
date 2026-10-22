@@ -16,7 +16,8 @@
  *                               cells, header, numbers
  *
  * Formats (background colour, horizontal and vertical alignment, text style
- * and colour) are kept on a column (`format`), a row (`format`), a cell (the
+ * and colour) are kept on a column (`format`, its body cells; `headerFormat`,
+ * its header cell), a row (`format`), a cell (the
  * row's `cellFormats` Y.Map, by column id, so people formatting different
  * cells don't clash), and in `layout` for all the cells at once, the header
  * row and the numbers column. A cell shows its own format, then its row's,
@@ -134,7 +135,10 @@ export interface Column {
   currency?: string;
   labelGroupId?: string;
   hidden?: boolean;
+  /** The column's body cells (not its header, see headerFormat) */
   format?: CellFormat;
+  /** Collaborators: this column's header cell, on its own */
+  headerFormat?: CellFormat;
 }
 
 export type FilterOperator =
@@ -305,6 +309,9 @@ const newRowYMap = (
   return row;
 };
 
+/** The gray of the palette (BACKGROUND_COLOURS), for new header rows. */
+export const NEW_TABLE_HEADER_BACKGROUND = '#f1f1ef';
+
 /** Create a table, 2 text columns by 2 rows like Loop, and return its id. */
 export const createTable = (
   ydoc: Y.Doc,
@@ -346,6 +353,8 @@ export const createTable = (
     const layout = new Y.Map<unknown>();
     layout.set('showRowNumbers', false);
     layout.set('showSummary', false);
+    // Collaborators: the header row starts gray (only the header row)
+    layout.set('header', { background: NEW_TABLE_HEADER_BACKGROUND });
     table.set('layout', layout);
     getTablesMap(ydoc).set(tableId, table);
   });
@@ -939,6 +948,33 @@ export const cellLook = (
     column.format,
     snapshot.layout.cells,
   );
+
+/**
+ * Collaborators: how a header cell looks — its own format, then the header
+ * row's; of its column's format, only the alignments (so a header sits over
+ * its numbers), not its colours or styles.
+ */
+export const headerLook = (
+  snapshot: TableSnapshot,
+  column: Column,
+): CellFormat =>
+  mergeFormats(column.headerFormat, snapshot.layout.header, {
+    ...(column.format?.align ? { align: column.format.align } : {}),
+    ...(column.format?.valign ? { valign: column.format.valign } : {}),
+  });
+
+export const setHeaderCellFormat = (
+  table: Y.Map<unknown>,
+  columnId: string,
+  patch: FormatPatch,
+) => {
+  const column = readTable(table).columns.find((item) => item.id === columnId);
+  if (column) {
+    updateColumn(table, columnId, {
+      headerFormat: applyFormatPatch(column.headerFormat, patch),
+    });
+  }
+};
 
 export const setColumnFormat = (
   table: Y.Map<unknown>,

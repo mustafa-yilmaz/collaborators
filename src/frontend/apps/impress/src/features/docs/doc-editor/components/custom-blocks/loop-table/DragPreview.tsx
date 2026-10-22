@@ -11,7 +11,7 @@ import {
   Row,
   TableSnapshot,
   cellLook,
-  mergeFormats,
+  headerLook,
 } from './model';
 
 /** How many cells a dragged column shows under its header. */
@@ -97,7 +97,7 @@ export const ColumnDragPreview = ({
 }) => {
   const width = widthOf(column, widths);
   const { t } = useTranslation();
-  const look = mergeFormats(snapshot.layout.header, column.format);
+  const look = headerLook(snapshot, column);
   const more = rows.length - COLUMN_PREVIEW_ROWS;
   return (
     <div className="loop-table__drag-ghost" aria-hidden="true">

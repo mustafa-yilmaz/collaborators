@@ -13,10 +13,12 @@ import {
   createTable,
   duplicateRow,
   getTable,
+  headerLook,
   mergeFormats,
   readTable,
   setCellFormat,
   setColumnFormat,
+  setHeaderCellFormat,
   setLayout,
   setLayoutFormat,
   setRowFormat,
@@ -124,6 +126,43 @@ describe('Loop table formats', () => {
     expect(readTable(table).layout.showRowNumbers).toBe(false);
   });
 
+  it('starts new tables with a gray header row, and only that row', () => {
+    const { table } = setup();
+    const { layout } = readTable(table);
+    expect(layout.header).toEqual({ background: '#f1f1ef' });
+    expect(layout.cells).toEqual({});
+  });
+
+  it('formats one header cell on its own, apart from its column', () => {
+    const { table, columnId, rowId } = setup();
+    const otherId = readTable(table).columns[1].id;
+
+    setHeaderCellFormat(table, columnId, { background: '#fbe4e4' });
+    setColumnFormat(table, columnId, {
+      background: '#e6f3e8',
+      align: 'right',
+    });
+
+    const snapshot = readTable(table);
+    const [first, second] = snapshot.columns;
+    // the header cell: its own colour; of the column, only its alignment
+    expect(headerLook(snapshot, first)).toMatchObject({
+      background: '#fbe4e4',
+      align: 'right',
+    });
+    // the other header cell keeps the header row's gray
+    expect(headerLook(snapshot, second).background).toBe('#f1f1ef');
+    expect(second.id).toBe(otherId);
+    // the column's cells: the column's colour, not the header cell's
+    expect(cellLook(snapshot, snapshot.rows[0], first).background).toBe(
+      '#e6f3e8',
+    );
+    expect(snapshot.rows[0].id).toBe(rowId);
+
+    setHeaderCellFormat(table, columnId, CLEAR_FORMAT);
+    expect(readTable(table).columns[0].headerFormat).toBeUndefined();
+  });
+
   it('shows the row numbers of tables made before formats', () => {
     const { table } = setup();
     // A table made before formats has no layout at all
@@ -163,8 +202,10 @@ describe('Loop table formats', () => {
 
     const formats = loopTableFormats(readTable(table));
 
+    // Collaborators: the header shows the header row's format, not the
+    // column's colour (new tables have a gray header row)
     expect(formats[0][0]).toEqual({
-      background: '#e3edf8',
+      background: '#f1f1ef',
       align: 'center',
       valign: undefined,
     });
@@ -314,7 +355,10 @@ describe('Loop table formats', () => {
 
     expect(ticked(header(), 'Text style')).toEqual(['Bold']);
     entry(entry(header(), 'Text style').children!, 'Bold').callback?.();
-    expect(readTable(table).layout.header).toEqual({ bold: false });
+    expect(readTable(table).layout.header).toEqual({
+      background: '#f1f1ef',
+      bold: false,
+    });
 
     entry(allCells(), 'Clear the formatting of all cells').callback?.();
     expect(readTable(table).layout.cells).toEqual({});

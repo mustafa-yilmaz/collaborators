@@ -13,7 +13,7 @@ import {
   TableSnapshot,
   cellLook,
   getTable,
-  mergeFormats,
+  headerLook,
   readTable,
 } from './model';
 import { visibleRows } from './view';
@@ -69,9 +69,7 @@ export const loopTableToTextRows = (snapshot: TableSnapshot) => {
 export const loopTableFormats = (snapshot: TableSnapshot): CellFormat[][] => {
   const columns = snapshot.columns.filter((column) => !column.hidden);
   return [
-    columns.map((column) =>
-      mergeFormats(snapshot.layout.header, column.format),
-    ),
+    columns.map((column) => headerLook(snapshot, column)),
     ...visibleRows(snapshot).map((row) =>
       columns.map((column) => cellLook(snapshot, row, column)),
     ),

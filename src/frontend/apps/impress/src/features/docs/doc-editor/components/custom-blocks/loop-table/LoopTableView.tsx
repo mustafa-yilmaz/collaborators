@@ -937,7 +937,9 @@ export const LoopTableView = ({
                               }
                             }}
                           />
-                          {isActive && isEditable && !isEditing && (
+                          {/* Collaborators: also while typing in the cell
+                              (right-click opens it too) */}
+                          {isActive && isEditable && (
                             <DropdownMenu
                               options={formatMenuItems(
                                 t,
@@ -994,7 +996,7 @@ export const LoopTableView = ({
                               >
                                 <Icon
                                   iconName="format_color_fill"
-                                  $size="14px"
+                                  $size="16px"
                                 />
                               </button>
                             </DropdownMenu>

@@ -12,7 +12,12 @@ import {
   columnTypeLabel,
   numberFormatLabel,
 } from './columnTypes';
-import { columnDefaults, formatMenuItems, formatStyle } from './formatMenu';
+import {
+  HEADER_DEFAULTS,
+  columnDefaults,
+  formatMenuItems,
+  formatStyle,
+} from './formatMenu';
 import {
   Column,
   ColumnType,
@@ -22,9 +27,11 @@ import {
   allLabelGroups,
   changeColumnType,
   deleteColumn,
+  headerLook,
   mergeFormats,
   newId,
   setColumnFormat,
+  setHeaderCellFormat,
   setView,
   updateColumn,
 } from './model';
@@ -132,20 +139,46 @@ export const ColumnHeader = ({
       ...(isEditable
         ? [
             { type: 'separator' as const },
-            // The whole column: its cells, and its header unless the header
-            // row has its own format
-            ...formatMenuItems(
-              t,
-              column.format,
-              (patch) => setColumnFormat(table, column.id, patch),
-              // What it inherits from all the cells, then the defaults
-              {
-                shown: mergeFormats(
-                  snapshot.layout.cells,
-                  columnDefaults(column),
-                ),
-              },
-            ),
+            // Collaborators: this header cell on its own...
+            {
+              label: t('Format this header cell', {
+                description: 'Loop table column menu',
+              }),
+              icon: <Icon iconName="format_color_fill" $size="18px" />,
+              children: formatMenuItems(
+                t,
+                column.headerFormat,
+                (patch) => setHeaderCellFormat(table, column.id, patch),
+                // What it inherits from the header row, then the defaults
+                {
+                  shown: mergeFormats(snapshot.layout.header, HEADER_DEFAULTS),
+                  labels: {
+                    clear: t('Clear header cell formatting', {
+                      description: 'Loop table column menu',
+                    }),
+                  },
+                },
+              ),
+            },
+            // ... or the column's cells under it (not its header)
+            {
+              label: t('Format the whole column', {
+                description: 'Loop table column menu',
+              }),
+              icon: <Icon iconName="view_column" $size="18px" />,
+              children: formatMenuItems(
+                t,
+                column.format,
+                (patch) => setColumnFormat(table, column.id, patch),
+                // What it inherits from all the cells, then the defaults
+                {
+                  shown: mergeFormats(
+                    snapshot.layout.cells,
+                    columnDefaults(column),
+                  ),
+                },
+              ),
+            },
           ]
         : []),
       { type: 'separator' },
@@ -218,8 +251,8 @@ export const ColumnHeader = ({
   }, [t, column, snapshot, table, index, isEditable, sortedHere]);
 
   const width = liveWidth ?? column.width;
-  // The header row's own format comes first, then the column's
-  const look = mergeFormats(snapshot.layout.header, column.format);
+  // Its own format, then the header row's (Collaborators: not its column's)
+  const look = headerLook(snapshot, column);
   const headerContent = (
     <>
       <Icon iconName={columnTypeIcon[column.type]} $size="16px" />

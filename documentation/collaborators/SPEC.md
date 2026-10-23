@@ -462,6 +462,12 @@ Done: the Loop table tweaks, Loop table v2 (T9, T5, T56), the wiki extras (F8), 
 10. **Following calls:** the same following and discoverability for calls themselves.
    - To decide first: where calls come from (e.g. the EU Funding & Tenders portal's public API, other funders' feeds, or entered by hand), and how often they're refreshed.
 
+**Also wanted** (asked for 2026-10-23, not yet scheduled):
+
+11. **Input from one's own AI tools:** besides typing on the platform, a collaborator can send content from the AI assistant they already use (ChatGPT, Claude, Gemini, Copilot…) into CO✍️✍️ABORATORS: create or update pages, fill Loop tables, add comments, labels or assignments, always as themselves and only where they may edit.
+   - Possible ways in, to choose from: an MCP server (the open standard many assistants connect to), a public API with personal access tokens (also for custom GPTs and automations), a "share to" or email-in address per space or page, and pasting an assistant's answer with its formatting kept.
+   - To decide first: which assistants and ways in come first; what an assistant may do (read only, draft for review, or write directly); how its changes are marked in the page history and notifications; and how tokens are given, limited per workspace and revoked.
+
 ## 5. Open questions
 
 1. **Identity broker:** Keycloak (already in the dev stack, with all four providers built in).

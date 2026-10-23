@@ -6,6 +6,7 @@ import { Box } from '@/components';
 import { CommentSideBar } from '@/features/docs/doc-comments/components/CommentSideBar';
 import { useDocStore, useProviderStore } from '@/features/docs/doc-management';
 import { TableContentSideBar } from '@/features/docs/doc-table-content/components/TableContentSideBar';
+import { usePageTableOfContents } from '@/features/docs/doc-table-content/hooks/usePageTableOfContents';
 import { useSidebarSide } from '@/features/left-panel';
 import { useFocusStore, useResponsiveStore } from '@/stores';
 
@@ -30,6 +31,14 @@ export const RightPanel = () => {
       setIsPanelOpen(false);
     };
   }, [doc?.id, setIsPanelOpen]);
+
+  // Collaborators: turning the table of contents off closes it
+  const { isOn: hasTableOfContents } = usePageTableOfContents(doc?.id);
+  useEffect(() => {
+    if (!hasTableOfContents && activePanel === 'tableContent') {
+      setIsPanelOpen(false);
+    }
+  }, [hasTableOfContents, activePanel, setIsPanelOpen]);
 
   /**
    * Keep rendering the last active panel during the close animation,

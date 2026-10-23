@@ -22,11 +22,13 @@ import { getWordCount } from '@/docs/doc-editor/utils';
 import { printDocumentWithStyles } from '@/docs/doc-export/utils_print';
 import { useDuplicatedDoc } from '@/docs/doc-management/components/ConfirmationDuplicateModal';
 import { usePresenterStore } from '@/docs/doc-presenter/stores';
+import { usePageTableOfContents } from '@/docs/doc-table-content/hooks/usePageTableOfContents';
 import {
   deleteDocFromTreeAfterNavigate,
   useTreeContextOrNull,
 } from '@/docs/doc-tree/utils';
 import { useAuth } from '@/features/auth';
+import { useRightPanelStore } from '@/features/right-panel/stores/useRightPanelStore';
 import ContentCopyIcon from '@/icons/copy.svg';
 import DocMoveInIcon from '@/icons/doc-move-in.svg';
 import DocMoveOutIcon from '@/icons/doc-move-out.svg';
@@ -235,6 +237,12 @@ const DocToolBoxComponent = ({
     isCurrentDoc,
   });
 
+  // Collaborators: a page's table of contents, off unless turned on here
+  const tableOfContents = usePageTableOfContents(
+    isCurrentDoc ? doc.id : undefined,
+  );
+  const setActivePanel = useRightPanelStore((state) => state.setActivePanel);
+
   const removeFavoriteDoc = useDeleteFavoriteDoc({
     listInvalidQueries: [KEY_LIST_DOC, KEY_DOC, KEY_LIST_FAVORITE_DOC],
   });
@@ -427,6 +435,26 @@ const DocToolBoxComponent = ({
       icon: <Icon iconName="image" $size="18px" $color="inherit" />,
       callback: () => setIsModalLogoOpen(true),
       isHidden: !doc.abilities.partial_update || !!doc.deleted_at,
+    },
+    {
+      label: t('Table of contents', {
+        description:
+          'Dropdown menu item turning the table of contents of a page on or off',
+      }),
+      icon: <Icon iconName="toc" $size="18px" $color="inherit" />,
+      isChecked: tableOfContents.isOn,
+      callback: () => {
+        const isOn = !tableOfContents.isOn;
+        tableOfContents.setIsOn(isOn);
+        if (isOn) {
+          setActivePanel('tableContent');
+        }
+      },
+      isHidden:
+        !isCurrentDoc ||
+        !tableOfContents.isAvailable ||
+        !doc.abilities.partial_update ||
+        !!doc.deleted_at,
     },
     { type: 'separator' },
     {

@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react';
 import { CommentSideBarButton } from '@/docs/doc-comments/components/CommentSideBar';
 import { useThreadStore } from '@/docs/doc-comments/stores/useThreadStore';
 import { useHeadingStore } from '@/docs/doc-editor/stores/useHeadingStore';
+import { useDocStore } from '@/docs/doc-management/stores/useDocStore';
 import { TableContentSideBarButton } from '@/docs/doc-table-content/components/TableContentSideBar';
+import { usePageTableOfContents } from '@/docs/doc-table-content/hooks/usePageTableOfContents';
 
 export const RightPanelCollapseButton = () => {
   const { threadStore } = useThreadStore();
@@ -11,7 +13,10 @@ export const RightPanelCollapseButton = () => {
     !!threadStore?.getThreads().size,
   );
   const { headings } = useHeadingStore();
-  const hasHeadings = headings.length > 0;
+  // Collaborators: only on pages whose table of contents is turned on
+  const currentDoc = useDocStore((state) => state.currentDoc);
+  const { isOn: hasTableOfContents } = usePageTableOfContents(currentDoc?.id);
+  const hasHeadings = hasTableOfContents && headings.length > 0;
 
   useEffect(() => {
     if (!threadStore) {

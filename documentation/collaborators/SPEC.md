@@ -445,6 +445,13 @@ Done: the Loop table tweaks, Loop table v2 (T9, T5, T56), the wiki extras (F8), 
    - **Tables:** the cells of the numbers column are formatted one by one like any other cell (their "⌄", or a right-click), but never typed in. A cell's "⌄" menu, header cells included, always ends with "Clear cell formatting" (greyed out while there is nothing to clear). A column's "⋮" menu starts with "Column type" (and "Number format" for numbers), then a line. Column names have no type icon any more.
    - **Formats:** the latest choice wins, at any level (see T60).
    - **Table of contents:** optional per page and off by default: editors turn it on or off from the page's "…" menu ("Table of contents"), kept with the page's content. Off, the contents button doesn't show.
+5l. ✅ **Moving blocks on a page, smoother** (built 2026-10-23), around BlockNote's own dragging by the "⠿" handle (`components/BlockMotion`):
+   - the blocks being dragged are dimmed; the line where they land is thicker, in the accent colour; the copy following the pointer is a card at most 180px tall;
+   - the page scrolls when a dragged block is held near its top or bottom edge;
+   - moved blocks slide from where they were to their new place and light up for a moment (not the slide with "reduce motion");
+   - "Move up" and "Move down" in the "⠿" menu, with BlockNote's shortcuts ⌘/Ctrl ⇧ ↑/↓ shown beside them; they slide too;
+   - on touch screens, a finger resting on the "⠿" (0.4 s) picks the block up; a line shows where it will land; lifting the finger drops it. A tap still opens the menu.
+   - The motion never changes the editor's own elements (ProseMirror redraws them): the dimming is a style rule, the slide and the light are animations.
 6. **Sign-in providers in production** (Google, Microsoft and LinkedIn set up on collaborators.community 2026-10-20: the development apps with the production redirect addresses added; their credentials in the server's `env/sso.env`). Email (2026-10-20): Brevo, sending from noreply@collaborators.community (domain authenticated with DKIM; DMARC reject), for the app and Keycloak (set with `deploy/production/bin/set-smtp.sh`). Still to do: publishing the Google app (now in Testing: only its test users can sign in). Originally: production redirect addresses, publishing the Google app (home page and privacy policy), a real SMTP server for Keycloak (F2, see `sso-setup.md` → Production). Locally, Google, Microsoft and LinkedIn sign-in work (apps registered 2026-10-19); Apple and X are dropped.
 
 **After the first public version** (grant calls, built on labels):

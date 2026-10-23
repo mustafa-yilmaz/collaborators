@@ -20,6 +20,7 @@ import TableHeaderRowIcon from '@/icons/table-header-row.svg';
 import TrashIcon from '@/icons/trash.svg';
 
 import { LinkToBlockItem } from './LinkToBlockItem';
+import { MoveBlockItems } from './MoveBlockItems';
 import { SideMenuSeparator } from './SideMenuSeparator';
 
 export const DocsDragHandleMenu = () => {
@@ -39,6 +40,9 @@ export const DocsDragHandleMenu = () => {
         </Box>
       </BlockColorsItem>
       <SideMenuSeparator typeHide="codeBlock" />
+      {/* Collaborators: moving the block, with its shortcuts */}
+      <MoveBlockItems />
+      <SideMenuSeparator />
       <LinkToBlockItem />
       <PresentBlockItem />
       <SideMenuSeparator typeDisplay="table" />

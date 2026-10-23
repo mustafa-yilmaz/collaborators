@@ -68,6 +68,7 @@ import { type DocsBlockNoteEditor } from '../types';
 import { randomColor, sanitizeColor } from '../utils';
 
 import BlockNoteAI from './AI';
+import { BlockMotion } from './BlockMotion/BlockMotion';
 import { BlockNoteSuggestionMenu } from './BlockNoteSuggestionMenu';
 import { BlockNoteToolbar } from './BlockNoteToolBar/BlockNoteToolbar';
 import { DocsSideMenu } from './DocsSideMenu/DocsSideMenu';
@@ -258,8 +259,10 @@ export const BlockNoteEditor = ({ doc, provider }: BlockNoteEditorProps) => {
         },
         showCursorLabels: showCursorLabels as 'always' | 'activity',
       },
+      // Collaborators: a clearer line where dragged blocks land
       dropCursor: {
-        color: 'var(--c--contextuals--background--semantic--brand--tertiary)',
+        color: 'var(--c--globals--colors--brand-500, #5c5ce6)',
+        width: 3,
       },
       dictionary: {
         ...localesBN[langLocalesBN as keyof typeof localesBN],
@@ -434,6 +437,8 @@ export const BlockNoteEditor = ({ doc, provider }: BlockNoteEditorProps) => {
           <BlockNoteSuggestionMenu aiAllowed={aiBlockNoteAllowed} />
           <BlockNoteToolbar aiAllowed={aiBlockNoteAllowed} />
           <DocsSideMenu />
+          {/* Collaborators: smoother moves of blocks */}
+          <BlockMotion />
           {showComments && <FloatingComposerController />}
           {showComments && !isCommentSideBarOpen && (
             <FloatingThreadController />

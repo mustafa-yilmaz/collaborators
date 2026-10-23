@@ -40,6 +40,49 @@ export const DocsEditorStyle = createGlobalStyle`
   /**
   * Token Blocknote
   */
+  /**
+  * Collaborators: moving blocks (components/BlockMotion), outside the
+  * editor's root: the copies following the pointer and the drop line are
+  * drawn outside it
+  */
+  .prosemirror-dropcursor-block {
+    border-radius: 3px;
+  }
+  /* The copy following the pointer: a card, not as tall as the screen */
+  .bn-drag-preview {
+    max-width: 720px;
+    max-height: 180px;
+    overflow: hidden;
+    background: var(--c--contextuals--background--surface--primary, #fff);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+  }
+  .bn-touch-drag-preview {
+    position: fixed;
+    z-index: 1000;
+    max-height: 180px;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0.92;
+    background: var(--c--contextuals--background--surface--primary, #fff);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  }
+  .bn-touch-drop-line {
+    position: fixed;
+    z-index: 1000;
+    height: 3px;
+    border-radius: 3px;
+    background: var(--c--globals--colors--brand-500, #5c5ce6);
+    pointer-events: none;
+  }
+  /* A finger resting on the handle picks the block up, never scrolls */
+  .bn-side-menu [draggable='true'] {
+    touch-action: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
   .bn-root[data-color-scheme] {
     --bn-colors-editor-text: var(
       --c--contextuals--content--semantic--neutral--primary

@@ -138,6 +138,10 @@ export const LoopTableStyle = createGlobalStyle`
     padding: 7px 8px;
     font-variant-numeric: tabular-nums;
   }
+  /* Collaborators: room for its "⌄" where it can be formatted */
+  .loop-table__rownum.is-formattable .loop-table__rownum-number {
+    padding-right: 20px;
+  }
   /* Collaborators: every cell's "⌄" (its format menu), at its right, shown
      on hover or when the cell is selected; header cells too */
   .loop-table__grid td,

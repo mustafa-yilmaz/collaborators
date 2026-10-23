@@ -217,6 +217,9 @@ export const formatMenuItems = (
       textColour?: string;
       clear?: string;
     };
+    /** Collaborators: a cell's menu always ends with its "Clear", greyed
+     * out while there is nothing to clear */
+    isCell?: boolean;
   },
 ): DropdownMenuItem[] => {
   const inherited = mergeFormats(options?.shown, DEFAULT_ALIGNMENT);
@@ -286,11 +289,32 @@ export const formatMenuItems = (
         labels?.clear ??
         t('Clear formatting', { description: 'Loop table format menu' }),
       icon: <Icon iconName="format_clear" $size="18px" />,
-      isHidden: !hasFormat(format),
+      isHidden: !options?.isCell && !hasFormat(format),
+      isDisabled: !hasFormat(format),
       callback: () => onChange(CLEAR_FORMAT),
     },
   ];
 };
+
+/**
+ * Collaborators: the menu of a cell (body, header or numbers cell): its own
+ * format, over what it inherits, ending with "Clear cell formatting".
+ */
+export const cellFormatMenuItems = (
+  t: T,
+  format: CellFormat | undefined,
+  onChange: (patch: FormatPatch) => void,
+  shown: CellFormat,
+): DropdownMenuItem[] =>
+  formatMenuItems(t, format, onChange, {
+    shown,
+    isCell: true,
+    labels: {
+      clear: t('Clear cell formatting', {
+        description: 'Loop table cell menu',
+      }),
+    },
+  });
 
 const textDecoration = (format: CellFormat) => {
   if (format.underline === undefined && format.strike === undefined) {

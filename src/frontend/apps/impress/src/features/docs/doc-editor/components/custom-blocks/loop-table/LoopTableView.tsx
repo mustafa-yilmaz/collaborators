@@ -42,6 +42,7 @@ import { Toolbar } from './Toolbar';
 import { labelOptionsOf } from './format';
 import {
   HEADER_DEFAULTS,
+  cellFormatMenuItems,
   columnDefaults,
   formatMenuItems,
   formatStyle,
@@ -130,20 +131,29 @@ const CellChevron = ({
   );
 };
 
-/** A row's number, aligned like the cells of any other column. */
+/**
+ * A row's number, aligned like the cells of any other column. Collaborators:
+ * formatted like any cell, by its "⌄" (or a right-click), but never typed in.
+ */
 const RowNumberCell = ({
   index,
   look,
+  onContextMenu,
+  children,
 }: {
   index: number;
   look: CellFormat;
+  onContextMenu?: (event: React.MouseEvent) => void;
+  children?: React.ReactNode;
 }) => (
   <td
-    className="loop-table__rownum"
+    className={`loop-table__rownum ${children ? 'is-formattable' : ''}`}
     data-column-id={NUMBERS_COLUMN_ID}
     style={formatStyle(look)}
+    onContextMenu={onContextMenu}
   >
     <div className="loop-table__rownum-number">{index + 1}</div>
+    {children}
   </td>
 );
 
@@ -704,6 +714,30 @@ export const LoopTableView = ({
     ),
   ];
 
+  /**
+   * Collaborators: a cell's "⌄", shown on hover or when selected; its menu is
+   * built only when it opens (a right-click opens it too).
+   */
+  const cellMenu = (
+    rowId: string,
+    columnId: string,
+    isActive: boolean,
+    options: () => DropdownMenuItem[],
+  ) => {
+    const key = `${rowId}:${columnId}`;
+    return cellMenuFor === key ? (
+      <DropdownMenu
+        options={options()}
+        isOpen
+        onOpenChange={(isOpen) => setCellMenuFor(isOpen ? key : null)}
+      >
+        <CellChevron isActive={isActive} onClick={() => setCellMenuFor(null)} />
+      </DropdownMenu>
+    ) : (
+      <CellChevron isActive={isActive} onClick={() => setCellMenuFor(key)} />
+    );
+  };
+
   const rowMenuOptions = (row: Row): DropdownMenuItem[] => {
     const index = snapshot.rows.findIndex((item) => item.id === row.id);
     return [
@@ -1070,9 +1104,38 @@ export const LoopTableView = ({
                     {showNumbersColumn && (
                       <RowNumberCell
                         index={rowIndex}
-                        // The numbers column's own format comes first
-                        look={mergeFormats(snapshot.layout.numbers, row.format)}
-                      />
+                        // Collaborators: the cell's own format, then the
+                        // numbers column's, then its row's
+                        look={mergeFormats(
+                          row.cellFormats?.[NUMBERS_COLUMN_ID],
+                          snapshot.layout.numbers,
+                          row.format,
+                        )}
+                        onContextMenu={(event) => {
+                          if (!isEditable) {
+                            return;
+                          }
+                          event.preventDefault();
+                          setIsEditing(false);
+                          setCellMenuFor(`${row.id}:${NUMBERS_COLUMN_ID}`);
+                        }}
+                      >
+                        {isEditable &&
+                          cellMenu(row.id, NUMBERS_COLUMN_ID, false, () =>
+                            cellFormatMenuItems(
+                              t,
+                              row.cellFormats?.[NUMBERS_COLUMN_ID],
+                              (patch) =>
+                                setCellFormat(
+                                  table,
+                                  row.id,
+                                  NUMBERS_COLUMN_ID,
+                                  patch,
+                                ),
+                              mergeFormats(snapshot.layout.numbers, row.format),
+                            ),
+                          )}
+                      </RowNumberCell>
                     )}
                     {columns.map((column) => {
                       const isActive =
@@ -1140,58 +1203,29 @@ export const LoopTableView = ({
                               }
                             }}
                           />
-                          {/* Collaborators: every cell's "⌄", shown on
-                              hover or when selected; its menu is built only
-                              when it opens (right-click opens it too) */}
+                          {/* Collaborators: every cell's "⌄" */}
                           {isEditable &&
-                            (cellMenuFor === `${row.id}:${column.id}` ? (
-                              <DropdownMenu
-                                options={formatMenuItems(
-                                  t,
-                                  row.cellFormats?.[column.id],
-                                  (patch) =>
-                                    setCellFormat(
-                                      table,
-                                      row.id,
-                                      column.id,
-                                      patch,
-                                    ),
-                                  {
-                                    // What the cell inherits from its row and
-                                    // column, then the defaults
-                                    shown: mergeFormats(
-                                      row.format,
-                                      column.format,
-                                      snapshot.layout.cells,
-                                      columnDefaults(column),
-                                    ),
-                                    labels: {
-                                      clear: t('Clear cell formatting', {
-                                        description: 'Loop table cell menu',
-                                      }),
-                                    },
-                                  },
-                                )}
-                                isOpen
-                                onOpenChange={(isOpen) =>
-                                  setCellMenuFor(
-                                    isOpen ? `${row.id}:${column.id}` : null,
-                                  )
-                                }
-                              >
-                                <CellChevron
-                                  isActive={isActive}
-                                  onClick={() => setCellMenuFor(null)}
-                                />
-                              </DropdownMenu>
-                            ) : (
-                              <CellChevron
-                                isActive={isActive}
-                                onClick={() =>
-                                  setCellMenuFor(`${row.id}:${column.id}`)
-                                }
-                              />
-                            ))}
+                            cellMenu(row.id, column.id, isActive, () =>
+                              cellFormatMenuItems(
+                                t,
+                                row.cellFormats?.[column.id],
+                                (patch) =>
+                                  setCellFormat(
+                                    table,
+                                    row.id,
+                                    column.id,
+                                    patch,
+                                  ),
+                                // What the cell inherits from its row and
+                                // column, then the defaults
+                                mergeFormats(
+                                  row.format,
+                                  column.format,
+                                  snapshot.layout.cells,
+                                  columnDefaults(column),
+                                ),
+                              ),
+                            )}
                         </td>
                       );
                     })}

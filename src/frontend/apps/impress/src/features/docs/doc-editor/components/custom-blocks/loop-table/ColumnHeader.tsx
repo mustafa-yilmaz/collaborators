@@ -14,6 +14,7 @@ import {
 } from './columnTypes';
 import {
   HEADER_DEFAULTS,
+  cellFormatMenuItems,
   columnDefaults,
   formatMenuItems,
   formatStyle,
@@ -69,27 +70,20 @@ export const ColumnHeader = ({
 
   // Collaborators: the same menu as every other cell — this header cell's
   // own format; renaming is typing in it
-  const cellMenu = formatMenuItems(
+  const cellMenu = cellFormatMenuItems(
     t,
     column.headerFormat,
     (patch) => setHeaderCellFormat(table, column.id, patch),
-    {
-      // What it inherits from the header row, then the defaults
-      shown: mergeFormats(snapshot.layout.header, HEADER_DEFAULTS),
-      labels: {
-        clear: t('Clear cell formatting', {
-          description: 'Loop table cell menu',
-        }),
-      },
-    },
+    // What it inherits from the header row, then the defaults
+    mergeFormats(snapshot.layout.header, HEADER_DEFAULTS),
   );
 
   const width = liveWidth ?? column.width;
   // Its own format, then the header row's (Collaborators: not its column's)
   const look = headerLook(snapshot, column);
+  // Collaborators: the column's name alone, without its type's icon
   const headerContent = (
     <>
-      <Icon iconName={columnTypeIcon[column.type]} $size="16px" />
       <span
         className="loop-table__header-name"
         style={{ textAlign: look.align }}
@@ -297,22 +291,7 @@ export const columnHandleMenuItems = (
     };
   });
   return [
-    // The whole column: its cells, not its header
-    ...formatMenuItems(
-      t,
-      column.format,
-      (patch) => setColumnFormat(table, column.id, patch),
-      // What it inherits from all the cells, then the defaults
-      {
-        shown: mergeFormats(snapshot.layout.cells, columnDefaults(column)),
-        labels: {
-          clear: t('Clear column formatting', {
-            description: 'Loop table column menu',
-          }),
-        },
-      },
-    ),
-    { type: 'separator' },
+    // Collaborators: what the column holds comes first
     {
       label: t('Column type', { description: 'Loop table column menu' }),
       icon: <Icon iconName="category" $size="18px" />,
@@ -329,6 +308,22 @@ export const columnHandleMenuItems = (
           updateColumn(table, column.id, { numberFormat: format }),
       })),
     },
+    { type: 'separator' },
+    // The whole column: its cells, not its header
+    ...formatMenuItems(
+      t,
+      column.format,
+      (patch) => setColumnFormat(table, column.id, patch),
+      // What it inherits from all the cells, then the defaults
+      {
+        shown: mergeFormats(snapshot.layout.cells, columnDefaults(column)),
+        labels: {
+          clear: t('Clear column formatting', {
+            description: 'Loop table column menu',
+          }),
+        },
+      },
+    ),
     { type: 'separator' },
     {
       label: t('Sort ascending', { description: 'Loop table column menu' }),

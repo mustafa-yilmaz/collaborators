@@ -5,7 +5,11 @@ import * as Y from 'yjs';
 
 import { Icon } from '@/components';
 
-import { HEADER_DEFAULTS, formatMenuItems, formatStyle } from './formatMenu';
+import {
+  HEADER_DEFAULTS,
+  cellFormatMenuItems,
+  formatStyle,
+} from './formatMenu';
 import {
   TableSnapshot,
   mergeFormats,
@@ -106,18 +110,11 @@ export const CornerHeader = ({
             </span>
           </div>
           <DropdownMenu
-            options={formatMenuItems(
+            options={cellFormatMenuItems(
               t,
               layout.corner,
               (patch) => setLayoutFormat(table, 'corner', patch),
-              {
-                shown: mergeFormats(layout.header, HEADER_DEFAULTS),
-                labels: {
-                  clear: t('Clear cell formatting', {
-                    description: 'Loop table cell menu',
-                  }),
-                },
-              },
+              mergeFormats(layout.header, HEADER_DEFAULTS),
             )}
             isOpen={isOpen}
             onOpenChange={setIsOpen}

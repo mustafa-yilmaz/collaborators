@@ -2,8 +2,15 @@ import type { TFunction } from 'i18next';
 import { describe, expect, it } from 'vitest';
 import * as Y from 'yjs';
 
+import { columnHandleMenuItems } from '../ColumnHeader';
+import { NUMBERS_COLUMN_ID } from '../CornerHeader';
 import { loopTableFormats } from '../export';
-import { formatMenuItems, formatStyle, layoutMenuItems } from '../formatMenu';
+import {
+  cellFormatMenuItems,
+  formatMenuItems,
+  formatStyle,
+  layoutMenuItems,
+} from '../formatMenu';
 import {
   CLEAR_FORMAT,
   SummaryKind,
@@ -40,7 +47,10 @@ const setup = () => {
 
 interface MenuItem {
   label?: string;
+  type?: string;
   isChecked?: boolean;
+  isHidden?: boolean;
+  isDisabled?: boolean;
   callback?: () => void;
   children?: MenuItem[];
 }
@@ -355,6 +365,63 @@ describe('Loop table formats', () => {
     expect(ticked(menu(), 'Text colour')).toEqual(['Green']);
     entry(menu(), 'Clear formatting').callback?.();
     expect(readTable(table).rows[0].cellFormats?.[columnId]).toBeUndefined();
+  });
+
+  it('ends every cell menu with "Clear cell formatting", greyed out until needed', () => {
+    const { table, columnId, rowId } = setup();
+    const menu = () =>
+      cellFormatMenuItems(
+        t,
+        readTable(table).rows[0].cellFormats?.[columnId],
+        (patch) => setCellFormat(table, rowId, columnId, patch),
+        {},
+      ) as MenuItem[];
+
+    const clear = () => menu()[menu().length - 1];
+    expect(clear().label).toBe('Clear cell formatting');
+    expect(clear().isHidden).toBe(false);
+    expect(clear().isDisabled).toBe(true);
+    entry(entry(menu(), 'Text style').children!, 'Italic').callback?.();
+    expect(clear().isDisabled).toBe(false);
+    clear().callback?.();
+    expect(readTable(table).rows[0].cellFormats?.[columnId]).toBeUndefined();
+
+    // Menus of a whole column, row… keep it out of sight until needed
+    const whole = formatMenuItems(t, undefined, () => {}) as MenuItem[];
+    expect(whole[whole.length - 1].isHidden).toBe(true);
+  });
+
+  it('formats a cell of the numbers column on its own', () => {
+    const { table, rowId } = setup();
+    setLayoutFormat(table, 'numbers', { bold: true, background: '#f1f1ef' });
+    setCellFormat(table, rowId, NUMBERS_COLUMN_ID, {
+      bold: false,
+      textColor: 'red',
+    });
+    const row = readTable(table).rows[0];
+    expect(
+      mergeFormats(
+        row.cellFormats?.[NUMBERS_COLUMN_ID],
+        readTable(table).layout.numbers,
+        row.format,
+      ),
+    ).toMatchObject({ bold: false, textColor: 'red', background: '#f1f1ef' });
+  });
+
+  it("lists the column type first in a column's menu, apart from the rest", () => {
+    const { table } = setup();
+    const snapshot = readTable(table);
+    const items = columnHandleMenuItems(
+      t,
+      table,
+      snapshot,
+      snapshot.columns[0],
+      () => {},
+    ) as MenuItem[];
+    const shown = items.filter((item) => !item.isHidden);
+    expect(shown[0].label).toBe('Column type');
+    expect(shown[1].type).toBe('separator');
+    expect(shown[2].label).toBe('Background colour');
   });
 
   it('formats all cells, and the header row is bold unless chosen', () => {

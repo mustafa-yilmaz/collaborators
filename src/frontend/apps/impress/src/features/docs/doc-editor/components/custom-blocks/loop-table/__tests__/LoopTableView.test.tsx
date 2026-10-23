@@ -107,6 +107,36 @@ describe('LoopTableView', () => {
     ]);
   });
 
+  it('formats the cells of the numbers column from their "⌄", never typing in them', () => {
+    const { table, container } = setup();
+    const { rows } = readTable(table);
+    const numberCell = container.querySelector<HTMLElement>(
+      'tbody td.loop-table__rownum',
+    )!;
+
+    fireEvent.click(numberCell);
+    expect(numberCell.querySelector('input, [contenteditable]')).toBeNull();
+    const chevron = numberCell.querySelector('.loop-table__cell-chevron');
+    expect(chevron).not.toBeNull();
+    fireEvent.click(chevron!);
+    expect(
+      screen.getByRole('menuitem', { name: /Clear cell formatting/ }),
+    ).toBeInTheDocument();
+    expect(rows[0].cellFormats).toBeUndefined();
+  });
+
+  it('shows no type icon beside the column names', () => {
+    const { container } = setup();
+    expect(
+      container.querySelector('thead .loop-table__header .--docs--icon-bg'),
+    ).toBeNull();
+    expect(
+      Array.from(container.querySelectorAll('thead .loop-table__header')).map(
+        (header) => header.textContent,
+      ),
+    ).toEqual(['', 'Column 1', 'Column 2']);
+  });
+
   it('gives readers neither the table menu nor the row controls', () => {
     const { table, container } = setup(false);
     const { rows } = readTable(table);
@@ -140,8 +170,9 @@ describe('LoopTableView', () => {
     expect(parseFloat(spacer!.style.height)).toBeGreaterThan(10000);
     // Row numbers count from the top of the table
     expect(
-      container.querySelector('tbody tr[data-row-id] .loop-table__rownum')
-        ?.textContent,
+      container.querySelector(
+        'tbody tr[data-row-id] .loop-table__rownum-number',
+      )?.textContent,
     ).toBe('1');
   });
 });

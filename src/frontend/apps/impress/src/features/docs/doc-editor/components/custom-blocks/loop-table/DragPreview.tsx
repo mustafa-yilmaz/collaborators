@@ -1,8 +1,5 @@
 import { useTranslation } from 'react-i18next';
 
-import { Icon } from '@/components';
-
-import { columnTypeIcon } from './columnTypes';
 import { formatCell } from './format';
 import { formatStyle } from './formatMenu';
 import {
@@ -113,7 +110,6 @@ export const ColumnDragPreview = ({
               }}
             >
               <div className="loop-table__header">
-                <Icon iconName={columnTypeIcon[column.type]} $size="16px" />
                 <span
                   className="loop-table__header-name"
                   style={{ textAlign: look.align }}

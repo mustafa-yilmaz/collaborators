@@ -32,6 +32,14 @@ import {
   setView,
 } from '../model';
 
+/** Collaborators: formats without the times of their choices. */
+const untimed = <V>(value: V): V =>
+  JSON.parse(
+    JSON.stringify(value ?? null, (key, inner: unknown) =>
+      key === 'at' ? undefined : inner,
+    ),
+  ) ?? undefined;
+
 const setup = () => {
   const ydoc = new Y.Doc();
   const tableId = createTable(ydoc);
@@ -107,15 +115,17 @@ describe('Loop table formats', () => {
     setLayout(table, { showRowNumbers: false });
 
     const snapshot = readTable(table);
-    expect(snapshot.columns[0].format).toEqual({ background: '#e6f3e8' });
-    expect(snapshot.rows[0].format).toEqual({
+    expect(untimed(snapshot.columns[0].format)).toEqual({
+      background: '#e6f3e8',
+    });
+    expect(untimed(snapshot.rows[0].format)).toEqual({
       align: 'center',
       valign: 'middle',
     });
-    expect(snapshot.rows[0].cellFormats).toEqual({
+    expect(untimed(snapshot.rows[0].cellFormats)).toEqual({
       [columnId]: { background: '#fbf3db' },
     });
-    expect(snapshot.layout).toEqual({
+    expect(untimed(snapshot.layout)).toEqual({
       showRowNumbers: false,
       showSummary: false,
       expanded: false,
@@ -212,12 +222,14 @@ describe('Loop table formats', () => {
 
     duplicateRow(table, rowId);
     const duplicated = readTable(table).rows[1];
-    expect(duplicated.format).toEqual({ background: '#ede6f6' });
-    expect(duplicated.cellFormats).toEqual({ [columnId]: { align: 'right' } });
+    expect(untimed(duplicated.format)).toEqual({ background: '#ede6f6' });
+    expect(untimed(duplicated.cellFormats)).toEqual({
+      [columnId]: { align: 'right' },
+    });
 
     const copyId = cloneTable(ydoc, readTable(table));
     const copy = readTable(getTable(ydoc, copyId)!);
-    expect(copy.rows[0].format).toEqual({ background: '#ede6f6' });
+    expect(untimed(copy.rows[0].format)).toEqual({ background: '#ede6f6' });
     expect(copy.layout.showRowNumbers).toBe(false);
   });
 
@@ -227,7 +239,7 @@ describe('Loop table formats', () => {
     setLayoutFormat(table, 'header', { align: 'center' });
     setCellFormat(table, rowId, columnId, { align: 'right' });
 
-    const formats = loopTableFormats(readTable(table));
+    const formats = untimed(loopTableFormats(readTable(table)));
 
     // Collaborators: the header shows the header row's format, not the
     // column's colour (new tables have a gray header row)
@@ -265,7 +277,7 @@ describe('Loop table formats', () => {
       'Right',
     ).callback?.();
     entry(entry(menu(), 'Vertical alignment').children!, 'Bottom').callback?.();
-    expect(readTable(table).layout.numbers).toEqual({
+    expect(untimed(readTable(table).layout.numbers)).toEqual({
       align: 'right',
       valign: 'bottom',
     });
@@ -307,7 +319,10 @@ describe('Loop table formats', () => {
     const snapshot = readTable(table);
     const [row, otherRow] = snapshot.rows;
     const [column, otherColumn] = snapshot.columns;
-    expect(snapshot.layout.cells).toEqual({ textColor: 'blue', italic: true });
+    expect(untimed(snapshot.layout.cells)).toEqual({
+      textColor: 'blue',
+      italic: true,
+    });
     expect(cellLook(snapshot, row, column)).toMatchObject({
       bold: false,
       italic: true,
@@ -348,17 +363,20 @@ describe('Loop table formats', () => {
     // Bold comes from the column
     expect(ticked(menu(), 'Text style')).toEqual(['Bold']);
     entry(entry(menu(), 'Text style').children!, 'Bold').callback?.();
-    expect(readTable(table).rows[0].cellFormats?.[columnId]).toEqual({
+    expect(untimed(readTable(table).rows[0].cellFormats?.[columnId])).toEqual({
       bold: false,
     });
     expect(ticked(menu(), 'Text style')).toEqual([]);
-    // Ticked again: it only repeats the column, so nothing is kept
+    // Ticked again: chosen outright, the latest choice
     entry(entry(menu(), 'Text style').children!, 'Bold').callback?.();
-    expect(readTable(table).rows[0].cellFormats?.[columnId]).toBeUndefined();
+    expect(untimed(readTable(table).rows[0].cellFormats?.[columnId])).toEqual({
+      bold: true,
+    });
 
     entry(entry(menu(), 'Text style').children!, 'Italic').callback?.();
     entry(entry(menu(), 'Text colour').children!, 'Green').callback?.();
-    expect(readTable(table).rows[0].cellFormats?.[columnId]).toEqual({
+    expect(untimed(readTable(table).rows[0].cellFormats?.[columnId])).toEqual({
+      bold: true,
       italic: true,
       textColor: 'green',
     });
@@ -408,6 +426,56 @@ describe('Loop table formats', () => {
     ).toMatchObject({ bold: false, textColor: 'red', background: '#f1f1ef' });
   });
 
+  it('shows the latest choice, whatever it was made for', () => {
+    const { table, columnId, rowId } = setup();
+    const look = () => {
+      const snapshot = readTable(table);
+      return cellLook(snapshot, snapshot.rows[0], snapshot.columns[0]);
+    };
+    const numberLook = () => {
+      const row = readTable(table).rows[0];
+      return mergeFormats(
+        row.cellFormats?.[NUMBERS_COLUMN_ID],
+        readTable(table).layout.numbers,
+        row.format,
+      );
+    };
+
+    // A cell, then its column: the column's later choice shows
+    setCellFormat(table, rowId, columnId, { textColor: 'red', bold: true });
+    setColumnFormat(table, columnId, { textColor: 'green' });
+    expect(look()).toMatchObject({ textColor: 'green', bold: true });
+    // Its row, later still, wins over both; then the cell again
+    setRowFormat(table, rowId, { textColor: 'blue', bold: false });
+    expect(look()).toMatchObject({ textColor: 'blue', bold: false });
+    setCellFormat(table, rowId, columnId, { bold: true });
+    expect(look()).toMatchObject({ textColor: 'blue', bold: true });
+    // All the cells, chosen last, win everywhere; "Default" is a choice too
+    setLayoutFormat(table, 'cells', { textColor: null });
+    expect(look().textColor).toBeUndefined();
+    // Clearing them brings back the choices made before
+    setLayoutFormat(table, 'cells', CLEAR_FORMAT);
+    expect(look().textColor).toBe('blue');
+
+    // The numbers column: a number cell, then the column's "⋮"
+    setCellFormat(table, rowId, NUMBERS_COLUMN_ID, {
+      background: '#fbe4e4',
+      italic: true,
+    });
+    setLayoutFormat(table, 'numbers', { background: '#e6f3e8' });
+    setLayoutFormat(table, 'numbers', { italic: false });
+    expect(numberLook()).toMatchObject({
+      background: '#e6f3e8',
+      italic: false,
+    });
+
+    // The header row over a header cell chosen before
+    setHeaderCellFormat(table, columnId, { align: 'center' });
+    setLayoutFormat(table, 'header', { align: 'right' });
+    const snapshot = readTable(table);
+    expect(headerLook(snapshot, snapshot.columns[0]).align).toBe('right');
+  });
+
   it("lists the column type first in a column's menu, apart from the rest", () => {
     const { table } = setup();
     const snapshot = readTable(table);
@@ -432,14 +500,14 @@ describe('Loop table formats', () => {
 
     entry(entry(allCells(), 'Text colour').children!, 'Purple').callback?.();
     entry(entry(allCells(), 'Text style').children!, 'Underline').callback?.();
-    expect(readTable(table).layout.cells).toEqual({
+    expect(untimed(readTable(table).layout.cells)).toEqual({
       textColor: 'purple',
       underline: true,
     });
 
     expect(ticked(header(), 'Text style')).toEqual(['Bold']);
     entry(entry(header(), 'Text style').children!, 'Bold').callback?.();
-    expect(readTable(table).layout.header).toEqual({
+    expect(untimed(readTable(table).layout.header)).toEqual({
       background: '#f1f1ef',
       bold: false,
     });

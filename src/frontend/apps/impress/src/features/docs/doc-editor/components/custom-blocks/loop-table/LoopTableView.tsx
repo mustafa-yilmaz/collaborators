@@ -808,16 +808,11 @@ export const LoopTableView = ({
       const row = snapshot.rows.find((item) => item.id === active.rowId);
       const column = columns.find((col) => col.id === active.columnId);
       if (row && column) {
-        const inherited = mergeFormats(
-          row.format,
-          column.format,
-          snapshot.layout.cells,
-        );
         setCellFormat(
           table,
           row.id,
           column.id,
-          toggleStyle(style, cellLook(snapshot, row, column), inherited),
+          toggleStyle(style, cellLook(snapshot, row, column)),
         );
       }
       return;

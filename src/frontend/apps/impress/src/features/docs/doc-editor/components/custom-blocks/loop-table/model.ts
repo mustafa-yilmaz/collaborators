@@ -99,9 +99,19 @@ export interface CellFormat {
   strike?: boolean;
   /** A colour name of TEXT_COLORS */
   textColor?: string;
+  /**
+   * Collaborators: when each property was chosen (ms). Of everything that
+   * covers a cell (itself, its row, its column, all the cells…), the latest
+   * choice wins. A time without its property is a choice of none (no
+   * background, the default text colour). Formats made before have none:
+   * older than any choice, the most specific of them wins.
+   */
+  at?: Partial<Record<FormatKey, number>>;
 }
 
-export const FORMAT_KEYS: (keyof CellFormat)[] = [
+export type FormatKey = Exclude<keyof CellFormat, 'at'>;
+
+export const FORMAT_KEYS: FormatKey[] = [
   'background',
   'align',
   'valign',
@@ -123,7 +133,7 @@ export const TEXT_STYLES: TextStyle[] = [
 
 /** A change of format: a value sets it, null takes it away. */
 export type FormatPatch = {
-  [Key in keyof CellFormat]?: CellFormat[Key] | null;
+  [Key in FormatKey]?: CellFormat[Key] | null;
 };
 
 export interface Column {
@@ -909,19 +919,34 @@ export const setView = (table: Y.Map<unknown>, changes: Partial<ViewState>) => {
 
 // -- Formats
 
-/** The format with the patch applied, or undefined when nothing is left. */
+/**
+ * The format with the patch applied, or undefined when nothing is left.
+ * Collaborators: with a `stamp`, each property changed is a choice made
+ * then (null choosing none); without, null takes the property away.
+ */
 export const applyFormatPatch = (
   format: CellFormat | undefined,
   patch: FormatPatch,
+  stamp?: number,
 ): CellFormat | undefined => {
-  const next: Record<string, unknown> = { ...format };
+  const { at: previousAt, ...rest } = format ?? {};
+  const next: Record<string, unknown> = { ...rest };
+  const at: Record<string, number> = { ...previousAt };
   Object.entries(patch).forEach(([key, value]) => {
     if (value === null || value === undefined) {
       delete next[key];
     } else {
       next[key] = value;
     }
+    if (stamp) {
+      at[key] = stamp;
+    } else {
+      delete at[key];
+    }
   });
+  if (Object.keys(at).length) {
+    next.at = at;
+  }
   return Object.keys(next).length ? next : undefined;
 };
 
@@ -930,23 +955,60 @@ export const CLEAR_FORMAT: FormatPatch = Object.fromEntries(
   FORMAT_KEYS.map((key) => [key, null]),
 );
 
-/** Whether a format sets anything. */
-export const hasFormat = (format: CellFormat | undefined) =>
-  FORMAT_KEYS.some((key) => format?.[key] !== undefined);
+const isClearAll = (patch: FormatPatch) =>
+  FORMAT_KEYS.every((key) => key in patch && patch[key] === null);
+
+let lastStamp = 0;
+/** Collaborators: when a choice is made, later than the one before. */
+const formatStamp = () => (lastStamp = Math.max(Date.now(), lastStamp + 1));
 
 /**
- * The format shown, from the most specific to the least: each property
- * comes from the first format that sets it (false included, for styles).
+ * Collaborators: a choice made now, the latest of all; clearing a format
+ * instead takes its choices away, so the ones made before show again.
+ */
+const applyChoice = (format: CellFormat | undefined, patch: FormatPatch) =>
+  applyFormatPatch(
+    format,
+    patch,
+    isClearAll(patch) ? undefined : formatStamp(),
+  );
+
+/** Whether a format sets anything (none chosen included). */
+export const hasFormat = (format: CellFormat | undefined) =>
+  FORMAT_KEYS.some(
+    (key) => format?.[key] !== undefined || format?.at?.[key] !== undefined,
+  );
+
+/**
+ * The format shown, from the most specific to the least. Collaborators:
+ * each property comes from the latest choice (see `CellFormat.at`); among
+ * formats set before choices were timed, from the first that sets it (false
+ * included, for styles). The result keeps the times, to be merged again.
  */
 export const mergeFormats = (
   ...formats: (CellFormat | undefined)[]
-): CellFormat =>
-  Object.fromEntries(
-    FORMAT_KEYS.map((key) => [
-      key,
-      formats.find((format) => format?.[key] !== undefined)?.[key],
-    ]),
-  );
+): CellFormat => {
+  const merged: Record<string, unknown> = {};
+  const at: Record<string, number> = {};
+  FORMAT_KEYS.forEach((key) => {
+    merged[key] = undefined;
+    let latest = -1;
+    formats.forEach((format) => {
+      const time = format?.at?.[key];
+      if (format?.[key] === undefined && time === undefined) {
+        return;
+      }
+      if ((time ?? 0) > latest) {
+        latest = time ?? 0;
+        merged[key] = format?.[key];
+      }
+    });
+    if (latest > 0) {
+      at[key] = latest;
+    }
+  });
+  return Object.keys(at).length ? { ...merged, at } : merged;
+};
 
 /**
  * The look of a body cell: its own format, then its row's, its column's,
@@ -974,8 +1036,9 @@ export const headerLook = (
   column: Column,
 ): CellFormat =>
   mergeFormats(column.headerFormat, snapshot.layout.header, {
-    ...(column.format?.align ? { align: column.format.align } : {}),
-    ...(column.format?.valign ? { valign: column.format.valign } : {}),
+    align: column.format?.align,
+    valign: column.format?.valign,
+    at: { align: column.format?.at?.align, valign: column.format?.at?.valign },
   });
 
 export const setHeaderCellFormat = (
@@ -986,7 +1049,7 @@ export const setHeaderCellFormat = (
   const column = readTable(table).columns.find((item) => item.id === columnId);
   if (column) {
     updateColumn(table, columnId, {
-      headerFormat: applyFormatPatch(column.headerFormat, patch),
+      headerFormat: applyChoice(column.headerFormat, patch),
     });
   }
 };
@@ -999,7 +1062,7 @@ export const setColumnFormat = (
   const column = readTable(table).columns.find((item) => item.id === columnId);
   if (column) {
     updateColumn(table, columnId, {
-      format: applyFormatPatch(column.format, patch),
+      format: applyChoice(column.format, patch),
     });
   }
 };
@@ -1019,7 +1082,7 @@ export const setRowFormat = (
     if (!yrow) {
       return;
     }
-    const format = applyFormatPatch(
+    const format = applyChoice(
       yrow.get('format') as CellFormat | undefined,
       patch,
     );
@@ -1043,7 +1106,7 @@ export const setCellFormat = (
       return;
     }
     let formats = yrow.get('cellFormats') as Y.Map<unknown> | undefined;
-    const format = applyFormatPatch(
+    const format = applyChoice(
       formats?.get(columnId) as CellFormat | undefined,
       patch,
     );
@@ -1077,5 +1140,5 @@ export const setLayoutFormat = (
   patch: FormatPatch,
 ) => {
   const current = readTable(table).layout[part];
-  setLayout(table, { [part]: applyFormatPatch(current, patch) ?? {} });
+  setLayout(table, { [part]: applyChoice(current, patch) ?? {} });
 };

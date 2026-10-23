@@ -143,29 +143,24 @@ const TextSwatch = ({ colour }: { colour?: string }) => (
 );
 
 /**
- * Turning a style on or off: set where it differs from what is inherited,
- * taken away where it would only repeat it.
+ * Turning a style on or off. Collaborators: always chosen outright, the
+ * latest choice winning over what covers the cell.
  */
 export const toggleStyle = (
   style: TextStyle,
   shown: CellFormat,
-  inherited: CellFormat,
-): FormatPatch => {
-  const next = !shown[style];
-  return { [style]: next === !!inherited[style] ? null : next };
-};
+): FormatPatch => ({ [style]: !shown[style] });
 
 const textStyleEntries = (
   t: T,
   shown: CellFormat,
-  inherited: CellFormat,
   onChange: (patch: FormatPatch) => void,
 ): DropdownMenuItem[] =>
   textStyles(t).map(([style, icon, label]) => ({
     label,
     icon: <Icon iconName={icon} $size="18px" />,
     isChecked: !!shown[style],
-    callback: () => onChange(toggleStyle(style, shown, inherited)),
+    callback: () => onChange(toggleStyle(style, shown)),
   }));
 
 const textColourEntries = (
@@ -275,7 +270,7 @@ export const formatMenuItems = (
         labels?.textStyle ??
         t('Text style', { description: 'Loop table format menu' }),
       icon: <Icon iconName="format_bold" $size="18px" />,
-      children: textStyleEntries(t, shown, inherited, onChange),
+      children: textStyleEntries(t, shown, onChange),
     },
     {
       label:
@@ -499,7 +494,7 @@ export const flatFormatEntries = (
     })),
     { type: 'separator' },
     heading(t('Text style', { description: 'Loop table format menu' })),
-    ...textStyleEntries(t, shown, inherited, onChange),
+    ...textStyleEntries(t, shown, onChange),
     { type: 'separator' },
     heading(t('Text colour', { description: 'Loop table format menu' })),
     ...textColourEntries(t, shown, onChange),

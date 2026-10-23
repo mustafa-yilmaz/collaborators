@@ -8,7 +8,7 @@ import { NextPageWithLayout } from '@/types/next';
 
 /** /legal-notice/: who runs the site, and who hosts it. English only for now. */
 const Page: NextPageWithLayout = () => (
-  <LegalPage title="Legal notice" updated="21 October 2026">
+  <LegalPage title="Legal notice" updated="23 October 2026">
     <h2>Publisher</h2>
     <p>
       The website collaborators.community and its sub-domains are published by:
@@ -59,15 +59,31 @@ const Page: NextPageWithLayout = () => (
       >
         Docs
       </a>{' '}
-      (La Suite numérique) and{' '}
+      (by{' '}
+      <a
+        href="https://github.com/suitenumerique"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        La Suite Numérique
+      </a>
+      ) and{' '}
       <a
         href="https://github.com/TypeCellOS/BlockNote"
         target="_blank"
         rel="noopener noreferrer"
       >
         BlockNote
+      </a>{' '}
+      (by{' '}
+      <a
+        href="https://github.com/TypeCellOS"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        TypeCellOS
       </a>
-      , under their own licences. Unless otherwise stated, the code of the site
+      ), under their own licences. Unless otherwise stated, the code of the site
       is under the MIT licence.
     </p>
 

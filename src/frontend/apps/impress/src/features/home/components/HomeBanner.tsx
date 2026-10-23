@@ -9,6 +9,10 @@ import { useConfig } from '@/core';
 import { ProConnectButton, gotoLogin } from '@/features/auth';
 import { useResponsiveStore } from '@/stores';
 
+/** Collaborators: where its code lives, open to contributions. */
+export const COLLABORATORS_REPOSITORY_URL =
+  'https://github.com/mustafa-yilmaz/collaborators';
+
 const rise = keyframes`
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: none; }
@@ -228,6 +232,46 @@ export default function HomeBanner() {
               </Button>
             )}
           </Box>
+          {/* Collaborators: open source, open to contributions */}
+          <Text
+            $size="0.9rem"
+            $variation="secondary"
+            $textAlign={!isMobile ? 'left' : 'center'}
+            $css={css`
+              ${entrance(320)}
+              a {
+                color: inherit;
+                text-decoration: underline;
+                text-underline-offset: 2px;
+              }
+              a:hover {
+                color: var(--c--globals--colors--brand-600, #3e5de7);
+              }
+            `}
+          >
+            {t('Open source:', {
+              description: 'Home page, before the links to the code',
+            })}{' '}
+            <a
+              href={COLLABORATORS_REPOSITORY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('help build it on GitHub', {
+                description: 'Home page link to the code on GitHub',
+              })}
+            </a>{' '}
+            {t('or', { description: 'Home page, between the two links' })}{' '}
+            <a
+              href={`${COLLABORATORS_REPOSITORY_URL}/issues`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('report an issue', {
+                description: 'Home page link to report a problem on GitHub',
+              })}
+            </a>
+          </Text>
         </Box>
         {!isMobile && (
           <Box

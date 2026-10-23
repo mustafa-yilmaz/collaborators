@@ -101,17 +101,27 @@ export const BlockMotion = () => {
         scroller.update(event.clientY);
       }
     };
-    // Before the editor handles the drop: where the blocks were
+    const endDrag = () => {
+      markDragSources([]);
+      dragged = [];
+      scroller.stop();
+    };
+    // Before the editor handles the drop: where the blocks were. The drag
+    // ends here: once dropped, BlockNote takes the "⠿" away, so its
+    // "dragend" never reaches the page, and the blocks would stay dimmed
     const onDrop = () => {
       const root = page();
       if (root && dragged.length) {
         animateLanding(root, dragged, blockTops(root, dragged));
       }
+      endDrag();
     };
-    const onDragEnd = () => {
-      markDragSources([]);
-      dragged = [];
-      scroller.stop();
+    // A drag given up (Escape, or dropped off the page) whose "dragend" is
+    // lost too: the pointer moving again ends it
+    const onMouseMove = () => {
+      if (dragged.length) {
+        endDrag();
+      }
     };
 
     // A finger picks blocks up our way, not with the browser's own drag
@@ -312,7 +322,8 @@ export const BlockMotion = () => {
     document.addEventListener('dragstart', onDragStart);
     document.addEventListener('dragover', onDragOver);
     document.addEventListener('drop', onDrop, true);
-    document.addEventListener('dragend', onDragEnd);
+    document.addEventListener('dragend', endDrag);
+    document.addEventListener('mousemove', onMouseMove, true);
     document.addEventListener('keydown', onKeyDown, true);
     document.addEventListener('pointerdown', onPointerDown, true);
     document.addEventListener('pointermove', onPointerMove, {
@@ -329,7 +340,8 @@ export const BlockMotion = () => {
       document.removeEventListener('dragstart', onDragStart);
       document.removeEventListener('dragover', onDragOver);
       document.removeEventListener('drop', onDrop, true);
-      document.removeEventListener('dragend', onDragEnd);
+      document.removeEventListener('dragend', endDrag);
+      document.removeEventListener('mousemove', onMouseMove, true);
       document.removeEventListener('keydown', onKeyDown, true);
       document.removeEventListener('pointerdown', onPointerDown, true);
       document.removeEventListener('pointermove', onPointerMove, true);

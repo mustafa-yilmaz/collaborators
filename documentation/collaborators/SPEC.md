@@ -15,7 +15,7 @@ Legend for "Docs today": ✅ already there · 🟡 partly there · ❌ to build.
 | Term | Meaning |
 |---|---|
 | **Collaborators** | The platform itself, the roof over everything. Run by **Platform admins**. Its logo is the text wordmark **CO✍️✍️ABORATORS**, in bold italic capitals (no logo image), so it works the same in the app and in emails; page titles and screen readers use the plain name "Collaborators". |
-| **Collaborator** | A person with an account (we don't say "user" in the UI). **Guest collaborators** are outsiders invited into a single space. |
+| **Collaborator** | A person with an account (we don't say "user" in the UI). There is no guest status (decided 2026-10-23): people from outside are invited to a workspace, space or page like anyone else. |
 | **Workspace** | An organisation-level area (a company, university, community). Has its own members, admins and groups. Address: `<slug>.collaborators.community`. |
 | **Space** | A team or topic area inside a workspace, holding a tree of pages. |
 | **Shared space** | A space owned by one workspace (its **home**) and linked into others. |
@@ -51,7 +51,7 @@ Collaborators  (collaborators.community)
 | Level | Roles |
 |---|---|
 | Platform | Platform admin · Collaborator |
-| Workspace | Owner · Admin · Member · Guest |
+| Workspace | Owner · Admin · Member |
 | Space / page | Owner · Administrator · Editor · Commenter · Reader *(Docs' existing `RoleChoices`)* |
 
 Space and page access can be granted to a collaborator or to a **group**.
@@ -472,10 +472,10 @@ Done: the Loop table tweaks, Loop table v2 (T9, T5, T56), the wiki extras (F8), 
 
 1. **Identity broker:** Keycloak (already in the dev stack, with all four providers built in).
 2. ✅ **Hosting** (decided 2026-10-20): one Hetzner Cloud **CX33** server (4 vCPU, 8 GB RAM) running everything with Docker Compose (`deploy/production/`), files in MinIO on the same server, HTTPS by Caddy. Chosen over Render (about $105–180 a month) and managed Kubernetes (€150+) for cost; the same images can move to a bigger server or Kubernetes later.
-3. **GitHub:** create a public or private GitHub repository for the fork, and under which account?
-4. **Editor extras under GPL:** build with `PUBLISH_AS_MIT=true` (drops PDF export and other BlockNote XL features), or accept GPL for those parts?
-5. **Group managers:** needed in v1, or are workspace admins enough?
-6. **Guest collaborators:** can a guest belong to a group?
+3. ✅ **GitHub** (decided 2026-10-23): a **public** repository under the owner's personal GitHub account. Not created yet; before the first push, check that no secret is in the history (they stay on the server in `deploy/production/env/` and `keys/`, which are git-ignored).
+4. ✅ **Editor extras under GPL** (decided 2026-10-23): **MIT only**. Production already builds without them (`PUBLISH_AS_MIT` isn't set to `false` there), so PDF, Word and ODT export, multi-column and the AI menu are off on collaborators.community. Development builds keep them, to evaluate later which ones are really needed (each would then need its GPL licence or a BlockNote subscription).
+5. ✅ **Group managers:** built (item 1 of "To do next"): group creators and the managers they appoint run their groups.
+6. ✅ **Guest collaborators** (decided 2026-10-23): there is **no guest status**. Everyone is a collaborator; outsiders are invited to a workspace, space or page like anyone else (5j). Workspace roles are Owner, Administrator and Member.
 
 ---
 

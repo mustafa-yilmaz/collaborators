@@ -239,6 +239,8 @@ export default function HomeBanner() {
             $textAlign={!isMobile ? 'left' : 'center'}
             $css={css`
               ${entrance(320)}
+              /* One sentence, its links inline */
+              display: block;
               a {
                 color: inherit;
                 text-decoration: underline;

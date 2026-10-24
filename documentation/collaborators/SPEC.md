@@ -119,7 +119,7 @@ See **section 3**: it is the largest single piece of work.
   - a new account is welcomed, warning that an account under another email is a separate one;
   - someone connected with a single provider is told, with a yellow symbol, that another account under a different email opens a separate account, and where to connect it. The sign-in methods page shows the same note.
 
-**Still to do:** emailing admins about requests to join (they reach the in-app inbox only).
+**Not planned** (decided 2026-10-25): emailing admins about requests to join. They reach the in-app inbox, to be improved there if needed; emails only if someone asks for them.
 
 ### F3 — Lean, customisable dashboard
 
@@ -195,7 +195,7 @@ See **section 3**: it is the largest single piece of work.
 
 **Built:** independent spaces and pages ("My spaces & pages" lists both, with a + for each), moving pages into and out of spaces, making spaces independent again, and linking a page into several spaces (`PageSpaceLink`).
 
-**Still to do:** a linked page opened from a public space isn't public through it (only roles on the linking space count).
+**Still to do:** a linked page opened from a public space isn't public through it (only roles on the linking space count). Part of job 2 of the order of work below.
 
 ### F8 — Public sharing and public wikis
 
@@ -242,7 +242,6 @@ See **section 3**: it is the largest single piece of work.
     - Routing: the proxy serves the frontend, `/api`, `/media` and the collaboration websocket on them too (or allows their origins).
 - The wiki's page tree is hidden until the reader shows it, as in the app.
 
-**Still to do:** checking a domain's DNS before accepting it, and keeping several fixed versions to go back to.
 
 ---
 
@@ -399,6 +398,19 @@ Moved out of the table v1:
 | 6 | Remaining sign-in providers (LinkedIn), account linking, domain auto-join | F2 |
 
 ---
+
+### Order of work (decided 2026-10-25)
+
+1. The slash menu shows its "Basic blocks" heading twice.
+2. **Public reach, checked and corrected:** what is public in public workspaces, independent public spaces and independent public pages, and what their pages and sub-pages show to readers (including pages linked into a public space, F7).
+3. **Live checks, with the owner:** an invitation email accepted from a second address; dragging a table column and hiding then showing the header row on a live table; the space and workspace screens; press-and-hold block dragging on a phone.
+4. **Publishing the Google sign-in app** (item 6 below), guided step by step.
+5. **Microsoft and LinkedIn sign-in in production:** checked live; the LinkedIn app's settings in its developer portal (linkedin.com/developers) checked or completed.
+6. **Grant calls** (items 7–10 below), once the owner has decided where calls come from.
+7. **Input from one's own AI tools** (item 11 below), once the owner has decided its first ways in.
+8. Last: a README of Collaborators for the GitHub repository.
+
+Not planned: emailing admins about join requests (see F2). Dropped (2026-10-25): checking a wiki domain's DNS before accepting it, and keeping several fixed versions of a wiki.
 
 ### To do next, in order
 

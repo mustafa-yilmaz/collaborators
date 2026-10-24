@@ -1,4 +1,4 @@
-import { sanitizeColor } from '../utils';
+import { keepGroupsTogether, sanitizeColor } from '../utils';
 
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
@@ -29,5 +29,24 @@ describe('sanitizeColor', () => {
 
   it('rejects empty string and returns a valid random hex color', () => {
     expect(sanitizeColor('')).toMatch(HEX_COLOR_RE);
+  });
+});
+
+describe('keepGroupsTogether', () => {
+  it('brings the items of a split group together, groups in order', () => {
+    const titles = keepGroupsTogether([
+      { title: 'Paragraph', group: 'Basic blocks' },
+      { title: 'Callout', group: 'Basic blocks' },
+      { title: 'Link a page', group: 'Links' },
+      { title: 'Table', group: 'Basic blocks' },
+      { title: 'Image', group: 'Media' },
+    ]).map((item) => item.title);
+    expect(titles).toEqual([
+      'Paragraph',
+      'Callout',
+      'Table',
+      'Link a page',
+      'Image',
+    ]);
   });
 });

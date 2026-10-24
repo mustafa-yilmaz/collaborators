@@ -38,3 +38,20 @@ function hslToHex(h: number, s: number, l: number) {
   };
   return `#${f(0)}${f(8)}${f(4)}`;
 }
+
+/**
+ * Collaborators: the items of each group side by side, groups in the order
+ * they first appear. A menu shows a group's heading wherever its items
+ * start, so a group split in two showed its heading twice.
+ */
+export const keepGroupsTogether = <T extends { group?: string }>(
+  items: T[],
+): T[] => {
+  const groups = new Map<string | undefined, T[]>();
+  items.forEach((item) => {
+    const members = groups.get(item.group) ?? [];
+    members.push(item);
+    groups.set(item.group, members);
+  });
+  return [...groups.values()].flat();
+};

@@ -18,6 +18,7 @@ import {
   DocsInlineContentSchema,
   DocsStyleSchema,
 } from '../types';
+import { keepGroupsTogether } from '../utils';
 
 import BlockNoteAI from './AI';
 import {
@@ -88,8 +89,12 @@ export const BlockNoteSuggestionMenu = ({
       ...combinedMenu.slice(index + 1),
     ];
 
+    // Collaborators: "Links" came between "Callout" and "Table", splitting
+    // the basic blocks, whose heading then showed twice
+    const groupedItems = keepGroupsTogether(newSlashMenuItems);
+
     return async (query: string) =>
-      Promise.resolve(filterSuggestionItems(newSlashMenuItems, query));
+      Promise.resolve(filterSuggestionItems(groupedItems, query));
   }, [
     editor,
     t,

@@ -44,15 +44,18 @@ def snippet(text, query, around=60):
     )
 
 
-def _document(document, query):
+def _document(document, query, user):
     root = document if document.is_root() else document.get_root()
     in_title = query.lower() in (document.title or "").lower()
     return {
         "id": str(document.id),
         "title": document.title or "",
         "kind": document.kind,
-        # Where it is: the space (or top page) holding it
-        "context": "" if root.pk == document.pk else (root.title or ""),
+        # Where it is: the space (or top page) holding it. Collaborators: not
+        # named to those who can't open it (a public page in a private space)
+        "context": ""
+        if root.pk == document.pk or not root.get_abilities(user).get("retrieve")
+        else (root.title or ""),
         "snippet": "" if in_title else snippet(document.text_content, query),
         "updated_at": document.updated_at,
     }
@@ -67,12 +70,12 @@ def _workspace(workspace):
     }
 
 
-def _split(documents, query, size):
+def _split(documents, query, size, user):
     spaces = [d for d in documents if d.kind == choices.DocumentKindChoices.SPACE]
     pages = [d for d in documents if d.kind != choices.DocumentKindChoices.SPACE]
     return (
-        [_document(d, query) for d in spaces[:size]],
-        [_document(d, query) for d in pages[:size]],
+        [_document(d, query, user) for d in spaces[:size]],
+        [_document(d, query, user) for d in pages[:size]],
     )
 
 
@@ -165,8 +168,8 @@ class SearchView(APIView):
             ]
             if document.get_abilities(user).get("retrieve")
         ]
-        involved_spaces, involved_pages = _split(mine, query, size)
-        visible_spaces, visible_pages = _split(others, query, size)
+        involved_spaces, involved_pages = _split(mine, query, size, user)
+        visible_spaces, visible_pages = _split(others, query, size, user)
 
         involved_labels, visible_labels = _labels(query, member_of, has_role, size)
 

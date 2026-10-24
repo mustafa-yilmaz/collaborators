@@ -52,7 +52,16 @@ def _top_documents(user):
             is_owned=Exists(owned),
             is_favorite=Exists(starred),
         )
-        .filter(Q(is_reachable=True) | Q(is_favorite=True))
+        # Collaborators: a starred page stays listed only while it can be
+        # opened (its link, or a space it is linked into)
+        .filter(
+            Q(is_reachable=True)
+            | Q(is_favorite=True)
+            & (
+                ~Q(link_reach=choices.LinkReachChoices.RESTRICTED)
+                | Exists(models.linked_reader_access(user))
+            )
+        )
     )
 
 

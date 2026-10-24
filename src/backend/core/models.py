@@ -1029,16 +1029,15 @@ class DocumentQuerySet(MP_NodeQuerySet):
         :return: A queryset of documents for which the user has direct access,
             team access or link access.
         """
-        if user.is_authenticated:
-            return self.filter(
-                models.Q(accesses__user=user)
-                | models.Q(accesses__team__in=user.teams)
-                | ~models.Q(link_reach=LinkReachChoices.RESTRICTED)
-                # pages linked into a space the user has a role on
-                | models.Exists(linked_reader_access(user))
-            )
+        return self.filter(role_readable_q(user) | link_readable_q(user))
 
-        return self.filter(link_reach=LinkReachChoices.PUBLIC)
+    def readable_by_role(self, user):
+        """Collaborators: readable through a role (on it, or by a link)."""
+        return self.filter(role_readable_q(user))
+
+    def readable_by_link(self, user):
+        """Collaborators: readable through its link reach alone."""
+        return self.filter(link_readable_q(user))
 
     def exclude_private_unreadable(self, user):
         """
@@ -1058,6 +1057,9 @@ class DocumentQuerySet(MP_NodeQuerySet):
             models.Q(keep_private=True)
             & models.Q(link_reach=LinkReachChoices.RESTRICTED)
             & ~models.Exists(has_role)
+            # Collaborators: read through a space it is linked into (it, or a
+            # page above it, as `get_role` grants)
+            & ~models.Exists(linked_reader_access(user))
         )
 
     def annotate_is_favorite(self, user):
@@ -1421,6 +1423,7 @@ class Document(MP_Node, BaseModel):
                     models.Q(space__accesses__user=user)
                     | models.Q(space__accesses__team__in=user.teams),
                     page__path__in=paths,
+                    space__ancestors_deleted_at__isnull=True,
                 )
                 .annotate(
                     linked_role=models.Value(
@@ -2673,6 +2676,20 @@ class Workspace(BaseModel):
             return None
         return self.accesses.filter(user=user).values_list("role", flat=True).first()
 
+    def is_shown_to(self, user):
+        """
+        Collaborators: whether the user may know the workspace (its name, its
+        address): its members, and those its visibility lets find it.
+        """
+        if self.visibility == WorkspaceVisibilityChoices.PUBLIC:
+            return True
+        if not user.is_authenticated:
+            return False
+        return (
+            self.visibility == WorkspaceVisibilityChoices.PLATFORM
+            or self.accesses.filter(user=user).exists()
+        )
+
     def get_abilities(self, user):
         """Compute and return the abilities of a user on the workspace."""
         role = self.get_role(user)
@@ -3099,6 +3116,31 @@ class PageSpaceLink(BaseModel):
         return f"{self.page!s} linked into {self.space!s}"
 
 
+def role_readable_q(user):
+    """
+    Collaborators: documents a user may read through a role: theirs, their
+    teams', or one on a space the document (or a page above it) is linked
+    into. Roles reach every page below, kept private or not.
+    """
+    if not user.is_authenticated:
+        return models.Q(pk__in=[])
+    return (
+        models.Q(accesses__user=user)
+        | models.Q(accesses__team__in=user.teams)
+        | models.Exists(linked_reader_access(user))
+    )
+
+
+def link_readable_q(user):
+    """
+    Collaborators: documents a user may read through their link reach. A
+    page kept private takes none from the pages above it.
+    """
+    if user.is_authenticated:
+        return ~models.Q(link_reach=LinkReachChoices.RESTRICTED)
+    return models.Q(link_reach=LinkReachChoices.PUBLIC)
+
+
 def linked_reader_access(user, outer_path="path"):
     """
     The links that let the user read a page (or one of its subpages: the
@@ -3110,6 +3152,8 @@ def linked_reader_access(user, outer_path="path"):
         | models.Q(space__accesses__team__in=user.teams),
         page__path=Left(models.OuterRef(outer_path), Length("page__path")),
         page__ancestors_deleted_at__isnull=True,
+        # Collaborators: a space in the trashbin links nothing
+        space__ancestors_deleted_at__isnull=True,
     )
 
 

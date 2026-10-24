@@ -551,7 +551,9 @@ def test_api_documents_media_auth_grant_via_deep_ancestor():
 # It is a small constant and, crucially, independent of how many documents the
 # instance holds -- that invariance is the regression guard for the thundering
 # herd, where the check used to materialise the user's entire readable set.
-MEDIA_AUTH_QUERY_COUNT = 5
+# Collaborators: one more, the pages kept private above the file (a link
+# reach stops there)
+MEDIA_AUTH_QUERY_COUNT = 6
 
 
 def test_api_documents_media_auth_authorization_cost_is_bounded(

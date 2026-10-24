@@ -196,15 +196,19 @@ class ListDocumentSerializer(serializers.ModelSerializer):
             return None
         return self.home_workspace_of(instance)
 
-    @staticmethod
-    def home_workspace_of(instance):
-        """The workspace a top-level document was placed in, if any."""
+    def home_workspace_of(self, instance):
+        """
+        The workspace a top-level document was placed in, if any.
+        Collaborators: only for those who may know it (a hidden workspace
+        stays unnamed to the readers of its public spaces).
+        """
         link = (
             instance.workspace_links.filter(is_home=True)
             .select_related("workspace")
             .first()
         )
-        if link is None:
+        request = self.context.get("request")
+        if link is None or not (request and link.workspace.is_shown_to(request.user)):
             return None
         return {
             "id": str(link.workspace.id),

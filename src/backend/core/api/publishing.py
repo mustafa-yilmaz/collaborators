@@ -15,6 +15,7 @@ own.
 
 import base64
 import re
+import uuid
 
 from django.conf import settings
 from django.core.files.base import ContentFile
@@ -85,6 +86,11 @@ def log_publication(document, user, action, **details):
     )
 
 
+def shown_slug(workspace, user):
+    """Collaborators: a workspace's address, for those who may know it."""
+    return workspace.slug if workspace and workspace.is_shown_to(user) else None
+
+
 def is_published(space):
     """A wiki is published live (public pages) or as a fixed version."""
     return bool(space.wiki_slug) and (
@@ -128,9 +134,14 @@ def is_wiki_file(key):
     published wiki, or it is a published wiki's logo.
     """
     published = Q(wiki_slug__isnull=False, ancestors_deleted_at__isnull=True)
+    # Collaborators: the logo is the space's own file, under /media/
+    logo = Q(wiki_logo__endswith=f"/media/{key}")
+    try:
+        logo &= Q(pk=uuid.UUID(key.split("/")[0]))
+    except ValueError:
+        logo = Q(pk__in=[])
     return models.Document.objects.filter(
-        published
-        & (Q(wiki_release__attachments__contains=[key]) | Q(wiki_logo__endswith=key))
+        published & (Q(wiki_release__attachments__contains=[key]) | logo)
     ).exists()
 
 
@@ -193,7 +204,7 @@ class DocumentPublicationView(APIView):
                 "title": wiki.title,
                 "logo": wiki.wiki_logo,
                 "domain": wiki.wiki_domain,
-                "workspace_slug": getattr(home_workspace(wiki), "slug", None),
+                "workspace_slug": shown_slug(home_workspace(wiki), user),
                 "released_at": wiki.wiki_release.created_at
                 if wiki.wiki_release
                 else None,
@@ -254,8 +265,16 @@ class WikiSerializer(serializers.Serializer):
     domain = serializers.CharField(max_length=253, required=False, allow_blank=True)
 
     def validate_logo(self, value):
-        """The logo is an image attached to the space itself."""
-        if value and f"/{self.context['space'].pk!s}/attachments/" not in value:
+        """
+        The logo is an image attached to the space itself. Collaborators: the
+        whole address is checked, not a part of it, so a logo can't lead to
+        the file of another page (with "../" for instance).
+        """
+        space_id = re.escape(str(self.context["space"].pk))
+        if value and not re.fullmatch(
+            rf"(https?://[^/?#]+)?/media/{space_id}/attachments/[\w-]+\.\w+",
+            value,
+        ):
             raise serializers.ValidationError(_("Upload the logo to the space first."))
         return value
 
@@ -534,6 +553,9 @@ class PublicWikiView(APIView):
         """Return the wiki's space and its pages."""
         space = published_space(slug)
         workspace = home_workspace(space)
+        # Collaborators: a hidden workspace stays unnamed
+        if workspace is not None and not workspace.is_shown_to(request.user):
+            workspace = None
         release = space.wiki_release
         return drf.response.Response(
             {
@@ -689,10 +711,18 @@ class WikiHostView(APIView):
                 workspace_links__workspace=workspace,
                 workspace_links__is_home=True,
             ).order_by("title")
+            # Collaborators: a hidden workspace's address shows only the
+            # wikis it publishes, never its name; with none, it isn't there
+            is_shown = workspace.is_shown_to(request.user)
+            if not is_shown and not spaces.exists():
+                raise drf.exceptions.NotFound()
             return drf.response.Response(
                 {
                     "kind": "workspace",
-                    "workspace": {"name": workspace.name, "slug": workspace.slug},
+                    "workspace": {
+                        "name": workspace.name if is_shown else None,
+                        "slug": workspace.slug,
+                    },
                     "wikis": [
                         {"slug": space.wiki_slug, "title": space.title or ""}
                         for space in spaces
@@ -729,9 +759,20 @@ class TlsAllowedView(APIView):
             and host.endswith(f".{base}")
             and host.count(".") == base.count(".") + 1
         ):
-            allowed = models.Workspace.objects.filter(
-                slug=host[: -len(base) - 1]
-            ).exists()
+            # Collaborators: not the addresses of hidden workspaces, unless
+            # they publish wikis there
+            allowed = (
+                models.Workspace.objects.filter(slug=host[: -len(base) - 1])
+                .filter(
+                    ~Q(visibility=choices.WorkspaceVisibilityChoices.HIDDEN)
+                    | Q(
+                        space_links__is_home=True,
+                        space_links__space__wiki_slug__isnull=False,
+                        space_links__space__ancestors_deleted_at__isnull=True,
+                    )
+                )
+                .exists()
+            )
         if not allowed and host:
             allowed = models.Document.objects.filter(
                 wiki_domain=host,

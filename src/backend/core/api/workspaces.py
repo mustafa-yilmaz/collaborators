@@ -242,7 +242,11 @@ class SpaceSerializer(ListDocumentSerializer):
         read_only_fields = fields
 
     def get_linked_workspaces(self, instance):
-        """All the workspaces the space appears in, its home first."""
+        """
+        All the workspaces the space appears in, its home first.
+        Collaborators: those the viewer may know only.
+        """
+        request = self.context.get("request")
         return [
             {
                 "id": str(link.workspace.id),
@@ -251,6 +255,7 @@ class SpaceSerializer(ListDocumentSerializer):
                 "is_home": link.is_home,
             }
             for link in instance.workspace_links.select_related("workspace")
+            if request and link.workspace.is_shown_to(request.user)
         ]
 
 
@@ -974,8 +979,10 @@ class SpaceViewSet(
                 {
                     "link_id": str(link.id),
                     "page": {"id": str(page.id), "title": page.title},
+                    # Collaborators: its home, named to those who can open it
                     "home": {"id": str(root.id), "title": root.title}
                     if root.is_space
+                    and root.get_abilities(request.user).get("retrieve")
                     else None,
                 }
             )

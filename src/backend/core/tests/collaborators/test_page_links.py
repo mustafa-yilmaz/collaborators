@@ -78,9 +78,16 @@ def test_linking_a_page_lets_the_other_space_read_it():
         {
             "link_id": str(models.PageSpaceLink.objects.get().id),
             "page": {"id": str(page.id), "title": "Roadmap"},
-            "home": {"id": str(engineering.id), "title": "Engineering"},
+            # Collaborators: Engineering, which the designer can't open,
+            # stays unnamed to them
+            "home": None,
         }
     ]
+    owner_listed = client_for(owner).get(f"/api/v1.0/spaces/{design.id}/linked-pages/")
+    assert owner_listed.json()[0]["home"] == {
+        "id": str(engineering.id),
+        "title": "Engineering",
+    }
 
     detail = client_for(owner).get(links_url(page)).json()
     assert detail["home"] == {"id": str(engineering.id), "title": "Engineering"}

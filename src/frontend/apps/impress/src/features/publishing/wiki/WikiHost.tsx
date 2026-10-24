@@ -21,6 +21,10 @@ const WorkspaceWikis = ({
 }) => {
   const { t } = useTranslation();
   const { data: config } = useConfig();
+  // Collaborators: a hidden workspace's address shows its wikis, unnamed
+  const heading =
+    host.workspace.name ??
+    t('Wikis', { description: 'Heading of a workspace address without name' });
   return (
     <Box
       $minHeight="100vh"
@@ -29,10 +33,10 @@ const WorkspaceWikis = ({
       $gap="md"
     >
       <Head>
-        <title>{host.workspace.name}</title>
+        <title>{heading}</title>
       </Head>
       <Text as="h1" $size="h3" $weight="700" $margin="none">
-        {host.workspace.name}
+        {heading}
       </Text>
       {host.wikis.length === 0 ? (
         <Text $variation="secondary">

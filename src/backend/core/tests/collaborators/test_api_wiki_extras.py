@@ -245,7 +245,10 @@ def test_wiki_address_of_a_workspace(settings):
     settings.COLLABORATORS_WIKI_BASE_DOMAIN = "collaborators.community"
     owner = factories.UserFactory()
     space, _page, _private = published_wiki(owner)
-    workspace = models.Workspace.objects.create(name="Acme", slug="acme")
+    # Collaborators: findable, so its address shows its name too
+    workspace = models.Workspace.objects.create(
+        name="Acme", slug="acme", visibility="public"
+    )
     models.WorkspaceAccess.objects.create(
         workspace=workspace, user=owner, role=WorkspaceRoleChoices.OWNER
     )

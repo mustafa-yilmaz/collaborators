@@ -283,7 +283,9 @@ def test_tls_allowed_only_for_our_addresses(settings):
     """Certificates for the app, workspaces and published wikis' domains only."""
     settings.COLLABORATORS_WIKI_BASE_DOMAIN = "collaborators.community"
     settings.COLLABORATORS_APP_HOSTS = ["collaborators.community"]
-    models.Workspace.objects.create(name="Acme", slug="acme")
+    # Collaborators: a findable workspace (a hidden one's address only serves
+    # the wikis it publishes)
+    models.Workspace.objects.create(name="Acme", slug="acme", visibility="platform")
     factories.DocumentFactory(
         kind="space",
         link_reach="public",

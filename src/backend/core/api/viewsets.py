@@ -2256,10 +2256,25 @@ class DocumentViewSet(
             for pos in range(len(path), 0, -models.Document.steplen)
         }
 
+        # Collaborators: a role counts from any page above; a link reach only
+        # up to the first page kept private (that page's own reach included)
+        kept_private = set(
+            self.queryset.select_related(None)
+            .filter(path__in=candidate_paths, keep_private=True)
+            .values_list("path", flat=True)
+        )
+        link_paths = set()
+        for path in attachment_paths:
+            for pos in range(len(path), 0, -models.Document.steplen):
+                link_paths.add(path[:pos])
+                if path[:pos] in kept_private:
+                    break
+
         if not candidate_paths or not (
-            self.queryset.readable_per_se(user)
-            .filter(path__in=candidate_paths)
-            .exists()
+            self.queryset.filter(
+                db.Q(path__in=candidate_paths) & models.role_readable_q(user)
+                | db.Q(path__in=link_paths) & models.link_readable_q(user)
+            ).exists()
             # Collaborators: the files of a wiki's fixed version, and its logo
             or publishing.is_wiki_file(key)
         ):

@@ -78,7 +78,8 @@ export type WikiHost =
   | { kind: 'domain'; slug: string }
   | {
       kind: 'workspace';
-      workspace: { name: string; slug: string };
+      /** Collaborators: no name for a hidden workspace */
+      workspace: { name: string | null; slug: string };
       wikis: { slug: string; title: string }[];
     };
 

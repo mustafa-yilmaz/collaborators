@@ -13,7 +13,7 @@ GET, PUT /api/v1.0/workspaces/<id>/labels/  — {names}: a workspace's
 from collections import Counter
 
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 import rest_framework as drf
@@ -92,17 +92,41 @@ class LabelListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        """Labels matching the text typed."""
+        """
+        Labels matching the text typed. Collaborators: those on what the user
+        can see, counted there (a label only on private pages isn't shown).
+        """
+        user = request.user
         query = models.Label.normalize(request.query_params.get("q")).lower()
-        labels = models.Label.objects.annotate(
-            uses=Count("documents", distinct=True) + Count("workspaces", distinct=True)
-        )
+        labels = models.Label.objects.all()
         if query:
             labels = labels.filter(key__contains=query)
+        documents = (
+            models.Document.objects.filter(
+                labels__label__in=labels, ancestors_deleted_at__isnull=True
+            )
+            .distinct()
+            .order_by("-updated_at")[:CANDIDATES]
+        )
+        visible = {document.id for document in visible_documents(user, documents)}
+        counts = Counter()
+        names = {}
+        for link in models.DocumentLabel.objects.filter(
+            document_id__in=visible, label__in=labels
+        ).select_related("label"):
+            counts[link.label.key] += 1
+            names[link.label.key] = link.label.name
+        for link in models.WorkspaceLabel.objects.filter(
+            workspace__in=visible_workspaces(user), label__in=labels
+        ).select_related("label"):
+            counts[link.label.key] += 1
+            names[link.label.key] = link.label.name
         return drf.response.Response(
             [
-                {"name": label.name, "count": label.uses}
-                for label in labels.order_by("-uses", "key")[:20]
+                {"name": names[key], "count": count}
+                for key, count in sorted(
+                    counts.items(), key=lambda item: (-item[1], item[0])
+                )[:20]
             ]
         )
 

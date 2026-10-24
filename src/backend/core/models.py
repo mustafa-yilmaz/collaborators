@@ -3116,6 +3116,60 @@ class PageSpaceLink(BaseModel):
         return f"{self.page!s} linked into {self.space!s}"
 
 
+def drop_workspace_roles(document, workspace_ids):
+    """
+    Collaborators: the roles these workspaces gave (their members, admins
+    and groups) go, on the document and every page below it: it left them.
+    """
+    workspace_ids = list(workspace_ids)
+    if not workspace_ids:
+        return
+    teams = [
+        make_team(kind, workspace_id)
+        for workspace_id in workspace_ids
+        for kind in (TEAM_WORKSPACE, TEAM_WORKSPACE_ADMINS)
+    ] + [
+        make_team(TEAM_GROUP, group_id)
+        for group_id in Group.objects.filter(
+            workspace_id__in=workspace_ids
+        ).values_list("id", flat=True)
+    ]
+    DocumentAccess.objects.filter(
+        document__path__startswith=document.path, team__in=teams
+    ).delete()
+
+
+def follow_workspaces_after_move(document, old_root, old_workspaces):
+    """
+    Collaborators: under another page, a page placed directly in a workspace
+    leaves it; the workspaces of its former space (or top page) give no more
+    roles on it and below it; still on top, a page placed in a workspace
+    keeps its members and administrators.
+    """
+    new_root = document if document.is_root() else document.get_root()
+    if not document.is_root():
+        document.workspace_links.all().delete()
+    if new_root.pk != old_root.pk:
+        kept = set(new_root.workspace_links.values_list("workspace_id", flat=True))
+        drop_workspace_roles(document, [w for w in old_workspaces if w not in kept])
+    home = (
+        document.workspace_links.filter(is_home=True).first()
+        if document.is_root() and not document.is_space
+        else None
+    )
+    if home is not None:
+        DocumentAccess.objects.update_or_create(
+            document=document,
+            team=make_team(TEAM_WORKSPACE_ADMINS, home.workspace_id),
+            defaults={"role": RoleChoices.OWNER},
+        )
+        DocumentAccess.objects.get_or_create(
+            document=document,
+            team=make_team(TEAM_WORKSPACE, home.workspace_id),
+            defaults={"role": RoleChoices.READER},
+        )
+
+
 def role_readable_q(user):
     """
     Collaborators: documents a user may read through a role: theirs, their

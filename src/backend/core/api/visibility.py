@@ -44,8 +44,23 @@ def _space_of(document):
     return root if root.is_space else None
 
 
+def _placed_in(document):
+    """
+    Collaborators: the workspace a top-level page is placed in directly (in
+    none of its spaces), if any: its members read it, as a space's people.
+    """
+    if document.is_space or not document.is_root():
+        return None
+    link = (
+        document.workspace_links.filter(is_home=True)
+        .select_related("workspace")
+        .first()
+    )
+    return link.workspace if link else None
+
+
 def _workspaces_of(space):
-    """The workspaces a space belongs to: its home first."""
+    """The workspaces a space (or a page placed in one) belongs to: home first."""
     if space is None:
         return []
     return [
@@ -69,7 +84,8 @@ def describe(document, user):
     """The current choice, the choices offered, and whether one can change it."""
     space = _space_of(document)
     in_space = space is not None and document != space
-    workspaces = _workspaces_of(space)
+    placed_in = _placed_in(document)
+    workspaces = _workspaces_of(space or (document if placed_in else None))
     reach = document.computed_link_reach
     teams = _workspace_teams(document)
 
@@ -86,7 +102,10 @@ def describe(document, user):
 
     options = [PUBLIC, PLATFORM]
     options += [f"{WORKSPACE_PREFIX}{workspace.id}" for workspace in workspaces]
-    options.append(SPACE if in_space else INVITED)
+    # Collaborators: a page placed in a workspace can't be hidden from its
+    # members (it would leave the workspace first)
+    if not placed_in:
+        options.append(SPACE if in_space else INVITED)
 
     return {
         "value": value,
@@ -137,6 +156,16 @@ class DocumentVisibilityView(APIView):
         link_role = request.data.get("link_role") or choices.LinkRoleChoices.READER
         if link_role not in LINK_ROLES:
             raise drf.exceptions.ValidationError({"link_role": _("Unknown role.")})
+        # Collaborators: a live wiki stays public and read-only
+        publishing.check_live_wiki_link(
+            document,
+            choices.LinkReachChoices.PUBLIC
+            if value == PUBLIC
+            else choices.LinkReachChoices.RESTRICTED,
+            link_role
+            if value in (PUBLIC, PLATFORM)
+            else choices.LinkRoleChoices.READER,
+        )
 
         was_public = document.link_reach == choices.LinkReachChoices.PUBLIC
         # A space published live as a wiki shows its public pages: narrowing
@@ -171,10 +200,24 @@ class DocumentVisibilityView(APIView):
         }.get(value, choices.LinkReachChoices.RESTRICTED)
         in_space = state["space"] is not None
         with transaction.atomic():
-            # The workspace roles this setting gave go, but the one chosen
-            document.accesses.filter(
+            # The workspace roles this setting gave go, but the one chosen.
+            # Collaborators: on a space (or a page placed in a workspace), it
+            # gives its home workspace's: the other workspaces sharing it
+            # grant their members themselves, and a page placed in a
+            # workspace keeps its members
+            given = document.accesses.filter(
                 team__startswith=WORKSPACE_PREFIX, role=choices.RoleChoices.READER
-            ).exclude(team=value).delete()
+            ).exclude(team=value)
+            if document.is_root():
+                home = _workspaces_of(document)[:1]
+                given = given.filter(
+                    team__in=[
+                        f"{WORKSPACE_PREFIX}{workspace.id}"
+                        for workspace in home
+                        if workspace != _placed_in(document)
+                    ]
+                )
+            given.delete()
             if value.startswith(WORKSPACE_PREFIX):
                 access = document.accesses.filter(team=value).first()
                 if access is None:

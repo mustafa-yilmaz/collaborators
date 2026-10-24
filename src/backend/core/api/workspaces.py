@@ -18,7 +18,7 @@ from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.views import APIView
 
 from core import choices, joining, models
-from core.api import permissions
+from core.api import permissions, publishing
 from core.api.people_privacy import check_can_find
 from core.api.serializers import ListDocumentSerializer, UserSerializer
 from core.utils.treebeard import create_tree_node_with_retry
@@ -958,6 +958,8 @@ class SpaceViewSet(
             raise drf.exceptions.ValidationError(
                 {"workspace_id": _("You are not a member of this workspace.")}
             )
+        # Collaborators: its publishing policy holds for what moves in
+        publishing.check_public_moving_in(request.user, space, workspace)
         with transaction.atomic():
             place_space_in_workspace(space, workspace)
         return drf.response.Response(self.get_serializer(space).data)
@@ -1004,10 +1006,10 @@ class SpaceViewSet(
         if not is_workspace_admin(home, request.user):
             raise drf.exceptions.PermissionDenied()
         with transaction.atomic():
-            for link in space.workspace_links.select_related("workspace"):
-                models.DocumentAccess.objects.filter(
-                    document=space, team__in=get_workspace_teams(link.workspace)
-                ).delete()
+            # Collaborators: on its pages too
+            models.drop_workspace_roles(
+                space, space.workspace_links.values_list("workspace_id", flat=True)
+            )
             space.workspace_links.all().delete()
             models.DocumentAccess.objects.update_or_create(
                 document=space,
@@ -1059,9 +1061,8 @@ class SpaceViewSet(
         if not (is_home_admin or is_workspace_admin(workspace, request.user)):
             raise drf.exceptions.PermissionDenied()
         with transaction.atomic():
-            models.DocumentAccess.objects.filter(
-                document=space, team__in=get_workspace_teams(workspace)
-            ).delete()
+            # Collaborators: on its pages too
+            models.drop_workspace_roles(space, [workspace.id])
             models.SpaceWorkspaceLink.objects.filter(
                 space=space, workspace=workspace, is_home=False
             ).delete()

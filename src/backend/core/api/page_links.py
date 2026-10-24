@@ -19,7 +19,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 
 from core import choices, models
-from core.api import permissions
+from core.api import permissions, publishing
 
 EDITING_ROLES = (
     choices.RoleChoices.EDITOR,
@@ -169,28 +169,32 @@ class MakePageIndependentView(APIView):
             raise drf.exceptions.ValidationError(
                 {"document": _("This page is already independent.")}
             )
+        old_workspaces = workspaces_of_root(page)
         with transaction.atomic():
             page.move(page.get_root(), pos="last-sibling")
             page.refresh_from_db()
             page.accesses.all().delete()
             page.invitations.all().delete()
+            # Collaborators: the workspaces it left gave roles below it too
+            models.drop_workspace_roles(page, old_workspaces)
             models.DocumentAccess.objects.create(
                 document=page, user=user, role=choices.RoleChoices.OWNER
             )
         return drf.response.Response({"id": str(page.id)})
 
 
+def workspaces_of_root(page):
+    """Collaborators: the workspaces holding the page's space (or top page)."""
+    root = page if page.is_root() else page.get_root()
+    return list(root.workspace_links.values_list("workspace_id", flat=True))
+
+
 def take_page_out_of_workspaces(page):
     """A top-level page leaves the workspaces it was placed in, and their roles."""
     workspace_ids = list(page.workspace_links.values_list("workspace_id", flat=True))
     page.workspace_links.all().delete()
-    page.accesses.filter(
-        team__in=[
-            models.make_team(kind, workspace_id)
-            for workspace_id in workspace_ids
-            for kind in (models.TEAM_WORKSPACE, models.TEAM_WORKSPACE_ADMINS)
-        ]
-    ).delete()
+    # Collaborators: on the pages below it too, its groups' included
+    models.drop_workspace_roles(page, workspace_ids)
 
 
 class MovePageToWorkspaceView(APIView):
@@ -222,6 +226,9 @@ class MovePageToWorkspaceView(APIView):
             raise drf.exceptions.ValidationError(
                 {"workspace_id": _("This page is already in this workspace.")}
             )
+        # Collaborators: its publishing policy holds for what moves in
+        publishing.check_public_moving_in(user, page, workspace)
+        old_workspaces = workspaces_of_root(page)
         with transaction.atomic():
             if not page.is_root():
                 # Out of its space or parent page first: its accesses came
@@ -230,6 +237,7 @@ class MovePageToWorkspaceView(APIView):
                 page.refresh_from_db()
                 page.accesses.all().delete()
                 page.invitations.all().delete()
+                models.drop_workspace_roles(page, old_workspaces)
                 models.DocumentAccess.objects.create(
                     document=page, user=user, role=choices.RoleChoices.OWNER
                 )

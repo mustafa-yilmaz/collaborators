@@ -1065,6 +1065,12 @@ class DocumentViewSet(
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Collaborators: the workspaces holding it before the move
+        old_root = document if document.is_root() else document.get_root()
+        old_workspaces = list(
+            old_root.workspace_links.values_list("workspace_id", flat=True)
+        )
+
         try:
             document.move(target_document, pos=position)
         except InvalidMoveToDescendant:
@@ -1119,6 +1125,9 @@ class DocumentViewSet(
             page=document,
             space=document if document.is_root() else document.get_root(),
         ).delete()
+
+        # Collaborators: its workspaces after the move
+        models.follow_workspaces_after_move(document, old_root, old_workspaces)
 
         # The document and its descendants now inherit the accesses and the link
         # definition of other ancestors, whether or not a direct access was
@@ -1969,6 +1978,12 @@ class DocumentViewSet(
             document, data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
+        # Collaborators: a live wiki stays public and read-only
+        publishing.check_live_wiki_link(
+            document,
+            serializer.validated_data.get("link_reach", document.link_reach),
+            serializer.validated_data.get("link_role", document.link_role),
+        )
 
         # Publishing to the web follows the workspace's publishing policy, and
         # is recorded in its publishing log

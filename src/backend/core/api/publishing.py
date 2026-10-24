@@ -57,6 +57,65 @@ def home_workspace(document):
     return link.workspace if link else None
 
 
+def is_live_wiki(document):
+    """Collaborators: a space published as a wiki showing its live pages."""
+    return (
+        document.is_space
+        and bool(document.wiki_slug)
+        and document.wiki_release_id is None
+        and document.link_reach == choices.LinkReachChoices.PUBLIC
+    )
+
+
+def check_live_wiki_link(document, link_reach, link_role):
+    """
+    Collaborators: a live wiki stays public and read-only for those not
+    invited, whichever setting changes its link (unpublishing comes first).
+    """
+    if not is_live_wiki(document):
+        return
+    if link_reach != choices.LinkReachChoices.PUBLIC:
+        raise drf.exceptions.ValidationError(
+            {
+                "link_reach": _(
+                    "This space is published as a public wiki: unpublish "
+                    "the wiki first (Publish to the web, below)."
+                )
+            }
+        )
+    if link_role != choices.LinkRoleChoices.READER:
+        raise drf.exceptions.ValidationError(
+            {"link_role": _("A public wiki is read-only for those not invited.")}
+        )
+
+
+def may_publish_in(user, workspace):
+    """Collaborators: whether the workspace lets the user publish."""
+    return (
+        workspace.publishing_policy != choices.PublishingPolicyChoices.WORKSPACE_ADMINS
+        or workspace.get_role(user) in choices.WORKSPACE_PRIVILEGED_ROLES
+    )
+
+
+def check_public_moving_in(user, document, workspace):
+    """
+    Collaborators: moving public pages into a workspace that lets only its
+    administrators publish, needs to be one of them (or to close them first).
+    """
+    is_public = models.Document.objects.filter(
+        path__startswith=document.path,
+        link_reach=choices.LinkReachChoices.PUBLIC,
+        ancestors_deleted_at__isnull=True,
+    ).exists()
+    if is_public and not may_publish_in(user, workspace):
+        raise drf.exceptions.PermissionDenied(
+            _(
+                "This workspace only lets its administrators publish: make "
+                "it non-public first, or ask one of them."
+            )
+        )
+
+
 def can_publish(user, document, abilities=None):
     """
     Whether the user may publish the document to the web: they manage its

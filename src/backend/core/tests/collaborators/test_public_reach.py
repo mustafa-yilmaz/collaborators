@@ -325,3 +325,200 @@ def test_starred_pages_leave_once_they_cant_be_opened():
 def test_unknown_logo_ids_are_refused_quietly():
     """A file address that names no document opens nothing."""
     assert publishing.is_wiki_file(f"not-an-id/attachments/{uuid4()}.png") is False
+
+
+# -- Settings that kept or removed access quietly
+
+
+def team(kind, workspace):
+    """A workspace's team string."""
+    return models.make_team(kind, workspace.id)
+
+
+def visibility(user, document, **data):
+    """Read, or change when data is given, who can see the document."""
+    url = f"/api/v1.0/documents/{document.id}/visibility/"
+    if not data:
+        return client_for(user).get(url)
+    return client_for(user).put(url, data, format="json")
+
+
+def test_a_page_placed_in_a_workspace_keeps_its_members():
+    """Its members can't be shut out from "Who can see this?"."""
+    owner, member = factories.UserFactory(), factories.UserFactory()
+    workspace = models.Workspace.objects.create(name="Acme")
+    for user in (owner, member):
+        models.WorkspaceAccess.objects.create(workspace=workspace, user=user)
+    page = factories.DocumentFactory(users=[(owner, "owner")], link_reach="restricted")
+    response = client_for(owner).post(
+        f"/api/v1.0/documents/{page.id}/move-to-workspace/",
+        {"workspace_id": str(workspace.id)},
+        format="json",
+    )
+    assert response.status_code == 200
+    members = team(models.TEAM_WORKSPACE, workspace)
+
+    state = visibility(owner, page).json()
+    assert state["value"] == members
+    assert "invited" not in state["options"]
+    assert visibility(owner, page, value="invited").status_code == 400
+
+    assert visibility(owner, page, value="public").status_code == 200
+    assert visibility(owner, page, value=members).status_code == 200
+    assert page.accesses.filter(team=members).exists()
+    response = client_for(fresh(member)).get(f"/api/v1.0/documents/{page.id}/")
+    assert response.status_code == 200
+
+
+def test_a_spaces_setting_leaves_other_workspaces_grants_alone():
+    """Choosing its home's members keeps what a sharing workspace granted."""
+    owner = factories.UserFactory()
+    space = factories.DocumentFactory(
+        kind="space", link_reach="restricted", users=[(owner, "owner")]
+    )
+    home = workspace_of(space, owner)
+    partner = models.Workspace.objects.create(name="Partner")
+    models.SpaceWorkspaceLink.objects.create(space=space, workspace=partner)
+    models.DocumentAccess.objects.create(
+        document=space, team=team(models.TEAM_WORKSPACE, partner), role="reader"
+    )
+
+    response = visibility(owner, space, value=team(models.TEAM_WORKSPACE, home))
+    assert response.status_code == 200
+    teams = set(space.accesses.values_list("team", flat=True))
+    assert team(models.TEAM_WORKSPACE, partner) in teams
+    assert team(models.TEAM_WORKSPACE, home) in teams
+    # Narrowed again, the home's members go, the partner's stay
+    assert visibility(owner, space, value="invited").status_code == 200
+    teams = set(space.accesses.values_list("team", flat=True))
+    assert team(models.TEAM_WORKSPACE, home) not in teams
+    assert team(models.TEAM_WORKSPACE, partner) in teams
+
+
+def test_a_live_wiki_stays_public_and_read_only():
+    """Neither setting makes it editable by anyone, nor empties it."""
+    owner = factories.UserFactory()
+    space = public_space(owner, wiki_slug="handbook")
+
+    response = visibility(owner, space, value="public", link_role="editor")
+    assert response.status_code == 400
+    url = f"/api/v1.0/documents/{space.id}/link-configuration/"
+    for data in (
+        {"link_reach": "restricted"},
+        {"link_reach": "public", "link_role": "editor"},
+    ):
+        response = client_for(owner).put(url, data, format="json")
+        assert response.status_code == 400
+    space.refresh_from_db()
+    assert (space.link_reach, space.link_role) == ("public", "reader")
+    assert client_for().get("/api/v1.0/wiki/handbook/").status_code == 200
+
+
+# -- Leaving a workspace, moving
+
+
+def test_leaving_a_workspace_takes_its_roles_below_too():
+    """Made independent, or unshared, no role a workspace gave stays inside."""
+    owner = factories.UserFactory()
+    space = factories.DocumentFactory(
+        kind="space", link_reach="restricted", users=[(owner, "owner")]
+    )
+    home = workspace_of(space, owner)
+    partner = models.Workspace.objects.create(name="Partner")
+    models.WorkspaceAccess.objects.create(
+        workspace=partner, user=owner, role=WorkspaceRoleChoices.ADMIN
+    )
+    models.SpaceWorkspaceLink.objects.create(space=space, workspace=partner)
+    group = models.Group.objects.create(workspace=home, name="Board")
+    page = factories.DocumentFactory(parent=space, link_reach="restricted")
+    below = factories.DocumentFactory(parent=page, link_reach="restricted")
+    models.DocumentAccess.objects.create(
+        document=page, team=team(models.TEAM_WORKSPACE, partner), role="reader"
+    )
+    models.DocumentAccess.objects.create(
+        document=below, team=team(models.TEAM_WORKSPACE, home), role="reader"
+    )
+    models.DocumentAccess.objects.create(document=below, team=group.team)
+
+    response = client_for(owner).delete(
+        f"/api/v1.0/spaces/{space.id}/links/",
+        {"workspace_id": str(partner.id)},
+        format="json",
+    )
+    assert response.status_code == 204
+    assert not page.accesses.filter(team__isnull=False).exists()
+    assert below.accesses.count() == 2
+
+    response = client_for(owner).post(f"/api/v1.0/spaces/{space.id}/make-independent/")
+    assert response.status_code == 200
+    assert not models.DocumentAccess.objects.filter(
+        document__path__startswith=space.path, team__startswith="workspace"
+    ).exists()
+    assert not below.accesses.exists()
+
+
+def test_a_placed_page_moved_under_another_leaves_its_workspace():
+    """Under another page it follows that page; on top it keeps its members."""
+    owner = factories.UserFactory()
+    workspace = models.Workspace.objects.create(name="Acme")
+    models.WorkspaceAccess.objects.create(
+        workspace=workspace, user=owner, role=WorkspaceRoleChoices.OWNER
+    )
+    page = factories.DocumentFactory(users=[(owner, "owner")])
+    client_for(owner).post(
+        f"/api/v1.0/documents/{page.id}/move-to-workspace/",
+        {"workspace_id": str(workspace.id)},
+        format="json",
+    )
+    other = factories.DocumentFactory(users=[(owner, "owner")])
+
+    # Reordered among top pages, it stays in the workspace, with its members
+    response = client_for(owner).post(
+        f"/api/v1.0/documents/{page.id}/move/",
+        {"target_document_id": str(other.id), "position": "left"},
+        format="json",
+    )
+    assert response.status_code == 200
+    assert page.workspace_links.exists()
+    assert page.accesses.filter(team=team(models.TEAM_WORKSPACE, workspace)).exists()
+
+    response = client_for(owner).post(
+        f"/api/v1.0/documents/{page.id}/move/",
+        {"target_document_id": str(other.id), "position": "last-child"},
+        format="json",
+    )
+    assert response.status_code == 200
+    assert not page.workspace_links.exists()
+    assert not page.accesses.filter(team__startswith="workspace").exists()
+
+
+def test_moving_public_pages_into_a_workspace_follows_its_policy():
+    """Only its administrators publish: others can't bring public pages in."""
+    member, admin = factories.UserFactory(), factories.UserFactory()
+    workspace = models.Workspace.objects.create(
+        name="Acme", publishing_policy="workspace_admins"
+    )
+    models.WorkspaceAccess.objects.create(workspace=workspace, user=member)
+    models.WorkspaceAccess.objects.create(
+        workspace=workspace, user=admin, role=WorkspaceRoleChoices.ADMIN
+    )
+
+    for user in (member, admin):
+        space = public_space(user)
+        response = client_for(user).post(
+            f"/api/v1.0/spaces/{space.id}/move-to-workspace/",
+            {"workspace_id": str(workspace.id)},
+            format="json",
+        )
+        assert response.status_code == (403 if user == member else 200)
+
+        page = factories.DocumentFactory(
+            users=[(user, "owner")], link_reach="restricted"
+        )
+        factories.DocumentFactory(parent=page, link_reach="public")
+        response = client_for(user).post(
+            f"/api/v1.0/documents/{page.id}/move-to-workspace/",
+            {"workspace_id": str(workspace.id)},
+            format="json",
+        )
+        assert response.status_code == (403 if user == member else 200)

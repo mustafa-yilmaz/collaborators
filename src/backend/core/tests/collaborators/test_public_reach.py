@@ -522,3 +522,85 @@ def test_moving_public_pages_into_a_workspace_follows_its_policy():
             format="json",
         )
         assert response.status_code == (403 if user == member else 200)
+
+
+# -- Pages linked into a public space
+
+
+def linked_into(space):
+    """A page of a private space, with a page below and one kept private."""
+    owner = factories.UserFactory()
+    home = factories.DocumentFactory(
+        kind="space", title="Board", link_reach="restricted", users=[(owner, "owner")]
+    )
+    page = factories.DocumentFactory(
+        parent=home, title="Minutes", link_reach="restricted"
+    )
+    below = factories.DocumentFactory(
+        parent=page, title="March", link_reach="restricted"
+    )
+    private = factories.DocumentFactory(
+        parent=page, title="Pay", link_reach="restricted", keep_private=True
+    )
+    models.PageSpaceLink.objects.create(page=page, space=space)
+    return home, page, below, private
+
+
+def opens(document, user=None):
+    """Whether the user can open the document."""
+    return (
+        client_for(user).get(f"/api/v1.0/documents/{document.id}/").status_code == 200
+    )
+
+
+def test_a_page_linked_into_a_public_space_is_public_through_it():
+    """It and its pages are public, down to a page kept private; not its home."""
+    space = public_space(factories.UserFactory())
+    home, page, below, private = linked_into(space)
+
+    for user in (None, factories.UserFactory()):
+        assert opens(page, user) and opens(below, user)
+        assert not opens(private, user)
+        assert not opens(home, user)
+    response = client_for().get(f"/api/v1.0/spaces/{space.id}/linked-pages/")
+    assert response.status_code == 200
+    assert [link["page"]["title"] for link in response.json()] == ["Minutes"]
+    children = client_for().get(f"/api/v1.0/documents/{page.id}/children/")
+    assert [child["title"] for child in children.json()["results"]] == ["March"]
+    assert media_auth(stored_file(below)) == 200
+    assert media_auth(stored_file(private)) == 403
+    # Read-only, as the space's link
+    response = client_for().get(f"/api/v1.0/documents/{page.id}/").json()
+    assert response["abilities"]["update"] is False
+
+
+def test_a_page_linked_into_a_space_open_to_everyone_signed_in():
+    """Signed in, anyone reads it; signed out, nobody."""
+    space = factories.DocumentFactory(kind="space", link_reach="authenticated")
+    _home, page, below, _private = linked_into(space)
+
+    assert not opens(page) and not opens(below)
+    assert opens(page, factories.UserFactory())
+    assert opens(below, factories.UserFactory())
+
+
+def test_a_linked_page_stops_being_public_with_its_space():
+    """Closed, trashed or unlinked, the space no longer opens the page."""
+    space = public_space(factories.UserFactory())
+    _home, page, _below, _private = linked_into(space)
+    assert opens(page)
+
+    space.link_reach = "restricted"
+    space.save()
+    assert not opens(page)
+    space.link_reach = "public"
+    space.save()
+    assert opens(page)
+
+    space.soft_delete()
+    assert not opens(page)
+    space.restore()
+    assert opens(page)
+
+    models.PageSpaceLink.objects.filter(page=page).delete()
+    assert not opens(page)

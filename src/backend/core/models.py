@@ -1048,6 +1048,8 @@ class DocumentQuerySet(MP_NodeQuerySet):
             return self.exclude(
                 models.Q(keep_private=True)
                 & ~models.Q(link_reach=LinkReachChoices.PUBLIC)
+                # Collaborators: nor public through a space it is linked into
+                & ~models.Q(linked_link_reach=LinkReachChoices.PUBLIC)
             )
         has_role = DocumentAccess.objects.filter(
             models.Q(user=user) | models.Q(team__in=user.teams),
@@ -1056,6 +1058,7 @@ class DocumentQuerySet(MP_NodeQuerySet):
         return self.exclude(
             models.Q(keep_private=True)
             & models.Q(link_reach=LinkReachChoices.RESTRICTED)
+            & models.Q(linked_link_reach=LinkReachChoices.RESTRICTED)
             & ~models.Exists(has_role)
             # Collaborators: read through a space it is linked into (it, or a
             # page above it, as `get_role` grants)
@@ -1166,6 +1169,18 @@ class Document(MP_Node, BaseModel):
     keep_private = models.BooleanField(default=False)
     # Let search engines index the page when it is public
     allow_indexing = models.BooleanField(default=False)
+    # Collaborators: the widest link of the spaces the page is linked into
+    # (PageSpaceLink), kept up to date by `refresh_linked_reach`. It reaches
+    # the page and the pages below it, as its own link does, down to a page
+    # kept private
+    linked_link_reach = models.CharField(
+        max_length=20,
+        choices=LinkReachChoices.choices,
+        default=LinkReachChoices.RESTRICTED,
+    )
+    linked_link_role = models.CharField(
+        max_length=20, choices=LinkRoleChoices.choices, default=LinkRoleChoices.READER
+    )
     # A space published as a wiki, at /wiki/<slug>, in its accent colour
     wiki_slug = models.SlugField(max_length=100, unique=True, null=True, blank=True)
     wiki_accent = models.CharField(max_length=7, blank=True, default="")
@@ -1470,12 +1485,26 @@ class Document(MP_Node, BaseModel):
             if ancestor.keep_private:
                 # nothing above a page kept private reaches it
                 ancestors_links = []
-            ancestors_links.append(
-                {"link_reach": ancestor.link_reach, "link_role": ancestor.link_role}
-            )
+            ancestors_links.extend(ancestor.own_link_definitions)
             paths_links_mapping[ancestor.path] = ancestors_links.copy()
 
         return paths_links_mapping
+
+    @property
+    def own_link_definitions(self):
+        """
+        Collaborators: the links the document gives itself and the pages
+        below it: its own, and that of the spaces it is linked into.
+        """
+        definitions = [self.link_definition]
+        if self.linked_link_reach != LinkReachChoices.RESTRICTED:
+            definitions.append(
+                {
+                    "link_reach": self.linked_link_reach,
+                    "link_role": self.linked_link_role,
+                }
+            )
+        return definitions
 
     @property
     def link_definition(self):
@@ -1580,10 +1609,8 @@ class Document(MP_Node, BaseModel):
             **self.ancestors_link_definition
         )
         link_definition = get_equivalent_link_definition(
-            [
-                self.ancestors_link_definition,
-                {"link_reach": self.link_reach, "link_role": self.link_role},
-            ]
+            # Collaborators: the spaces it is linked into too
+            [self.ancestors_link_definition, *self.own_link_definitions]
         )
 
         link_reach = link_definition["link_reach"]
@@ -3191,8 +3218,39 @@ def link_readable_q(user):
     page kept private takes none from the pages above it.
     """
     if user.is_authenticated:
-        return ~models.Q(link_reach=LinkReachChoices.RESTRICTED)
-    return models.Q(link_reach=LinkReachChoices.PUBLIC)
+        return ~models.Q(link_reach=LinkReachChoices.RESTRICTED) | ~models.Q(
+            linked_link_reach=LinkReachChoices.RESTRICTED
+        )
+    return models.Q(link_reach=LinkReachChoices.PUBLIC) | models.Q(
+        linked_link_reach=LinkReachChoices.PUBLIC
+    )
+
+
+def refresh_linked_reach(page_ids):
+    """
+    Collaborators: give these pages the widest link of the spaces they are
+    linked into (none in the trashbin). Returns the pages whose link changed.
+    """
+    changed = []
+    for page in Document.objects.filter(pk__in=list(page_ids)):
+        linked = get_equivalent_link_definition(
+            [
+                {"link_reach": reach, "link_role": role}
+                for reach, role in PageSpaceLink.objects.filter(
+                    page=page, space__ancestors_deleted_at__isnull=True
+                ).values_list("space__link_reach", "space__link_role")
+            ]
+        )
+        values = (
+            linked["link_reach"] or LinkReachChoices.RESTRICTED,
+            linked["link_role"] or LinkRoleChoices.READER,
+        )
+        if values != (page.linked_link_reach, page.linked_link_role):
+            Document.objects.filter(pk=page.pk).update(
+                linked_link_reach=values[0], linked_link_role=values[1]
+            )
+            changed.append(page.pk)
+    return changed
 
 
 def linked_reader_access(user, outer_path="path"):

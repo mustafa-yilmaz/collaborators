@@ -1369,9 +1369,8 @@ class DocumentViewSet(
                 ancestors_links = []
             # Compute cache for ancestors links to avoid many queries while computing
             # abilities for his documents in the tree!
-            ancestors_links.append(
-                {"link_reach": ancestor.link_reach, "link_role": ancestor.link_role}
-            )
+            # Collaborators: the spaces it is linked into too
+            ancestors_links.extend(ancestor.own_link_definitions)
             paths_links_mapping[ancestor.path] = ancestors_links.copy()
 
             if ancestor.depth < highest_readable.depth:

@@ -964,10 +964,18 @@ class SpaceViewSet(
             place_space_in_workspace(space, workspace)
         return drf.response.Response(self.get_serializer(space).data)
 
-    @drf.decorators.action(detail=True, methods=["get"], url_path="linked-pages")
+    @drf.decorators.action(
+        detail=True,
+        methods=["get"],
+        url_path="linked-pages",
+        # Collaborators: a public space's linked pages are public through it
+        permission_classes=[drf.permissions.AllowAny],
+    )
     def linked_pages(self, request, *args, **kwargs):
         """The pages of other spaces (or independent ones) linked into this one."""
-        space = self.get_object()
+        space = get_object_or_404_space(kwargs["pk"])
+        if not space.get_abilities(request.user)["retrieve"]:
+            raise drf.exceptions.NotFound()
         links = (
             space.linked_pages.filter(page__ancestors_deleted_at__isnull=True)
             .select_related("page")

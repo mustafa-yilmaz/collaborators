@@ -53,6 +53,14 @@ def document_post_save(sender, instance, created, **kwargs):  # pylint: disable=
 
     if not created and instance.link_definition_changed():
         reset_service_connections_on_commit(instance.pk)
+    # Collaborators: a space's link (or its going to the trashbin) reaches the
+    # pages linked into it
+    if not created and instance.is_space:
+        refresh_linked_pages(
+            models.PageSpaceLink.objects.filter(space=instance).values_list(
+                "page_id", flat=True
+            )
+        )
     # once committed: taken now, a save rolled back with its savepoint would
     # leave the snapshot of a value the database never got, and saving that
     # value again would report no change
@@ -116,3 +124,19 @@ def membership_changed(sender, instance, **kwargs):  # pylint: disable=unused-ar
             ]
         )
     forget_all_people()
+
+
+def refresh_linked_pages(page_ids):
+    """
+    Collaborators: pages linked into spaces take their widest link, and the
+    collaboration server re-checks who may read those whose link changed.
+    """
+    for page_id in models.refresh_linked_reach(page_ids):
+        reset_service_connections_on_commit(page_id)
+
+
+@receiver(signals.post_save, sender=models.PageSpaceLink)
+@receiver(signals.post_delete, sender=models.PageSpaceLink)
+def page_space_link_changed(sender, instance, **kwargs):  # pylint: disable=unused-argument
+    """Collaborators: a page linked into a space, or no longer, takes its link."""
+    refresh_linked_pages([instance.page_id])

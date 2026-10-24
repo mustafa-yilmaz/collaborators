@@ -361,7 +361,8 @@ def decode_logo(raw):
 class LogoMixin:
     """Read, set and remove the logo of an item."""
 
-    permission_classes = [permissions.IsAuthenticated]
+    # Collaborators: the logo of what is public shows signed out too
+    permission_classes = [permissions.IsAuthenticatedOrSafe]
 
     def get_item(self, request, pk, change):
         """The item, checking the user may see it (and change it)."""
@@ -399,10 +400,7 @@ class WorkspaceLogoView(LogoMixin, APIView):
     def get_item(self, request, pk, change):
         workspace = models.Workspace.objects.filter(id=pk).first()
         role = workspace and workspace.get_role(request.user)
-        if workspace is None or (
-            role is None
-            and workspace.visibility == choices.WorkspaceVisibilityChoices.HIDDEN
-        ):
+        if workspace is None or not workspace.is_shown_to(request.user):
             raise drf.exceptions.NotFound()
         if change and role not in choices.WORKSPACE_PRIVILEGED_ROLES:
             raise drf.exceptions.PermissionDenied()

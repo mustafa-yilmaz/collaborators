@@ -2,6 +2,16 @@
 # (which holds the certificates). Adapted from Docs' production template
 # (docker/files/production/etc/nginx/conf.d/default.conf.template): the files
 # are on MinIO, on this server, rather than an outside S3.
+# Collaborators: search engines may index the cover page, the legal and
+# guide pages, and what is published (pages, spaces and wikis, which tell
+# themselves when they may not be indexed); nothing else. An empty value
+# sends no header.
+map $uri $collaborators_robots {
+    default "noindex, nofollow";
+    "~^/(home/?)?$" "";
+    "~^/(page|space|wiki|legal-notice|privacy|accessibility|guide)/" "";
+}
+
 upstream docs_backend {
     server ${BACKEND_HOST}:8000 fail_timeout=0;
 }
@@ -22,6 +32,15 @@ server {
     server_tokens off;
 
     proxy_ssl_server_name on;
+
+    # Collaborators: see the map above (locations with headers of their own
+    # repeat it)
+    add_header X-Robots-Tag $collaborators_robots always;
+
+    location = /robots.txt {
+        default_type text/plain;
+        return 200 "User-agent: *\nDisallow: /api/\nDisallow: /admin/\nDisallow: /media/\nDisallow: /account/\nDisallow: /registrations/\nDisallow: /invite/\nDisallow: /join/\nDisallow: /signin/\nDisallow: /login/\nDisallow: /profile/\nDisallow: /labels/\nDisallow: /workspaces/\nDisallow: /workspace/\nDisallow: /user-reconciliations/\n";
+    }
 
     location @proxy_to_docs_backend {
         proxy_set_header Host $http_host;
@@ -111,6 +130,7 @@ server {
 
     
         add_header Content-Security-Policy "default-src 'none'" always;
+        add_header X-Robots-Tag "noindex" always;
     }
 
     location /media-auth {

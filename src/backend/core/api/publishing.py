@@ -418,6 +418,10 @@ class SpaceWikiView(APIView):
             space.link_reach == choices.LinkReachChoices.PUBLIC
         )
 
+        # Collaborators: its link before the wiki, to give it back afterwards
+        if not space.wiki_slug:
+            space.pre_wiki_link_reach = space.link_reach
+            space.pre_wiki_link_role = space.link_role
         space.wiki_slug = data["slug"]
         space.wiki_accent = data.get("accent", space.wiki_accent)
         space.allow_indexing = data["allow_indexing"]
@@ -440,6 +444,8 @@ class SpaceWikiView(APIView):
                     "wiki_domain",
                     "link_reach",
                     "link_role",
+                    "pre_wiki_link_reach",
+                    "pre_wiki_link_role",
                     "updated_at",
                 ]
             )
@@ -468,18 +474,28 @@ class SpaceWikiView(APIView):
         )
 
     def delete(self, request, resource_id):
-        """Take the wiki down; only invited people can read the space again."""
+        """
+        Take the wiki down. Collaborators: the space gets back the link it had
+        before (only invited people, when it isn't known).
+        """
         space = self._space(request, resource_id)
         slug = space.wiki_slug
         space.wiki_slug = None
         space.wiki_release = None
-        space.link_reach = choices.LinkReachChoices.RESTRICTED
+        space.link_reach = (
+            space.pre_wiki_link_reach or choices.LinkReachChoices.RESTRICTED
+        )
+        space.link_role = space.pre_wiki_link_role or space.link_role
+        space.pre_wiki_link_reach = space.pre_wiki_link_role = None
         with transaction.atomic():
             space.save(
                 update_fields=[
                     "wiki_slug",
                     "wiki_release",
                     "link_reach",
+                    "link_role",
+                    "pre_wiki_link_reach",
+                    "pre_wiki_link_role",
                     "updated_at",
                 ]
             )

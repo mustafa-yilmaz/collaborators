@@ -1169,6 +1169,14 @@ class Document(MP_Node, BaseModel):
     keep_private = models.BooleanField(default=False)
     # Let search engines index the page when it is public
     allow_indexing = models.BooleanField(default=False)
+    # Collaborators: a space's link before it was published as a wiki, given
+    # back when the wiki is unpublished
+    pre_wiki_link_reach = models.CharField(
+        max_length=20, choices=LinkReachChoices.choices, null=True, blank=True
+    )
+    pre_wiki_link_role = models.CharField(
+        max_length=20, choices=LinkRoleChoices.choices, null=True, blank=True
+    )
     # Collaborators: the widest link of the spaces the page is linked into
     # (PageSpaceLink), kept up to date by `refresh_linked_reach`. It reaches
     # the page and the pages below it, as its own link does, down to a page

@@ -165,7 +165,10 @@ def test_publish_space_as_wiki_and_read_it_signed_out():
 
 
 def test_wiki_addresses_are_unique_and_unpublishing_closes_the_space():
-    """Two wikis can't share an address; unpublishing makes the space private."""
+    """
+    Two wikis can't share an address; unpublishing closes the wiki.
+    Collaborators: the space gets back its reach from before the wiki.
+    """
     owner = factories.UserFactory()
     space, *_ = public_space(owner)
     other = factories.DocumentFactory(users=[(owner, "owner")], kind="space")
@@ -188,7 +191,8 @@ def test_wiki_addresses_are_unique_and_unpublishing_closes_the_space():
     assert client.delete(f"/api/v1.0/spaces/{space.id}/wiki/").status_code == 204
     assert client_for().get("/api/v1.0/wiki/handbook/").status_code == 404
     space.refresh_from_db()
-    assert space.link_reach == "restricted"
+    # it was public before being published as a wiki
+    assert space.link_reach == "public"
 
 
 def test_wiki_needs_a_space_and_its_admins():

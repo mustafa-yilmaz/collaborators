@@ -1214,13 +1214,21 @@ class JoinWorkspaceView(APIView):
 def directory_card(workspace, user):
     """What anyone allowed to find a workspace sees of it."""
     is_member = user.is_authenticated and workspace.accesses.filter(user=user).exists()
-    public_spaces = models.Document.objects.filter(
-        workspace_links__workspace=workspace,
-        workspace_links__is_home=True,
-        kind=choices.DocumentKindChoices.SPACE,
-        link_reach=choices.LinkReachChoices.PUBLIC,
-        ancestors_deleted_at__isnull=True,
-    ).order_by("title")[:10]
+    # Collaborators: its own spaces and those shared with it, open to the
+    # viewer by their link (public, or to everyone signed in)
+    reaches = [choices.LinkReachChoices.PUBLIC]
+    if user.is_authenticated:
+        reaches.append(choices.LinkReachChoices.AUTHENTICATED)
+    public_spaces = (
+        models.Document.objects.filter(
+            workspace_links__workspace=workspace,
+            kind=choices.DocumentKindChoices.SPACE,
+            link_reach__in=reaches,
+            ancestors_deleted_at__isnull=True,
+        )
+        .distinct()
+        .order_by("title")[:10]
+    )
     return {
         "id": str(workspace.id),
         "name": workspace.name,

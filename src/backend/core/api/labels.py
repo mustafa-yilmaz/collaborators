@@ -213,7 +213,8 @@ class LabelDetailView(APIView):
 class DocumentLabelsView(APIView):
     """A page's or a space's labels; those who can edit it change them."""
 
-    permission_classes = [permissions.IsAuthenticated]
+    # Collaborators: the labels of what is public show signed out too
+    permission_classes = [permissions.IsAuthenticatedOrSafe]
 
     def _document(self, user, resource_id):
         document = models.Document.objects.filter(
@@ -251,11 +252,12 @@ class DocumentLabelsView(APIView):
 class WorkspaceLabelsView(APIView):
     """A workspace's labels; its administrators change them."""
 
-    permission_classes = [permissions.IsAuthenticated]
+    # Collaborators: a public workspace's labels show signed out too
+    permission_classes = [permissions.IsAuthenticatedOrSafe]
 
     def _workspace(self, user, workspace_id):
-        workspace = visible_workspaces(user).filter(id=workspace_id).first()
-        if workspace is None:
+        workspace = models.Workspace.objects.filter(id=workspace_id).first()
+        if workspace is None or not workspace.is_shown_to(user):
             raise drf.exceptions.NotFound()
         return workspace
 

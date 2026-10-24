@@ -50,10 +50,9 @@ def public_space(owner, **kwargs):
     return factories.DocumentFactory(
         users=[(owner, "owner")],
         kind="space",
-        title="Handbook",
         link_reach="public",
         link_role="reader",
-        **kwargs,
+        **{"title": "Handbook", **kwargs},
     )
 
 
@@ -604,3 +603,109 @@ def test_a_linked_page_stops_being_public_with_its_space():
 
     models.PageSpaceLink.objects.filter(page=page).delete()
     assert not opens(page)
+
+
+# -- What is public, shown where it should
+
+
+def test_discover_shows_shared_spaces_and_those_open_to_everyone_signed_in():
+    """A findable workspace's card lists its own and shared spaces, by reach."""
+    owner = factories.UserFactory()
+    workspace = models.Workspace.objects.create(
+        name="Open Lab", visibility=WorkspaceVisibilityChoices.PUBLIC
+    )
+    own = public_space(owner, title="Handbook")
+    models.SpaceWorkspaceLink.objects.create(
+        space=own, workspace=workspace, is_home=True
+    )
+    shared = public_space(owner, title="Atlas")
+    models.SpaceWorkspaceLink.objects.create(space=shared, workspace=workspace)
+    signed_in = factories.DocumentFactory(
+        kind="space", title="Forum", link_reach="authenticated"
+    )
+    models.SpaceWorkspaceLink.objects.create(
+        space=signed_in, workspace=workspace, is_home=True
+    )
+    hidden = factories.DocumentFactory(
+        kind="space", title="Payroll", link_reach="restricted"
+    )
+    models.SpaceWorkspaceLink.objects.create(
+        space=hidden, workspace=workspace, is_home=True
+    )
+
+    def titles(user):
+        cards = client_for(user).get("/api/v1.0/workspaces/discover/").json()
+        card = next(card for card in cards if card["name"] == "Open Lab")
+        return [space["title"] for space in card["public_spaces"]]
+
+    assert titles(None) == ["Atlas", "Handbook"]
+    assert titles(factories.UserFactory()) == ["Atlas", "Forum", "Handbook"]
+
+
+def test_unpublishing_a_wiki_gives_the_space_its_former_reach():
+    """Open to everyone signed in before the wiki, it is so again after."""
+    owner = factories.UserFactory()
+    space = factories.DocumentFactory(
+        kind="space",
+        link_reach="authenticated",
+        link_role="commenter",
+        users=[(owner, "owner")],
+    )
+    url = f"/api/v1.0/spaces/{space.id}/wiki/"
+    assert (
+        client_for(owner).put(url, {"slug": "handbook"}, format="json").status_code
+        == 200
+    )
+    space.refresh_from_db()
+    assert (space.link_reach, space.link_role) == ("public", "reader")
+    # Updating the wiki keeps what it was before
+    client_for(owner).put(url, {"slug": "handbook-2"}, format="json")
+
+    assert client_for(owner).delete(url).status_code in (200, 204)
+    space.refresh_from_db()
+    assert (space.link_reach, space.link_role) == ("authenticated", "commenter")
+    assert space.pre_wiki_link_reach is None
+
+
+def test_logos_and_labels_of_what_is_public_show_signed_out():
+    """Public pages and workspaces show them to anyone; the rest to nobody."""
+    owner = factories.UserFactory()
+    page = public_space(owner)
+    private = factories.DocumentFactory(link_reach="restricted")
+    workspace = models.Workspace.objects.create(
+        name="Open Lab", visibility=WorkspaceVisibilityChoices.PUBLIC
+    )
+    hidden = models.Workspace.objects.create(name="Lab")
+    label = models.Label.get_or_create_named("Climate", owner)
+    for document in (page, private):
+        models.DocumentLabel.objects.create(document=document, label=label)
+        models.ItemLogo.objects.create(
+            document=document, content_type="image/png", data=b"png"
+        )
+    for item in (workspace, hidden):
+        models.WorkspaceLabel.objects.create(workspace=item, label=label)
+        models.ItemLogo.objects.create(
+            workspace=item, content_type="image/png", data=b"png"
+        )
+    anonymous = client_for()
+
+    assert anonymous.get(f"/api/v1.0/documents/{page.id}/logo/").status_code == 200
+    response = anonymous.get(f"/api/v1.0/documents/{page.id}/labels/")
+    assert response.json() == {"names": ["Climate"], "can_edit": False}
+    assert anonymous.get(f"/api/v1.0/workspaces/{workspace.id}/logo/").status_code == (
+        200
+    )
+    response = anonymous.get(f"/api/v1.0/workspaces/{workspace.id}/labels/")
+    assert response.json()["names"] == ["Climate"]
+
+    for url in (
+        f"/api/v1.0/documents/{private.id}/logo/",
+        f"/api/v1.0/documents/{private.id}/labels/",
+        f"/api/v1.0/workspaces/{hidden.id}/logo/",
+        f"/api/v1.0/workspaces/{hidden.id}/labels/",
+    ):
+        assert anonymous.get(url).status_code == 404
+    # Changing them still needs signing in
+    assert anonymous.put(
+        f"/api/v1.0/documents/{page.id}/labels/", {"names": []}, format="json"
+    ).status_code in (401, 403)

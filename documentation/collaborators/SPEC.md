@@ -195,7 +195,7 @@ See **section 3**: it is the largest single piece of work.
 
 **Built:** independent spaces and pages ("My spaces & pages" lists both, with a + for each), moving pages into and out of spaces, making spaces independent again, and linking a page into several spaces (`PageSpaceLink`).
 
-**Still to do:** a linked page opened from a public space isn't public through it (only roles on the linking space count). Part of job 2 of the order of work below.
+**Built 2026-10-25:** a page linked into a public space (or one open to everyone signed in) is public through it, read-only as the space, with its pages down to one kept private; its home is unchanged (`Document.linked_link_reach`, kept up to date when links or spaces change).
 
 ### F8 — Public sharing and public wikis
 
@@ -464,6 +464,11 @@ Done: the Loop table tweaks, Loop table v2 (T9, T5, T56), the wiki extras (F8), 
    - "Move up" and "Move down" in the "⠿" menu, with BlockNote's shortcuts ⌘/Ctrl ⇧ ↑/↓ shown beside them; they slide too;
    - on touch screens, a finger resting on the "⠿" (0.4 s) picks the block up; a line shows where it will land; lifting the finger drops it. A tap still opens the menu.
    - The motion never changes the editor's own elements (ProseMirror redraws them): the dimming is a style rule, the slide and the light are animations.
+5m. ✅ **What is public, checked and corrected** (job 2 of the order of work, built 2026-10-25; tests in `tests/collaborators/test_public_reach.py`):
+   - A workspace's visibility only decides who finds it (Discover, search, profiles); what is readable follows roles and links (a space's or page's own, passed down to pages below unless kept private, and that of the spaces a page is linked into).
+   - **Closed leaks:** a wiki logo is checked whole (a crafted one made another page's file public); files of a page kept private are no longer served through the public space above; a hidden workspace's name stays hidden (its spaces, wikis and address, which exists only if it publishes wikis); a space in the trashbin links nothing; search, linked pages, the label picker and "Starred" no longer show titles or labels of what one can't open.
+   - **Settings:** a page placed in a workspace keeps its members; a shared space's setting no longer removes what another workspace granted; a live wiki stays public and read-only; leaving a workspace takes its roles from the pages below too; moving public pages into a workspace follows its publishing policy.
+   - **Shown where it should:** Discover lists shared spaces and those open to everyone signed in; unpublishing a wiki gives back the space's former reach; logos and labels of public items show signed out; `robots.txt` and an `X-Robots-Tag: noindex` header keep search engines to the cover, legal and guide pages and what is published.
 6. **Sign-in providers in production** (Google, Microsoft and LinkedIn set up on collaborators.community 2026-10-20: the development apps with the production redirect addresses added; their credentials in the server's `env/sso.env`). Email (2026-10-20): Brevo, sending from noreply@collaborators.community (domain authenticated with DKIM; DMARC reject), for the app and Keycloak (set with `deploy/production/bin/set-smtp.sh`). Still to do: publishing the Google app (now in Testing: only its test users can sign in). Originally: production redirect addresses, publishing the Google app (home page and privacy policy), a real SMTP server for Keycloak (F2, see `sso-setup.md` → Production). Locally, Google, Microsoft and LinkedIn sign-in work (apps registered 2026-10-19); Apple and X are dropped.
 
 **After the first public version** (grant calls, built on labels):

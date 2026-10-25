@@ -17,7 +17,7 @@ import { css } from 'styled-components';
 import SearchIcon from '@/assets/icons/ui-kit/zoom-rounded.svg';
 import { Box, BoxButton, Icon, StyledLink, Text } from '@/components';
 import { useCunninghamTheme } from '@/cunningham';
-import { DocDefaultFilter, useTrans } from '@/docs/doc-management';
+import { DocDefaultFilter, readTarget, useTrans } from '@/docs/doc-management';
 import { orderItems, useSidebarOrder } from '@/features/dashboard/api';
 import { useLeftPanelStore } from '@/features/left-panel';
 import { MyCollaboratorsName } from '@/features/people/BrandName';
@@ -135,7 +135,7 @@ export const LeftPanelTargetFilters = () => {
   const { colorsTokens, spacingsTokens } = useCunninghamTheme();
 
   // No list is highlighted on the dashboard (no target)
-  const target = searchParams.get('target') as DocDefaultFilter | null;
+  const target = readTarget(searchParams.get('target'));
 
   // "My collaborations": what one is involved in, then the trash
   const defaultQueries: {

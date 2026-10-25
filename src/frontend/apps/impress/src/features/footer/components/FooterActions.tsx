@@ -5,7 +5,12 @@ import { createGlobalStyle } from 'styled-components';
 import { Box, Icon } from '@/components';
 import { Waffle } from '@/components/Waffle';
 import { useConfig } from '@/core';
-import { ButtonLogin, gotoLogout, useAuth } from '@/features/auth';
+import {
+  ButtonLogin,
+  gotoLogout,
+  hasPlatformLevel,
+  useAuth,
+} from '@/features/auth';
 import { HelpMenu } from '@/features/help';
 import { LanguagePicker } from '@/features/language/components/LanguagePicker';
 import { SidebarSideSwitch } from '@/features/left-panel/components/SidebarSideSwitch';
@@ -60,8 +65,8 @@ export const FooterActions = ({
     </Button>
   ) : undefined;
 
-  // Collaborators: platform administrators let newcomers in
-  const registrations = user?.is_platform_admin ? (
+  // Collaborators: platform managers (and those above) let newcomers in
+  const registrations = hasPlatformLevel(user, 'manager') ? (
     <Button
       size="small"
       variant="tertiary"

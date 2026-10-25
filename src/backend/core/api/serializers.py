@@ -71,22 +71,22 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserMeSerializer(UserSerializer):
     """
-    The signed-in user, with where their registration stands and whether
-    they decide on others' (platform administrator).
+    The signed-in user, with where their registration stands and their
+    level on the platform (core.platform_roles).
     """
 
-    is_platform_admin = serializers.BooleanField(source="is_staff", read_only=True)
+    platform_role = serializers.CharField(source="platform_level", read_only=True)
 
     class Meta(UserSerializer.Meta):
         fields = [
             *UserSerializer.Meta.fields,
             "registration_status",
-            "is_platform_admin",
+            "platform_role",
         ]
         read_only_fields = [
             *UserSerializer.Meta.read_only_fields,
             "registration_status",
-            "is_platform_admin",
+            "platform_role",
         ]
 
 

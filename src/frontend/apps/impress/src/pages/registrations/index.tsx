@@ -8,11 +8,11 @@ import { RegistrationList } from '@/features/registrations/RegistrationList';
 import { MainLayout } from '@/layouts';
 import { NextPageWithLayout } from '@/types/next';
 
-/** /registrations/: platform administrators let newcomers in. */
+/** /registrations/: platform managers let newcomers in. */
 const Page: NextPageWithLayout = () => {
   const { t } = useTranslation();
   const heading = t('New registrations', {
-    description: 'Title of the page where administrators approve newcomers',
+    description: 'Title of the page where platform managers approve newcomers',
   });
   const title = `${heading} - ${t('Docs', {
     description: 'Product name, shown in page titles and the logo',

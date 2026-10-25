@@ -1,16 +1,16 @@
 """
-Collaborators: new collaborators wait for a platform administrator to let
-them in (COLLABORATORS_SIGNUP_APPROVAL).
+Collaborators: new collaborators wait for a platform manager (or someone
+above, see core.platform_roles) to let them in
+(COLLABORATORS_SIGNUP_APPROVAL).
 
-Platform administrators are staff users. The people signing in with an email
-of COLLABORATORS_PLATFORM_ADMIN_EMAILS that their identity provider verified
-become platform administrators, let in at once, so a platform never waits
-for an administrator it doesn't have.
+The people signing in with an email of COLLABORATORS_PLATFORM_ADMIN_EMAILS
+that their identity provider verified become platform managers at least,
+let in at once, so a platform never waits for a manager it doesn't have.
 
 A newcomer waiting (pending) or declined stays signed in but counts as
 signed out everywhere except for reading who they are (users/me/), see
 `core.authentication.backends.SessionAuthentication`. They and the
-administrators are told by email, and the administrators in their inbox.
+managers are told by email, and the managers in their inbox.
 """
 
 import logging
@@ -19,7 +19,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 
-from core import joining, models
+from core import joining, models, platform_roles
 from core.choices import RegistrationStatusChoices
 
 logger = logging.getLogger(__name__)
@@ -29,8 +29,8 @@ PENDING = RegistrationStatusChoices.PENDING
 DECLINED = RegistrationStatusChoices.DECLINED
 
 
-def is_admin_email(user):
-    """Whether the user's verified email makes them a platform administrator."""
+def is_manager_email(user):
+    """Whether the user's verified email makes them a platform manager."""
     emails = {
         email.strip().lower()
         for email in settings.COLLABORATORS_PLATFORM_ADMIN_EMAILS
@@ -43,24 +43,25 @@ def is_admin_email(user):
     )
 
 
-def platform_admins():
-    """The administrators who decide on registrations."""
-    return models.User.objects.filter(
-        is_staff=True, is_active=True, registration_status=APPROVED
+def platform_managers():
+    """The managers (and those above them) who decide on registrations."""
+    return platform_roles.at_level(platform_roles.MANAGER).filter(
+        registration_status=APPROVED
     )
 
 
 def check_sign_in(user, is_new_user):
     """
-    At each sign-in: make a platform administrator of a listed email; put a
+    At each sign-in: make a platform manager of a listed email; put a
     newcomer on the waiting list when registrations need approval, and tell
-    them and the administrators.
+    them and the managers.
     """
-    if is_admin_email(user):
-        if not user.is_staff or user.registration_status != APPROVED:
-            user.is_staff = True
+    if is_manager_email(user):
+        if not platform_roles.has_level(user, platform_roles.MANAGER):
+            platform_roles.set_role(user, platform_roles.MANAGER, source="settings")
+        if user.registration_status != APPROVED:
             user.registration_status = APPROVED
-            user.save(update_fields=["is_staff", "registration_status", "updated_at"])
+            user.save(update_fields=["registration_status", "updated_at"])
             _clear_signup_notifications(user)
         return
     if not is_new_user or not settings.COLLABORATORS_SIGNUP_APPROVAL:
@@ -70,7 +71,7 @@ def check_sign_in(user, is_new_user):
         return
     user.registration_status = PENDING
     user.save(update_fields=["registration_status", "updated_at"])
-    for admin in platform_admins():
+    for admin in platform_managers():
         models.Notification.objects.create(
             recipient=admin, actor=user, kind=models.Notification.KIND_SIGNUP
         )
@@ -131,7 +132,7 @@ def decline(user):
 
 
 def _clear_signup_notifications(user):
-    """Once decided, the registration leaves every administrator's inbox."""
+    """Once decided, the registration leaves every manager's inbox."""
     models.Notification.objects.filter(
         kind=models.Notification.KIND_SIGNUP, actor=user
     ).delete()

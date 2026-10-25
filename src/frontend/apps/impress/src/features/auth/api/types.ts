@@ -13,10 +13,28 @@ export interface User {
   full_name: string;
   short_name: string;
   language?: string;
-  /** Collaborators: a newcomer waits for a platform administrator */
+  /** Collaborators: a newcomer waits for a platform manager */
   registration_status?: 'approved' | 'pending' | 'declined';
-  /** Decides on others' registrations */
-  is_platform_admin?: boolean;
+  /** The level on the platform (see PLATFORM_LEVELS) */
+  platform_role?: PlatformRole;
 }
+
+/** Collaborators: the levels of the platform, lowest first. */
+export const PLATFORM_LEVELS = [
+  'collaborator',
+  'manager',
+  'administrator',
+  'owner',
+] as const;
+
+export type PlatformRole = (typeof PLATFORM_LEVELS)[number];
+
+/** Whether someone is at this level of the platform or above. */
+export const hasPlatformLevel = (
+  user: Pick<User, 'platform_role'> | null | undefined,
+  role: PlatformRole,
+) =>
+  PLATFORM_LEVELS.indexOf(user?.platform_role ?? 'collaborator') >=
+  PLATFORM_LEVELS.indexOf(role);
 
 export type UserLight = Pick<User, 'full_name' | 'short_name'>;

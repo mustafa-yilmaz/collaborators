@@ -125,8 +125,17 @@ export enum DocDefaultFilter {
   NOTIFICATIONS = 'notifications',
   LABELS = 'labels',
   // The people one may see: "My Collaborators"
-  PEOPLE = 'people',
+  PEOPLE = 'collaborators',
 }
+
+/**
+ * Collaborators: the list asked for by the address (?target=…), if any;
+ * "people", the former address of My Collaborators, still opens it.
+ */
+export const readTarget = (param: string | null): DocDefaultFilter | null =>
+  param === 'people'
+    ? DocDefaultFilter.PEOPLE
+    : (param as DocDefaultFilter | null);
 
 export type DocsOrdering =
   | 'title'

@@ -50,7 +50,7 @@ Collaborators  (collaborators.community)
 
 | Level | Roles |
 |---|---|
-| Platform | Platform owner · Platform administrator · Platform manager · Collaborator *(to build: today only platform admins, staff users, and collaborators)* |
+| Platform | Platform owner · Platform administrator · Platform manager · Collaborator |
 | Workspace | Owner · Admin · Member |
 | Space / page | Owner · Administrator · Editor · Commenter · Reader *(Docs' existing `RoleChoices`)* |
 
@@ -62,6 +62,8 @@ Space and page access can be granted to a collaborator or to a **group**.
 - **Platform administrator:** suspends or removes accounts, from the platform and from Keycloak, with their pages handed over or deleted; handles content reports; appoints managers.
 - **Platform owner:** appoints administrators and owners; full `/admin/` rights; platform-wide settings.
 - Every action of these levels is logged.
+- **Built 2026-10-25 (step 1):** the levels (`User.platform_role`, `core/platform_roles.py`; a superuser counts as an owner) and the **platform log** (`PlatformLog`, read only in `/admin/`), which records every change of level with who made it (or the command line, the settings, the migration). Owners alone open `/admin/` (they are its superusers); the other levels act in the app. Migration 0061 made the former staff users managers and superusers owners. Registrations are decided by managers and above (the emails of `COLLABORATORS_PLATFORM_ADMIN_EMAILS` become managers at sign-in). `manage.py set_platform_role <email> <level>` sets a level until appointing is in the app.
+  - **Manage Collaborators:** a tab of the "My CO✍️✍️ABORATORS" screen (now at `/?target=collaborators`; `/?target=people` still opens it), for managers and above: everyone with an account, newest first, with their level, registration, email (verified or not), when they joined and last signed in, their workspaces and the pages they own; found by name or email, level or registration status (`GET platform/people/`, 50 a page).
 
 ---
 
@@ -413,7 +415,7 @@ Moved out of the table v1:
 3. ✅ **Live checks, with the owner:** an invitation email accepted from a second address; dragging a table column and hiding then showing the header row on a live table; the space and workspace screens; press-and-hold block dragging on a phone. Done 2026-10-25; only the touch screens are left (see "Later" below).
 4. ✅ **Publishing the Google sign-in app** (item 6 below): done 2026-10-25, tried with an account outside the test users.
 5. **Microsoft and LinkedIn sign-in in production:** checked live; the LinkedIn app's settings in its developer portal (linkedin.com/developers) checked or completed.
-5b. **Platform roles** (see section 1, Roles): four levels instead of two. Build order suggested, not yet confirmed: the levels and the People screen, then suspending and removing accounts, then appointing, then reports and settings.
+5b. **Platform roles** (see section 1, Roles): four levels instead of two. Steps: ✅ the levels and the list of everyone ("Manage Collaborators", 2026-10-25); then suspending and removing accounts; then appointing; then reports and settings (this order suggested, not yet confirmed).
 6. **Grant calls** (items 7–10 below), once the owner has decided where calls come from.
 7. **Input from one's own AI tools** (item 11 below), once the owner has decided its first ways in.
 8. Last: a README of Collaborators for the GitHub repository.

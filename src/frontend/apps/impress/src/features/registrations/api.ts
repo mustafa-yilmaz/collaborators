@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { APIError, errorCauses, fetchAPI } from '@/api';
 
-/** A newcomer's registration, as platform administrators see it. */
+/** A newcomer's registration, as platform managers see it. */
 export interface Registration {
   id: string;
   full_name: string;

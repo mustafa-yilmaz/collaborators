@@ -15,6 +15,7 @@ from core.api import (
     notifications,
     page_links,
     people,
+    platform,
     profiles,
     publishing,
     registrations,
@@ -171,6 +172,7 @@ urlpatterns = [
                     "registrations/<uuid:user_id>/decline/",
                     registrations.RegistrationDecisionView.as_view(decision="decline"),
                 ),
+                path("platform/people/", platform.PlatformPeopleView.as_view()),
                 path("collaborations/", collaborations.CollaborationsView.as_view()),
                 path("search/", search.SearchView.as_view()),
                 path(

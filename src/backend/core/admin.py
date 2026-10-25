@@ -48,6 +48,8 @@ class UserAdmin(auth_admin.UserAdmin):
                 "fields": (
                     "is_active",
                     "is_device",
+                    # Collaborators: changed by set_platform_role, which logs it
+                    "platform_role",
                     "is_staff",
                     "is_superuser",
                     "groups",
@@ -73,13 +75,20 @@ class UserAdmin(auth_admin.UserAdmin):
         "admin_email",
         "email",
         "is_active",
+        "platform_role",
         "is_staff",
         "is_superuser",
         "is_device",
         "created_at",
         "updated_at",
     )
-    list_filter = ("is_staff", "is_superuser", "is_device", "is_active")
+    list_filter = (
+        "platform_role",
+        "is_staff",
+        "is_superuser",
+        "is_device",
+        "is_active",
+    )
     ordering = (
         "is_active",
         "-is_superuser",
@@ -91,6 +100,7 @@ class UserAdmin(auth_admin.UserAdmin):
     readonly_fields = (
         "id",
         "sub",
+        "platform_role",
         "email",
         "full_name",
         "short_name",
@@ -256,3 +266,21 @@ class InvitationAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         obj.issuer = request.user
         obj.save()
+
+
+@admin.register(models.PlatformLog)
+class PlatformLogAdmin(admin.ModelAdmin):
+    """Collaborators: the platform log, read only."""
+
+    list_display = ("created_at", "action", "actor_name", "target_name", "details")
+    list_filter = ("action",)
+    search_fields = ("actor_name", "target_name")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

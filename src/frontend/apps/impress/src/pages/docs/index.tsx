@@ -4,7 +4,7 @@ import type { PropsWithChildren, ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
-import { DocDefaultFilter, useTrans } from '@/docs/doc-management';
+import { DocDefaultFilter, readTarget, useTrans } from '@/docs/doc-management';
 import { CollaborationsScreen } from '@/features/collaborations/CollaborationsScreen';
 import { Dashboard } from '@/features/dashboard/Dashboard';
 import { HeaderFloatingBar } from '@/features/header/components/HeaderFloatingBar';
@@ -18,7 +18,7 @@ const Page: NextPageWithLayout = () => {
   const { transFilter } = useTrans();
   const { isDesktop } = useResponsiveStore();
   const searchParams = useSearchParams();
-  const targetParam = searchParams.get('target') as DocDefaultFilter | null;
+  const targetParam = readTarget(searchParams.get('target'));
   const target = targetParam ?? DocDefaultFilter.ALL_DOCS;
   // Without a list chosen in the left panel, the home is the dashboard
   const isDashboard = !targetParam;

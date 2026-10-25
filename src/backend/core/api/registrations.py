@@ -1,5 +1,5 @@
 """
-Collaborators: the registrations platform administrators decide on (see
+Collaborators: the registrations platform managers decide on (see
 core.registrations).
 
     GET  /api/v1.0/registrations/?status=pending|declined
@@ -10,15 +10,17 @@ core.registrations).
 import rest_framework as drf
 from rest_framework.views import APIView
 
-from core import models, registrations
+from core import models, platform_roles, registrations
 from core.api import permissions
 
 
-class IsPlatformAdmin(permissions.IsAuthenticated):
-    """Only platform administrators (staff users) decide on registrations."""
+class IsPlatformManager(permissions.IsAuthenticated):
+    """Platform managers, and the levels above them."""
 
     def has_permission(self, request, view):
-        return super().has_permission(request, view) and request.user.is_staff
+        return super().has_permission(request, view) and platform_roles.has_level(
+            request.user, platform_roles.MANAGER
+        )
 
 
 def _registration(user):
@@ -35,7 +37,7 @@ def _registration(user):
 class RegistrationListView(APIView):
     """The newcomers waiting (default), or those declined, oldest first."""
 
-    permission_classes = [IsPlatformAdmin]
+    permission_classes = [IsPlatformManager]
 
     def get(self, request):
         """List the registrations of one status."""
@@ -51,7 +53,7 @@ class RegistrationListView(APIView):
 class RegistrationDecisionView(APIView):
     """Approve or decline one registration (a declined one can be approved)."""
 
-    permission_classes = [IsPlatformAdmin]
+    permission_classes = [IsPlatformManager]
     decision = None
 
     def post(self, request, user_id):

@@ -462,7 +462,7 @@ def test_api_users_retrieve_me_authenticated():
         "short_name": user.short_name,
         "is_first_connection": True,
         "registration_status": "approved",
-        "is_platform_admin": False,
+        "platform_role": "collaborator",
     }
 
 
@@ -494,7 +494,7 @@ def test_api_users_retrieve_me_authenticated_empty_name():
         "short_name": "test_foo",
         "is_first_connection": True,
         "registration_status": "approved",
-        "is_platform_admin": False,
+        "platform_role": "collaborator",
     }
 
 

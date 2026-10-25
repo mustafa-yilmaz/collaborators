@@ -187,11 +187,29 @@ class JoinRequestStatusChoices(TextChoices):
 
 
 class RegistrationStatusChoices(TextChoices):
-    """Whether a platform administrator let a new collaborator in."""
+    """Whether a platform manager let a new collaborator in."""
 
     APPROVED = "approved", _("Approved")
     PENDING = "pending", _("Pending")
     DECLINED = "declined", _("Declined")
+
+
+class PlatformRoleChoices(TextChoices):
+    """
+    Collaborators: the levels of the platform, lowest first; each has the
+    rights of the levels below it (see core.platform_roles).
+    """
+
+    COLLABORATOR = "collaborator", _("Collaborator")
+    MANAGER = "manager", _("Platform manager")
+    ADMINISTRATOR = "administrator", _("Platform administrator")
+    OWNER = "owner", _("Platform owner")
+
+
+class PlatformLogActionChoices(TextChoices):
+    """What the platform log records."""
+
+    ROLE_CHANGED = "role_changed", _("Platform level changed")
 
 
 class SpaceVisibilityChoices(TextChoices):

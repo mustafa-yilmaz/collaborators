@@ -11,7 +11,7 @@ import { Notification } from './api';
 export const useNotificationTarget = () => {
   const { setCurrentWorkspaceId } = useWorkspaceStore();
   return (notification: Notification) => {
-    // Someone registered: platform administrators decide there
+    // Someone registered: platform managers decide there
     if (notification.kind === 'signup') {
       return { href: '/registrations/' };
     }

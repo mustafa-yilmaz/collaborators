@@ -42,6 +42,8 @@ from core.choices import (
     JoinViaChoices,
     LinkReachChoices,
     LinkRoleChoices,
+    PlatformLogActionChoices,
+    PlatformRoleChoices,
     PublicationActionChoices,
     PublishingPolicyChoices,
     RegistrationStatusChoices,
@@ -271,8 +273,8 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
         default=True,
         help_text=_("Whether the user has completed the first connection process."),
     )
-    # Collaborators: a newcomer waits for a platform administrator (a staff
-    # user) to let them in, when COLLABORATORS_SIGNUP_APPROVAL is set
+    # Collaborators: a newcomer waits for a platform manager to let them
+    # in, when COLLABORATORS_SIGNUP_APPROVAL is set
     registration_status = models.CharField(
         _("registration status"),
         max_length=10,
@@ -282,6 +284,14 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
     # Collaborators: came in through an invitation by email (someone vouches
     # for them: no approval of the registration needed)
     collaborator_invited = models.BooleanField(default=False)
+    # Collaborators: the level on the platform, changed through
+    # core.platform_roles (which logs it); see `platform_level`
+    platform_role = models.CharField(
+        _("platform level"),
+        max_length=20,
+        choices=PlatformRoleChoices.choices,
+        default=PlatformRoleChoices.COLLABORATOR,
+    )
 
     objects = UserManager()
 
@@ -316,6 +326,16 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
             self._clear_user_created_documents()
 
             return super().delete(using=using, keep_parents=keep_parents)
+
+    @property
+    def platform_level(self):
+        """
+        Collaborators: the level on the platform; a superuser (made with
+        createsuperuser) is an owner.
+        """
+        if self.is_superuser:
+            return PlatformRoleChoices.OWNER
+        return self.platform_role
 
     def _delete_user_shared_documents_accesses(self):
         """
@@ -3583,6 +3603,42 @@ class PublicationLog(BaseModel):
 
     def __str__(self):
         return f"{self.action} {self.document_id!s}"
+
+
+class PlatformLog(BaseModel):
+    """
+    Collaborators: what platform managers, administrators and owners did
+    (and changes made from the command line or by settings, without an
+    actor). Names are kept as they were, should the accounts go.
+    """
+
+    actor = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="platform_actions",
+        null=True,
+        blank=True,
+    )
+    actor_name = models.CharField(max_length=255, blank=True)
+    target = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="platform_log",
+        null=True,
+        blank=True,
+    )
+    target_name = models.CharField(max_length=255, blank=True)
+    action = models.CharField(max_length=20, choices=PlatformLogActionChoices.choices)
+    details = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        db_table = "collaborators_platform_log"
+        ordering = ("-created_at",)
+        verbose_name = _("Platform log entry")
+        verbose_name_plural = _("Platform log entries")
+
+    def __str__(self):
+        return f"{self.action} {self.target_name}"
 
 
 class WorkspaceInvitation(BaseModel):

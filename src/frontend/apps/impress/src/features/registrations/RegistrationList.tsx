@@ -116,7 +116,7 @@ const RegistrationRow = ({ registration }: { registration: Registration }) => {
   );
 };
 
-/** The registrations platform administrators decide on. */
+/** The registrations platform managers decide on. */
 export const RegistrationList = () => {
   const { t } = useTranslation();
   const [status, setStatus] = useState<RegistrationStatus>('pending');
@@ -143,7 +143,7 @@ export const RegistrationList = () => {
       {isLoading && <Loading />}
       {isError && (
         <Text $variation="secondary">
-          {t('Only platform administrators decide on registrations.', {
+          {t('Only platform managers decide on registrations.', {
             description: 'Registrations page for someone else',
           })}
         </Text>

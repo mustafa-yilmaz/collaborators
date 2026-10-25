@@ -4,7 +4,7 @@ import { DocsGrid } from '@/features/docs/docs-grid';
 import { LabelsOverview } from '@/features/labels/LabelsOverview';
 import { ForMeList } from '@/features/notifications/ForMeList';
 import { MyCollaboratorsName } from '@/features/people/BrandName';
-import { PeopleDirectory } from '@/features/people/PeopleDirectory';
+import { CollaboratorsTabs } from '@/features/platform/CollaboratorsTabs';
 import { useResponsiveStore } from '@/stores/useResponsiveStore';
 
 import { CollaborationsList } from './CollaborationsList';
@@ -53,7 +53,7 @@ export const CollaborationsScreen = ({
       {view && <CollaborationsList view={view} />}
       {target === DocDefaultFilter.NOTIFICATIONS && <ForMeList full />}
       {target === DocDefaultFilter.LABELS && <LabelsOverview />}
-      {target === DocDefaultFilter.PEOPLE && <PeopleDirectory />}
+      {target === DocDefaultFilter.PEOPLE && <CollaboratorsTabs />}
     </Box>
   );
 };

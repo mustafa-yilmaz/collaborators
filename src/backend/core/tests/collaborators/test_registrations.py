@@ -1,4 +1,4 @@
-"""Collaborators: platform administrators approve new registrations."""
+"""Collaborators: platform managers approve new registrations."""
 
 from django.core import mail
 
@@ -19,7 +19,7 @@ def fixture_approval(settings):
 
 
 def _admin():
-    return factories.UserFactory(is_staff=True, full_name="Ada Admin")
+    return factories.UserFactory(platform_role="manager", full_name="Ada Admin")
 
 
 def _client(user):
@@ -59,20 +59,27 @@ def test_without_approval_newcomers_are_let_in(settings):
 
 
 @pytest.mark.usefixtures("approval")
-def test_a_listed_verified_email_makes_a_platform_administrator():
+def test_a_listed_verified_email_makes_a_platform_manager():
     """Let in at once, even after waiting; an unverified email isn't enough."""
     unverified = factories.UserFactory(email="admin@example.org")
     registrations.check_sign_in(unverified, is_new_user=True)
     unverified.refresh_from_db()
     assert unverified.registration_status == registrations.PENDING
-    assert not unverified.is_staff
+    assert unverified.platform_role == "collaborator"
 
     # Their provider verified it at a later sign-in
     unverified.collaborator_email_verified = True
     registrations.check_sign_in(unverified, is_new_user=False)
     unverified.refresh_from_db()
     assert unverified.registration_status == registrations.APPROVED
-    assert unverified.is_staff
+    assert unverified.platform_role == "manager"
+    # Managers act in the app; /admin/ is for owners
+    assert not unverified.is_staff
+    assert models.PlatformLog.objects.get(target=unverified).details == {
+        "previous": "collaborator",
+        "role": "manager",
+        "source": "settings",
+    }
 
 
 @pytest.mark.usefixtures("approval")
@@ -85,7 +92,7 @@ def test_a_waiting_newcomer_counts_as_signed_out():
     me = client.get("/api/v1.0/users/me/")
     assert me.status_code == 200
     assert me.json()["registration_status"] == "pending"
-    assert me.json()["is_platform_admin"] is False
+    assert me.json()["platform_role"] == "collaborator"
     # Not even their own page: the list is that of someone signed out
     assert client.get("/api/v1.0/documents/").json()["count"] == 0
     assert client.get("/api/v1.0/workspaces/").status_code == 401

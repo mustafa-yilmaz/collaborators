@@ -14,7 +14,7 @@ Legend for "Docs today": ✅ already there · 🟡 partly there · ❌ to build.
 
 | Term | Meaning |
 |---|---|
-| **Collaborators** | The platform itself, the roof over everything. Run by **Platform admins**. Its logo is the text wordmark **CO✍️✍️ABORATORS**, in bold italic capitals (no logo image), so it works the same in the app and in emails; page titles and screen readers use the plain name "Collaborators". |
+| **Collaborators** | The platform itself, the roof over everything. Run by its **platform owners, administrators and managers** (see Roles). Its logo is the text wordmark **CO✍️✍️ABORATORS**, in bold italic capitals (no logo image), so it works the same in the app and in emails; page titles and screen readers use the plain name "Collaborators". |
 | **Collaborator** | A person with an account (we don't say "user" in the UI). There is no guest status (decided 2026-10-23): people from outside are invited to a workspace, space or page like anyone else. |
 | **Workspace** | An organisation-level area (a company, university, community). Has its own members, admins and groups. Address: `<slug>.collaborators.community`. |
 | **Space** | A team or topic area inside a workspace, holding a tree of pages. |
@@ -50,11 +50,18 @@ Collaborators  (collaborators.community)
 
 | Level | Roles |
 |---|---|
-| Platform | Platform admin · Collaborator |
+| Platform | Platform owner · Platform administrator · Platform manager · Collaborator *(to build: today only platform admins, staff users, and collaborators)* |
 | Workspace | Owner · Admin · Member |
 | Space / page | Owner · Administrator · Editor · Commenter · Reader *(Docs' existing `RoleChoices`)* |
 
 Space and page access can be granted to a collaborator or to a **group**.
+
+**Platform levels** (names decided 2026-10-25), each with the rights of the levels below it:
+- **Collaborator:** anyone with an account.
+- **Platform manager:** what platform admins do today: approves new registrations (5c) and reads a "People of the platform" list.
+- **Platform administrator:** suspends or removes accounts, from the platform and from Keycloak, with their pages handed over or deleted; handles content reports; appoints managers.
+- **Platform owner:** appoints administrators and owners; full `/admin/` rights; platform-wide settings.
+- Every action of these levels is logged.
 
 ---
 
@@ -403,9 +410,10 @@ Moved out of the table v1:
 
 1. The slash menu shows its "Basic blocks" heading twice.
 2. **Public reach, checked and corrected:** what is public in public workspaces, independent public spaces and independent public pages, and what their pages and sub-pages show to readers (including pages linked into a public space, F7).
-3. **Live checks, with the owner:** an invitation email accepted from a second address; dragging a table column and hiding then showing the header row on a live table; the space and workspace screens; press-and-hold block dragging on a phone.
+3. ✅ **Live checks, with the owner:** an invitation email accepted from a second address; dragging a table column and hiding then showing the header row on a live table; the space and workspace screens; press-and-hold block dragging on a phone. Done 2026-10-25; only the touch screens are left (see "Later" below).
 4. ✅ **Publishing the Google sign-in app** (item 6 below): done 2026-10-25, tried with an account outside the test users.
 5. **Microsoft and LinkedIn sign-in in production:** checked live; the LinkedIn app's settings in its developer portal (linkedin.com/developers) checked or completed.
+5b. **Platform roles** (see section 1, Roles): four levels instead of two. Build order suggested, not yet confirmed: the levels and the People screen, then suspending and removing accounts, then appointing, then reports and settings.
 6. **Grant calls** (items 7–10 below), once the owner has decided where calls come from.
 7. **Input from one's own AI tools** (item 11 below), once the owner has decided its first ways in.
 8. Last: a README of Collaborators for the GitHub repository.

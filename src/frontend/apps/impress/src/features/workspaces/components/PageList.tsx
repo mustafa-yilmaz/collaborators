@@ -39,7 +39,7 @@ const useIndependentPages = (enabled: boolean) =>
   });
 
 /** Puts a page just created directly in the workspace, then opens it. */
-const PlaceInWorkspace = ({
+export const PlaceInWorkspace = ({
   pageId,
   workspaceId,
   onDone,

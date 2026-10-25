@@ -21,7 +21,10 @@ export const LeftPanelContent = () => {
   const router = useRouter();
   const isHome = router.pathname === '/';
   const isDoc = ['/page/[id]', '/space/[id]'].includes(router.pathname);
-  const isWorkspacePage = router.pathname.startsWith('/workspaces/');
+  // Collaborators: a workspace's settings, and its own screen
+  const isWorkspacePage =
+    router.pathname.startsWith('/workspaces/') ||
+    router.pathname === '/workspace/[id]';
   const { currentWorkspaceId } = useWorkspaceStore();
 
   if (isHome || isWorkspacePage) {

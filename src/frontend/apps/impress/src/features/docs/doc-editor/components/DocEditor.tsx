@@ -14,6 +14,7 @@ import {
 import { useAuth } from '@/features/auth/';
 import { SkeletonEditorCore, useSkeletonStore } from '@/features/skeletons';
 import { useSkeletonFadeOut } from '@/features/skeletons/hooks/useFadeOut';
+import { SpaceContents } from '@/features/workspaces/components/SpaceContents';
 import { useAnalytics } from '@/libs';
 import { useResponsiveStore } from '@/stores';
 
@@ -95,6 +96,7 @@ export const DocEditor = ({ doc }: DocEditorProps) => {
   const { authenticated } = useAuth();
   const isPublicDoc = getDocLinkReach(doc) === LinkReach.PUBLIC;
   const { setIsSkeletonVisible } = useSkeletonStore();
+  const { isDesktop } = useResponsiveStore();
 
   useEffect(() => {
     setIsSkeletonVisible(false);
@@ -131,6 +133,13 @@ export const DocEditor = ({ doc }: DocEditorProps) => {
       readOnly={readOnly}
     >
       <DocCoreEditor doc={doc} readOnly={readOnly} />
+      {/* Collaborators: a space opens as a folder of its pages, below its
+          own text */}
+      {doc.kind === 'space' && (
+        <Box $padding={{ horizontal: isDesktop ? '54px' : 'base', top: 'md' }}>
+          <SpaceContents space={doc} />
+        </Box>
+      )}
     </DocEditorContainer>
   );
 };

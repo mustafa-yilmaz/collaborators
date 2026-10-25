@@ -60,7 +60,16 @@ export const SimpleDocItem = ({
       className="--docs--simple-doc-item"
       aria-label={itemAriaLabel}
     >
-      {isChild ? (
+      {/* Collaborators: a space is a folder */}
+      {doc.kind === 'space' ? (
+        <Icon
+          iconName="folder"
+          $size={isSmallMobile ? '35px' : '40px'}
+          $shrink="0"
+          $color="var(--c--contextuals--content--semantic--info--tertiary)"
+          data-testid="doc-space-icon"
+        />
+      ) : isChild ? (
         <Icon
           icon={
             <SubdocsIcon

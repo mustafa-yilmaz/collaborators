@@ -142,6 +142,14 @@ const LogoModal = dynamic(
   { ssr: false },
 );
 
+const ReportPageModal = dynamic(
+  () =>
+    import('@/features/platform/ReportPageModal').then((mod) => ({
+      default: mod.ReportPageModal,
+    })),
+  { ssr: false },
+);
+
 const ModalExport = dynamic(
   () =>
     import('@/docs/doc-export/components/ModalExport').then((mod) => ({
@@ -197,6 +205,7 @@ const DocToolBoxComponent = ({
   >(null);
   const [isModalIndependentOpen, setIsModalIndependentOpen] = useState(false);
   const [isModalLogoOpen, setIsModalLogoOpen] = useState(false);
+  const [isModalReportOpen, setIsModalReportOpen] = useState(false);
   const managesDoc =
     doc.user_role === Role.OWNER || doc.user_role === Role.ADMIN;
   const isSpace = doc.kind === 'space';
@@ -485,6 +494,15 @@ const DocToolBoxComponent = ({
        */
       isHidden: !isTopParent || !authenticated,
     },
+    // Collaborators: to the platform administrators (core.reports)
+    {
+      label: t('Report this page', {
+        description: 'Dropdown menu item reporting a page',
+      }),
+      icon: <Icon iconName="flag" $size="18px" $color="inherit" />,
+      callback: () => setIsModalReportOpen(true),
+      isHidden: !authenticated || !!doc.deleted_at,
+    },
     {
       label: t('Delete', {
         description: 'Dropdown menu item to delete the document',
@@ -558,6 +576,12 @@ const DocToolBoxComponent = ({
       )}
       {isModalLogoOpen && (
         <LogoModal doc={doc} onClose={() => setIsModalLogoOpen(false)} />
+      )}
+      {isModalReportOpen && (
+        <ReportPageModal
+          docId={doc.id}
+          onClose={() => setIsModalReportOpen(false)}
+        />
       )}
       {isModalIndependentOpen && (
         <MakeIndependentModal

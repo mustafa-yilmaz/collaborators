@@ -261,3 +261,162 @@ export const useUnblockEmail = () => {
       void queryClient.invalidateQueries({ queryKey: [KEY_BLOCKED_EMAILS] }),
   });
 };
+
+/** Why someone reports a page. */
+export type ReportReason =
+  'spam' | 'abuse' | 'illegal' | 'personal_data' | 'copyright' | 'other';
+
+/** Report a page one reads to the platform administrators. */
+export const useReportPage = () =>
+  useMutation<
+    void,
+    APIError,
+    { docId: string; reason: ReportReason; details: string }
+  >({
+    mutationFn: async ({ docId, ...body }) => {
+      const response = await fetchAPI(`documents/${docId}/report/`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        throw new APIError(
+          'The page was not reported',
+          await errorCauses(response),
+        );
+      }
+    },
+  });
+
+/** A reported page, as platform administrators see it. */
+export interface ContentReport {
+  id: string;
+  /** The page as it is now; null once deleted for good */
+  document: {
+    id: string;
+    title: string;
+    deleted: boolean;
+    taken_down: boolean;
+    owners: string[];
+  } | null;
+  /** The page's title when it was reported */
+  document_title: string;
+  /** The page's text when it was reported */
+  excerpt: string;
+  reporter: string;
+  reason: ReportReason;
+  details: string;
+  status: 'open' | 'dismissed' | 'taken_down';
+  resolved_by: string;
+  resolved_at: string | null;
+  resolution_note: string;
+  created_at: string;
+}
+
+export const KEY_REPORTS = 'platform-reports';
+
+export const useReports = (status: 'open' | 'decided') =>
+  useQuery<ContentReport[], APIError>({
+    queryKey: [KEY_REPORTS, status],
+    queryFn: async () => {
+      const response = await fetchAPI(`platform/reports/?status=${status}`);
+      if (!response.ok) {
+        throw new APIError(
+          'Failed to list the reports',
+          await errorCauses(response),
+        );
+      }
+      return response.json() as Promise<ContentReport[]>;
+    },
+  });
+
+/** Dismiss a report, take its page down, or put the page back. */
+export const useDecideReport = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ContentReport,
+    APIError,
+    {
+      id: string;
+      decision: 'dismiss' | 'take-down' | 'put-back';
+      note?: string;
+    }
+  >({
+    mutationFn: async ({ id, decision, note }) => {
+      const response = await fetchAPI(`platform/reports/${id}/${decision}/`, {
+        method: 'POST',
+        body: JSON.stringify({ note: note ?? '' }),
+      });
+      if (!response.ok) {
+        throw new APIError(
+          'The report was not decided',
+          await errorCauses(response),
+        );
+      }
+      return response.json() as Promise<ContentReport>;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [KEY_REPORTS] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['notifications-unread-count'],
+      });
+    },
+  });
+};
+
+/** A setting platform owners change, beside the server's own. */
+export interface PlatformSetting {
+  value: boolean;
+  server_default: boolean;
+  /** Changed here; else it follows the server */
+  set_here: boolean;
+}
+
+export type PlatformSettingName = 'signup_approval' | 'email_invitations';
+
+export const KEY_PLATFORM_SETTINGS = 'platform-settings';
+
+export const usePlatformSettings = () =>
+  useQuery<Record<PlatformSettingName, PlatformSetting>, APIError>({
+    queryKey: [KEY_PLATFORM_SETTINGS],
+    queryFn: async () => {
+      const response = await fetchAPI('platform/settings/');
+      if (!response.ok) {
+        throw new APIError(
+          'Failed to read the platform settings',
+          await errorCauses(response),
+        );
+      }
+      return response.json() as Promise<
+        Record<PlatformSettingName, PlatformSetting>
+      >;
+    },
+  });
+
+/** Change settings; null follows the server again. */
+export const useUpdatePlatformSettings = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    Record<PlatformSettingName, PlatformSetting>,
+    APIError,
+    Partial<Record<PlatformSettingName, boolean | null>>
+  >({
+    mutationFn: async (body) => {
+      const response = await fetchAPI('platform/settings/', {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        throw new APIError(
+          'The settings were not changed',
+          await errorCauses(response),
+        );
+      }
+      return response.json() as Promise<
+        Record<PlatformSettingName, PlatformSetting>
+      >;
+    },
+    onSuccess: (data) =>
+      queryClient.setQueryData([KEY_PLATFORM_SETTINGS], data),
+  });
+};

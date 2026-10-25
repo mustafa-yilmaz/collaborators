@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import { PlatformRole } from '@/features/auth/api';
 
-import { PlatformPerson } from './api';
+import { PlatformPerson, ReportReason } from './api';
 
 /**
  * The names of the levels (one word each) and registration statuses, as the
@@ -30,4 +30,22 @@ export const usePlatformWords = () => {
     declined: t('Declined', { description: 'Registration status' }),
   };
   return { levels, statuses };
+};
+
+/** Why a page is reported, as the screen says it. */
+export const useReportReasons = () => {
+  const { t } = useTranslation();
+  const reasons: Record<ReportReason, string> = {
+    spam: t('Spam or advertising', { description: 'Reason of a report' }),
+    abuse: t('Abuse or harassment', { description: 'Reason of a report' }),
+    illegal: t('Illegal content', { description: 'Reason of a report' }),
+    personal_data: t('Someone’s personal data', {
+      description: 'Reason of a report',
+    }),
+    copyright: t('Copyright infringement', {
+      description: 'Reason of a report',
+    }),
+    other: t('Something else', { description: 'Reason of a report' }),
+  };
+  return reasons;
 };

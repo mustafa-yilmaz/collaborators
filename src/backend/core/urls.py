@@ -153,6 +153,10 @@ urlpatterns = [
                     visibility.DocumentVisibilityView.as_view(),
                 ),
                 path(
+                    "documents/<uuid:pk>/report/",
+                    platform.ReportPageView.as_view(),
+                ),
+                path(
                     "documents/<uuid:pk>/make-independent/",
                     page_links.MakePageIndependentView.as_view(),
                 ),
@@ -193,6 +197,20 @@ urlpatterns = [
                     "platform/people/<uuid:user_id>/level/",
                     platform.AccountActionView.as_view(action="level"),
                 ),
+                path("platform/reports/", platform.PlatformReportsView.as_view()),
+                path(
+                    "platform/reports/<uuid:report_id>/dismiss/",
+                    platform.ReportDecisionView.as_view(decision="dismiss"),
+                ),
+                path(
+                    "platform/reports/<uuid:report_id>/take-down/",
+                    platform.ReportDecisionView.as_view(decision="take_down"),
+                ),
+                path(
+                    "platform/reports/<uuid:report_id>/put-back/",
+                    platform.ReportDecisionView.as_view(decision="put_back"),
+                ),
+                path("platform/settings/", platform.PlatformSettingsView.as_view()),
                 path("platform/blocked/", platform.BlockedEmailListView.as_view()),
                 path(
                     "platform/blocked/<uuid:blocked_id>/",

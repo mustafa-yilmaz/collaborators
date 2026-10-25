@@ -39,7 +39,7 @@ from django.utils.translation import gettext_lazy as _
 import rest_framework as drf
 from rest_framework.views import APIView
 
-from core import choices, models, registrations
+from core import choices, models, platform_settings, registrations
 from core.api import permissions
 
 logger = getLogger(__name__)
@@ -338,6 +338,10 @@ class WorkspaceInvitationsView(APIView):
     def post(self, request, workspace_id):
         """Invite an email (sent again, renewed, when already invited)."""
         workspace = workspace_for_admin(request, workspace_id)
+        if not platform_settings.get("email_invitations"):
+            raise drf.exceptions.PermissionDenied(
+                _("Invitations by email are turned off on this platform.")
+            )
         email = validated_email(request.data.get("email"))
         role = request.data.get("role") or choices.WorkspaceRoleChoices.MEMBER
         if role not in choices.WorkspaceRoleChoices.values:

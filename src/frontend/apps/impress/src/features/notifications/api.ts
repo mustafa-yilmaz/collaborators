@@ -9,7 +9,8 @@ export type NotificationKind =
   | 'join_request'
   | 'join_approved'
   | 'signup'
-  | 'signup_approved';
+  | 'signup_approved'
+  | 'report';
 
 export interface Notification {
   id: string;

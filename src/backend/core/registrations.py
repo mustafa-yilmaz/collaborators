@@ -19,7 +19,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 
-from core import joining, models, platform_roles
+from core import joining, models, platform_roles, platform_settings
 from core.choices import RegistrationStatusChoices
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ def check_sign_in(user, is_new_user):
             user.save(update_fields=["registration_status", "updated_at"])
             _clear_signup_notifications(user)
         return
-    if not is_new_user or not settings.COLLABORATORS_SIGNUP_APPROVAL:
+    if not is_new_user or not platform_settings.get("signup_approval"):
         return
     # Invited by email: the inviter vouches for them
     if models.User.objects.filter(pk=user.pk, collaborator_invited=True).exists():

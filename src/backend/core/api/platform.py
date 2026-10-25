@@ -11,6 +11,13 @@ it (see core.platform_roles), and what they do to accounts (core.accounts).
     GET    /api/v1.0/platform/blocked/                  (owners)
     POST   /api/v1.0/platform/blocked/                  {email, reason} (owners)
     DELETE /api/v1.0/platform/blocked/<id>/             (owners)
+    POST   /api/v1.0/documents/<id>/report/             {reason, details} (readers)
+    GET    /api/v1.0/platform/reports/?status=open|decided   (administrators)
+    POST   /api/v1.0/platform/reports/<id>/dismiss/     {note}
+    POST   /api/v1.0/platform/reports/<id>/take-down/   {note}
+    POST   /api/v1.0/platform/reports/<id>/put-back/
+    GET    /api/v1.0/platform/settings/                 (owners)
+    PATCH  /api/v1.0/platform/settings/                 {name: true|false|null}
 """
 
 from django.db.models import Count, IntegerField, OuterRef, Q, Subquery
@@ -21,7 +28,7 @@ from rest_framework import serializers
 from rest_framework.generics import ListAPIView
 from rest_framework.views import APIView
 
-from core import accounts, models, platform_roles
+from core import accounts, models, platform_roles, platform_settings, reports
 from core.api import permissions
 from core.api.registrations import IsPlatformManager
 from core.choices import PlatformRoleChoices, RegistrationStatusChoices, RoleChoices
@@ -280,3 +287,118 @@ class BlockedEmailView(APIView):
             raise drf.exceptions.NotFound()
         accounts.unblock_email(blocked, request.user)
         return drf.response.Response(status=204)
+
+
+class ReportPageView(APIView):
+    """Report a page one reads to the platform administrators."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        """Why, and in a few words what is wrong."""
+        document = models.Document.objects.filter(pk=pk).first()
+        if document is None or not document.get_abilities(request.user).get("retrieve"):
+            raise drf.exceptions.NotFound()
+        try:
+            reports.report(
+                document,
+                request.user,
+                request.data.get("reason"),
+                str(request.data.get("details") or "").strip(),
+            )
+        except reports.ReportError as err:
+            raise drf.exceptions.ValidationError({"detail": str(err)}) from err
+        return drf.response.Response(status=201)
+
+
+def _report(content_report):
+    document = content_report.document
+    return {
+        "id": str(content_report.id),
+        "document": {
+            "id": str(document.id),
+            "title": document.title or "",
+            "deleted": bool(document.deleted_at or document.ancestors_deleted_at),
+            "taken_down": document.taken_down_at is not None,
+            "owners": [
+                platform_roles.display_name(owner) for owner in reports.owners(document)
+            ],
+        }
+        if document
+        else None,
+        "document_title": content_report.document_title,
+        "excerpt": content_report.excerpt,
+        "reporter": content_report.reporter_name,
+        "reason": content_report.reason,
+        "details": content_report.details,
+        "status": content_report.status,
+        "resolved_by": content_report.resolved_by_name,
+        "resolved_at": content_report.resolved_at,
+        "resolution_note": content_report.resolution_note,
+        "created_at": content_report.created_at,
+    }
+
+
+class PlatformReportsView(APIView):
+    """The reports to decide on (oldest first), or those decided (newest)."""
+
+    permission_classes = [IsPlatformAdministrator]
+
+    def get(self, request):
+        """List them."""
+        status = request.query_params.get("status") or "open"
+        found = models.ContentReport.objects.select_related("document")
+        if status == "open":
+            found = found.filter(status="open").order_by("created_at")
+        elif status == "decided":
+            found = found.exclude(status="open").order_by("-resolved_at")[:200]
+        else:
+            raise drf.exceptions.ValidationError({"status": "open or decided"})
+        return drf.response.Response([_report(item) for item in found])
+
+
+class ReportDecisionView(APIView):
+    """Dismiss a report, take its page down, or put the page back."""
+
+    permission_classes = [IsPlatformAdministrator]
+    decision = None
+
+    def post(self, request, report_id):
+        """Decide; the people concerned are told by email."""
+        content_report = (
+            models.ContentReport.objects.select_related("document")
+            .filter(id=report_id)
+            .first()
+        )
+        if content_report is None:
+            raise drf.exceptions.NotFound()
+        note = str(request.data.get("note") or "").strip()[:500]
+        try:
+            if self.decision == "dismiss":
+                reports.dismiss(content_report, request.user, note)
+            elif self.decision == "take_down":
+                reports.take_down(content_report, request.user, note)
+            else:
+                reports.put_back(content_report, request.user)
+        except reports.ReportError as err:
+            raise drf.exceptions.ValidationError({"detail": str(err)}) from err
+        content_report.refresh_from_db()
+        return drf.response.Response(_report(content_report))
+
+
+class PlatformSettingsView(APIView):
+    """The settings platform owners change in the app."""
+
+    permission_classes = [IsPlatformOwner]
+
+    def get(self, request):
+        """Each setting, with the server's own."""
+        return drf.response.Response(platform_settings.describe())
+
+    def patch(self, request):
+        """Change some; null follows the server again."""
+        try:
+            platform_settings.update(dict(request.data), request.user)
+        except ValueError as err:
+            raise drf.exceptions.ValidationError({"detail": str(err)}) from err
+        return drf.response.Response(platform_settings.describe())

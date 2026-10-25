@@ -18,6 +18,10 @@ export const useNotificationTarget = () => {
     if (notification.kind === 'signup_approved') {
       return { href: '/' };
     }
+    // A page reported: platform administrators decide there
+    if (notification.kind === 'report') {
+      return { href: '/?target=collaborators&tab=reports' };
+    }
     if (notification.kind === 'join_request' && notification.workspace) {
       return { href: `/workspaces/${notification.workspace.id}/settings/` };
     }
@@ -42,6 +46,7 @@ export const notificationIcon = (notification: Notification) =>
     join_approved: 'how_to_reg',
     signup: 'person_add',
     signup_approved: 'celebration',
+    report: 'flag',
     mention: 'alternate_email',
   })[notification.kind] ?? 'alternate_email';
 
@@ -63,6 +68,15 @@ export const useNotificationText = () => {
       return t('{{name}} accepted your registration: welcome!', {
         description: 'Notification of an accepted registration',
         name,
+      });
+    }
+    if (notification.kind === 'report') {
+      return t('{{name}} reported {{doc}}', {
+        description: 'Notification of a reported page',
+        name,
+        doc:
+          notification.document?.title ||
+          t('Untitled page', { description: 'Name of a doc without title' }),
       });
     }
     if (notification.kind === 'join_request') {

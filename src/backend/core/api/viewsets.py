@@ -45,7 +45,14 @@ from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from treebeard.exceptions import InvalidMoveToDescendant
 
-from core import authentication, choices, enums, models, notifications
+from core import (
+    authentication,
+    choices,
+    enums,
+    models,
+    notifications,
+    platform_settings,
+)
 from core.api import invitations
 from core.api.filters import remove_accents
 from core.api.people_privacy import check_can_find
@@ -3102,7 +3109,8 @@ class InvitationViewset(
 
     def perform_create(self, serializer):
         """Save invitation to a document then send an email to the invited user."""
-        if not settings.COLLABORATORS_EMAIL_INVITATIONS:
+        # Collaborators: a platform setting (core.platform_settings)
+        if not platform_settings.get("email_invitations"):
             # Collaborators join by signing in with a provider; documents are
             # shared with people who already have an account
             raise drf.exceptions.PermissionDenied(

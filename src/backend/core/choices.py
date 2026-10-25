@@ -216,6 +216,29 @@ class PlatformLogActionChoices(TextChoices):
     REMOVED = "removed", _("Account removed")
     BLOCKED = "blocked", _("Email blocked")
     UNBLOCKED = "unblocked", _("Email unblocked")
+    REPORT_DISMISSED = "report_dismissed", _("Report dismissed")
+    TAKEN_DOWN = "taken_down", _("Page taken down")
+    PUT_BACK = "put_back", _("Page put back")
+    SETTINGS_CHANGED = "settings_changed", _("Platform settings changed")
+
+
+class ReportReasonChoices(TextChoices):
+    """Collaborators: why someone reports a page (core.reports)."""
+
+    SPAM = "spam", _("Spam or advertising")
+    ABUSE = "abuse", _("Abuse or harassment")
+    ILLEGAL = "illegal", _("Illegal content")
+    PERSONAL_DATA = "personal_data", _("Someone's personal data")
+    COPYRIGHT = "copyright", _("Copyright infringement")
+    OTHER = "other", _("Something else")
+
+
+class ReportStatusChoices(TextChoices):
+    """Where a report stands, and what was decided."""
+
+    OPEN = "open", _("Open")
+    DISMISSED = "dismissed", _("Dismissed")
+    TAKEN_DOWN = "taken_down", _("Page taken down")
 
 
 class SpaceVisibilityChoices(TextChoices):

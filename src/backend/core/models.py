@@ -47,6 +47,8 @@ from core.choices import (
     PublicationActionChoices,
     PublishingPolicyChoices,
     RegistrationStatusChoices,
+    ReportReasonChoices,
+    ReportStatusChoices,
     RoleChoices,
     WorkspaceRoleChoices,
     WorkspaceVisibilityChoices,
@@ -1230,6 +1232,9 @@ class Document(MP_Node, BaseModel):
     # The page's text, as the collaboration server last saved it, for the
     # full-text search of wikis (refreshed when its content changes)
     text_content = models.TextField(blank=True, default="")
+    # Collaborators: taken down by a platform administrator after a report
+    # (core.reports): in the trash, and its owners can't restore it
+    taken_down_at = models.DateTimeField(null=True, blank=True)
     text_updated_at = models.DateTimeField(null=True, blank=True)
     creator = models.ForeignKey(
         User,
@@ -1832,6 +1837,11 @@ class Document(MP_Node, BaseModel):
         if self.deleted_at < get_trashbin_cutoff():
             raise RuntimeError(
                 "This document was permanently deleted and cannot be restored."
+            )
+        # Collaborators: only a platform administrator puts it back
+        if self.taken_down_at:
+            raise RuntimeError(
+                "A platform administrator took this page down after a report."
             )
 
         # save the current deleted_at value to exclude it from the descendants update
@@ -3397,7 +3407,8 @@ class Notification(BaseModel):
     An entry of a collaborator's notification inbox: they were mentioned
     (directly or through a group) or assigned somewhere in a document, or
     someone asks to join a workspace they administer, or they were let in;
-    for platform administrators, someone registered and waits for them.
+    for platform managers, someone registered and waits for them; for
+    platform administrators, someone reported a page.
     """
 
     KIND_MENTION = "mention"
@@ -3407,6 +3418,7 @@ class Notification(BaseModel):
     KIND_JOIN_APPROVED = "join_approved"
     KIND_SIGNUP = "signup"
     KIND_SIGNUP_APPROVED = "signup_approved"
+    KIND_REPORT = "report"
 
     recipient = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="notifications"
@@ -3428,6 +3440,7 @@ class Notification(BaseModel):
             (KIND_JOIN_APPROVED, _("Request to join approved")),
             (KIND_SIGNUP, _("New registration")),
             (KIND_SIGNUP_APPROVED, _("Registration approved")),
+            (KIND_REPORT, _("Page reported")),
         ],
         default=KIND_MENTION,
     )
@@ -3669,6 +3682,86 @@ class BlockedEmail(BaseModel):
 
     def __str__(self):
         return self.email
+
+
+class ContentReport(BaseModel):
+    """
+    Collaborators: someone reported a page; platform administrators dismiss
+    the report or take the page down (core.reports). What was reported is
+    kept as it was, should the page or the accounts go.
+    """
+
+    document = models.ForeignKey(
+        Document,
+        on_delete=models.SET_NULL,
+        related_name="reports",
+        null=True,
+        blank=True,
+    )
+    document_title = models.CharField(max_length=255, blank=True)
+    # The page's text when it was reported
+    excerpt = models.TextField(blank=True)
+    reporter = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="reports_made",
+        null=True,
+        blank=True,
+    )
+    reporter_name = models.CharField(max_length=255, blank=True)
+    reason = models.CharField(max_length=20, choices=ReportReasonChoices.choices)
+    details = models.TextField(blank=True, max_length=2000)
+    status = models.CharField(
+        max_length=20,
+        choices=ReportStatusChoices.choices,
+        default=ReportStatusChoices.OPEN,
+    )
+    resolved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="reports_resolved",
+        null=True,
+        blank=True,
+    )
+    resolved_by_name = models.CharField(max_length=255, blank=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    # Why, as told to the page's owners
+    resolution_note = models.CharField(max_length=500, blank=True)
+
+    class Meta:
+        db_table = "collaborators_content_report"
+        ordering = ("-created_at",)
+        verbose_name = _("Content report")
+        verbose_name_plural = _("Content reports")
+
+    def __str__(self):
+        return f"{self.reason} {self.document_title}"
+
+
+class PlatformSettings(BaseModel):
+    """
+    Collaborators: the settings platform owners change in the app (one row,
+    core.platform_settings). Empty, a setting follows the server's own
+    (its environment).
+    """
+
+    signup_approval = models.BooleanField(null=True, blank=True)
+    email_invitations = models.BooleanField(null=True, blank=True)
+    updated_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        db_table = "collaborators_platform_settings"
+        verbose_name = _("Platform settings")
+        verbose_name_plural = _("Platform settings")
+
+    def __str__(self):
+        return "Platform settings"
 
 
 class WorkspaceInvitation(BaseModel):

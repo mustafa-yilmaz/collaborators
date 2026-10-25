@@ -727,8 +727,10 @@ class Base(Configuration):
         environ_name="OIDC_AUTHENTICATE_CLASS",
         environ_prefix=None,
     )
+    # Collaborators: a repeated return from the sign-in server no longer
+    # signs the person out (core.authentication.views)
     OIDC_CALLBACK_CLASS = values.Value(
-        "lasuite.oidc_login.views.OIDCAuthenticationCallbackView",
+        "core.authentication.views.OIDCAuthenticationCallbackView",
         environ_name="OIDC_CALLBACK_CLASS",
         environ_prefix=None,
     )

@@ -143,7 +143,7 @@ export const RegistrationList = () => {
       {isLoading && <Loading />}
       {isError && (
         <Text $variation="secondary">
-          {t('Only platform managers decide on registrations.', {
+          {t('Only managers decide on registrations.', {
             description: 'Registrations page for someone else',
           })}
         </Text>

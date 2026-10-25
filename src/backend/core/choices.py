@@ -197,19 +197,20 @@ class RegistrationStatusChoices(TextChoices):
 class PlatformRoleChoices(TextChoices):
     """
     Collaborators: the levels of the platform, lowest first; each has the
-    rights of the levels below it (see core.platform_roles).
+    rights of the levels below it (see core.platform_roles). Each is named
+    with one word in the interface.
     """
 
     COLLABORATOR = "collaborator", _("Collaborator")
-    MANAGER = "manager", _("Platform manager")
-    ADMINISTRATOR = "administrator", _("Platform administrator")
-    OWNER = "owner", _("Platform owner")
+    MANAGER = "manager", _("Manager")
+    ADMINISTRATOR = "administrator", _("Administrator")
+    OWNER = "owner", _("Owner")
 
 
 class PlatformLogActionChoices(TextChoices):
     """What the platform log records."""
 
-    ROLE_CHANGED = "role_changed", _("Platform level changed")
+    ROLE_CHANGED = "role_changed", _("Level changed")
 
 
 class SpaceVisibilityChoices(TextChoices):

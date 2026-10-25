@@ -287,7 +287,7 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
     # Collaborators: the level on the platform, changed through
     # core.platform_roles (which logs it); see `platform_level`
     platform_role = models.CharField(
-        _("platform level"),
+        _("level"),
         max_length=20,
         choices=PlatformRoleChoices.choices,
         default=PlatformRoleChoices.COLLABORATOR,

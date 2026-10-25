@@ -24,20 +24,23 @@ const badgeCss = css`
   white-space: nowrap;
 `;
 
-/** The names of the levels and registration statuses, as the screen says them. */
+/**
+ * The names of the levels (one word each) and registration statuses, as the
+ * screen says them.
+ */
 const usePlatformWords = () => {
   const { t } = useTranslation();
   const levels: Record<PlatformRole, string> = {
     collaborator: t('Collaborator', {
       description: 'Platform level: anyone with an account',
     }),
-    manager: t('Platform manager', {
+    manager: t('Manager', {
       description: 'Platform level: approves registrations',
     }),
-    administrator: t('Platform administrator', {
+    administrator: t('Administrator', {
       description: 'Platform level: suspends and removes accounts',
     }),
-    owner: t('Platform owner', {
+    owner: t('Owner', {
       description: 'Platform level: appoints administrators and owners',
     }),
   };
@@ -211,7 +214,7 @@ export const ManageCollaborators = () => {
       {isLoading && <Loading />}
       {isError && (
         <Text $variation="secondary">
-          {t('Only platform managers and those above them see everyone.', {
+          {t('Only managers and those above them see everyone.', {
             description: 'Manage Collaborators for someone else',
           })}
         </Text>

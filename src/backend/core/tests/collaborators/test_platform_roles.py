@@ -232,7 +232,7 @@ def test_set_platform_role_command():
     call_command("set_platform_role", "ADA@example.org", "owner", stdout=out)
     user.refresh_from_db()
     assert user.platform_level == "owner" and user.is_superuser
-    assert "Platform owner" in out.getvalue()
+    assert out.getvalue().strip() == "ada@example.org: Owner"
     assert models.PlatformLog.objects.get(target=user).details["source"] == "command"
     with pytest.raises(CommandError):
         call_command("set_platform_role", "nobody@example.org", "manager")

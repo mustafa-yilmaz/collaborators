@@ -14,7 +14,7 @@ Legend for "Docs today": ✅ already there · 🟡 partly there · ❌ to build.
 
 | Term | Meaning |
 |---|---|
-| **Collaborators** | The platform itself, the roof over everything. Run by its **platform owners, administrators and managers** (see Roles). Its logo is the text wordmark **CO✍️✍️ABORATORS**, in bold italic capitals (no logo image), so it works the same in the app and in emails; page titles and screen readers use the plain name "Collaborators". |
+| **Collaborators** | The platform itself, the roof over everything. Run by its **owners, administrators and managers** (see Roles). Its logo is the text wordmark **CO✍️✍️ABORATORS**, in bold italic capitals (no logo image), so it works the same in the app and in emails; page titles and screen readers use the plain name "Collaborators". |
 | **Collaborator** | A person with an account (we don't say "user" in the UI). There is no guest status (decided 2026-10-23): people from outside are invited to a workspace, space or page like anyone else. |
 | **Workspace** | An organisation-level area (a company, university, community). Has its own members, admins and groups. Address: `<slug>.collaborators.community`. |
 | **Space** | A team or topic area inside a workspace, holding a tree of pages. |
@@ -50,19 +50,19 @@ Collaborators  (collaborators.community)
 
 | Level | Roles |
 |---|---|
-| Platform | Platform owner · Platform administrator · Platform manager · Collaborator |
+| Platform | Owner · Administrator · Manager · Collaborator |
 | Workspace | Owner · Admin · Member |
 | Space / page | Owner · Administrator · Editor · Commenter · Reader *(Docs' existing `RoleChoices`)* |
 
 Space and page access can be granted to a collaborator or to a **group**.
 
-**Platform levels** (names decided 2026-10-25), each with the rights of the levels below it:
+**Platform levels** (names decided 2026-10-25; one word each in the interface, without "platform", 2026-10-25), each with the rights of the levels below it:
 - **Collaborator:** anyone with an account.
-- **Platform manager:** what platform admins do today: approves new registrations (5c) and reads a "People of the platform" list.
-- **Platform administrator:** suspends or removes accounts, from the platform and from Keycloak, with their pages handed over or deleted; handles content reports; appoints managers.
-- **Platform owner:** appoints administrators and owners; full `/admin/` rights; platform-wide settings.
+- **Manager:** approves new registrations (5c) and reads the list of everyone ("Manage Collaborators").
+- **Administrator:** suspends or removes accounts, from the platform and from Keycloak, with their pages handed over or deleted; handles content reports; appoints managers.
+- **Owner:** appoints administrators and owners; full `/admin/` rights; platform-wide settings.
 - Every action of these levels is logged.
-- **Built 2026-10-25 (step 1):** the levels (`User.platform_role`, `core/platform_roles.py`; a superuser counts as an owner) and the **platform log** (`PlatformLog`, read only in `/admin/`), which records every change of level with who made it (or the command line, the settings, the migration). Owners alone open `/admin/` (they are its superusers); the other levels act in the app. Migration 0061 made the former staff users managers and superusers owners. Registrations are decided by managers and above (the emails of `COLLABORATORS_PLATFORM_ADMIN_EMAILS` become managers at sign-in). `manage.py set_platform_role <email> <level>` sets a level until appointing is in the app.
+- **Built 2026-10-25 (step 1):** the levels (`User.platform_role`, `core/platform_roles.py`; a superuser counts as an owner) and the **platform log** (`PlatformLog`, read only in `/admin/`), which records every change of level with who made it (or the command line, the settings, the migration). Owners alone open `/admin/` (they are its superusers); the other levels act in the app. Migration 0061 made the former staff users managers and superusers owners. Registrations are decided by managers and above (the emails of `COLLABORATORS_PLATFORM_ADMIN_EMAILS` become managers at sign-in). `manage.py set_platform_role <email> <level>` sets a level until appointing is in the app. On collaborators.community (2026-10-25): two owners, one administrator, one manager.
   - **Manage Collaborators:** a tab of the "My CO✍️✍️ABORATORS" screen (now at `/?target=collaborators`; `/?target=people` still opens it), for managers and above: everyone with an account, newest first, with their level, registration, email (verified or not), when they joined and last signed in, their workspaces and the pages they own; found by name or email, level or registration status (`GET platform/people/`, 50 a page).
 
 ---

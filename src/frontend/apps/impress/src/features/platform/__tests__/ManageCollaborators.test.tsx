@@ -81,7 +81,7 @@ describe('Manage Collaborators', () => {
 
     const row = await screen.findByTestId('platform-person-u-1');
     expect(row).toHaveTextContent('Zoë Zeta');
-    expect(row).toHaveTextContent('Platform administrator');
+    expect(row).toHaveTextContent('Administrator');
     expect(row).toHaveTextContent('Waiting for approval');
     expect(row).toHaveTextContent('zoe@example.org');
     expect(row).toHaveTextContent('5 pages owned');
@@ -98,7 +98,7 @@ describe('Manage Collaborators', () => {
     render(<ManageCollaborators />, { wrapper: AppWrapper });
     await screen.findByText('0 people');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Platform owner' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
     fireEvent.click(
       screen.getByRole('button', { name: 'Waiting for approval' }),
     );

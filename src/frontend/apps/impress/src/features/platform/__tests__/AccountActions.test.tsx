@@ -29,6 +29,7 @@ const person = {
   pages: 1,
   suspended: false,
   can_manage: true,
+  levels_you_may_give: ['collaborator', 'manager'],
 };
 
 const list = (people: object[]) =>
@@ -60,7 +61,13 @@ describe('Suspending, removing and blocking accounts', () => {
   test('only people one may manage have actions', async () => {
     list([
       person,
-      { ...person, id: 'u-2', full_name: 'Olga', can_manage: false },
+      {
+        ...person,
+        id: 'u-2',
+        full_name: 'Olga',
+        can_manage: false,
+        levels_you_may_give: [],
+      },
     ]);
     render(<ManageCollaborators />, { wrapper: AppWrapper });
 
@@ -69,6 +76,34 @@ describe('Suspending, removing and blocking accounts', () => {
     expect(row).toHaveTextContent('Remove');
     expect(screen.getByTestId('platform-person-u-2')).not.toHaveTextContent(
       'Suspend',
+    );
+    expect(screen.getByTestId('platform-person-u-2')).not.toHaveTextContent(
+      'Level',
+    );
+  });
+
+  test('appointing offers the levels one may give, explained', async () => {
+    list([person]);
+    fetchMock.post(`${API}/platform/people/u-1/level/`, {
+      platform_role: 'manager',
+    });
+    render(<ManageCollaborators />, { wrapper: AppWrapper });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Level' }));
+    expect(
+      await screen.findByText('Change Tom Test’s level'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Approves new registrations and sees everyone.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'Owner' })).toBeNull();
+    fireEvent.click(screen.getByRole('radio', { name: 'Manager' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Change the level' }));
+
+    await waitFor(() =>
+      expect(bodyOf(`${API}/platform/people/u-1/level/`)).toEqual({
+        role: 'manager',
+      }),
     );
   });
 

@@ -9,13 +9,19 @@ import { PlatformRole } from '@/features/auth/api';
 import { UserAvatar } from '@/features/auth/components/UserAvatar';
 import { profileHref } from '@/features/profile/api';
 
-import { RemoveDialog, SuspendDialog, useOutcomeToast } from './AccountDialogs';
+import {
+  LevelDialog,
+  RemoveDialog,
+  SuspendDialog,
+  useOutcomeToast,
+} from './AccountDialogs';
 import {
   PlatformPeopleParams,
   PlatformPerson,
   usePlatformPeople,
   useReinstatePerson,
 } from './api';
+import { usePlatformWords } from './words';
 
 const rowCss = css`
   border-top: 1px solid var(--c--contextuals--border--surface--primary);
@@ -38,44 +44,27 @@ const badgeCss = css`
   white-space: nowrap;
 `;
 
-/**
- * The names of the levels (one word each) and registration statuses, as the
- * screen says them.
- */
-const usePlatformWords = () => {
-  const { t } = useTranslation();
-  const levels: Record<PlatformRole, string> = {
-    collaborator: t('Collaborator', {
-      description: 'Platform level: anyone with an account',
-    }),
-    manager: t('Manager', {
-      description: 'Platform level: approves registrations',
-    }),
-    administrator: t('Administrator', {
-      description: 'Platform level: suspends and removes accounts',
-    }),
-    owner: t('Owner', {
-      description: 'Platform level: appoints administrators and owners',
-    }),
-  };
-  const statuses: Record<PlatformPerson['registration_status'], string> = {
-    approved: t('Approved', { description: 'Registration status' }),
-    pending: t('Waiting for approval', { description: 'Registration status' }),
-    declined: t('Declined', { description: 'Registration status' }),
-  };
-  return { levels, statuses };
-};
-
 /** Suspend or reinstate, and remove: for people below one's level. */
 const PersonActions = ({ person }: { person: PlatformPerson }) => {
   const { t } = useTranslation();
-  const [dialog, setDialog] = useState<'suspend' | 'remove' | null>(null);
+  const [dialog, setDialog] = useState<'level' | 'suspend' | 'remove' | null>(
+    null,
+  );
   const reinstate = useReinstatePerson();
   const outcomeToast = useOutcomeToast();
   const name = person.full_name || person.email;
 
   return (
     <Box $direction="row" $gap="xs">
+      {person.levels_you_may_give.length > 0 && (
+        <Button
+          size="small"
+          variant="secondary"
+          onClick={() => setDialog('level')}
+        >
+          {t('Level', { description: 'Button changing someone’s level' })}
+        </Button>
+      )}
       {person.suspended ? (
         <Button
           size="small"
@@ -118,6 +107,9 @@ const PersonActions = ({ person }: { person: PlatformPerson }) => {
       >
         {t('Remove', { description: 'Button removing an account' })}
       </Button>
+      {dialog === 'level' && (
+        <LevelDialog person={person} onClose={() => setDialog(null)} />
+      )}
       {dialog === 'suspend' && (
         <SuspendDialog person={person} onClose={() => setDialog(null)} />
       )}

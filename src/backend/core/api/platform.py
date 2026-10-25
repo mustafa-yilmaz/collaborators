@@ -7,6 +7,7 @@ it (see core.platform_roles), and what they do to accounts (core.accounts).
     POST   /api/v1.0/platform/people/<id>/reinstate/
     GET    /api/v1.0/platform/people/<id>/removal/      what removing leaves
     POST   /api/v1.0/platform/people/<id>/remove/       {pages, recipient, reason, block}
+    POST   /api/v1.0/platform/people/<id>/level/        {role}
     GET    /api/v1.0/platform/blocked/                  (owners)
     POST   /api/v1.0/platform/blocked/                  {email, reason} (owners)
     DELETE /api/v1.0/platform/blocked/<id>/             (owners)
@@ -42,6 +43,8 @@ class PlatformPersonSerializer(serializers.ModelSerializer):
     suspended = serializers.SerializerMethodField()
     # The requester may suspend or remove them
     can_manage = serializers.SerializerMethodField()
+    # The levels the requester may put them at
+    levels_you_may_give = serializers.SerializerMethodField()
 
     def get_suspended(self, person):
         """Suspended until reinstated."""
@@ -50,6 +53,10 @@ class PlatformPersonSerializer(serializers.ModelSerializer):
     def get_can_manage(self, person):
         """Below the requester's level, and not the requester."""
         return accounts.can_manage(self.context["request"].user, person)
+
+    def get_levels_you_may_give(self, person):
+        """Up to manager for an administrator, any for an owner."""
+        return accounts.levels_one_may_give(self.context["request"].user, person)
 
     class Meta:
         model = models.User
@@ -66,6 +73,7 @@ class PlatformPersonSerializer(serializers.ModelSerializer):
             "pages",
             "suspended",
             "can_manage",
+            "levels_you_may_give",
         ]
         read_only_fields = fields
 
@@ -163,7 +171,7 @@ def _reason(request):
 
 
 class AccountActionView(APIView):
-    """Suspend, reinstate or remove someone below one's level."""
+    """Suspend, reinstate, remove or appoint someone below one's level."""
 
     permission_classes = [IsPlatformAdministrator]
     action = None
@@ -198,6 +206,9 @@ class AccountActionView(APIView):
                 server = accounts.suspend(target, request.user, _reason(request))
             elif self.action == "reinstate":
                 server = accounts.reinstate(target, request.user)
+            elif self.action == "level":
+                accounts.appoint(target, request.user, request.data.get("role"))
+                return drf.response.Response({"platform_role": target.platform_level})
             else:
                 recipient = None
                 recipient_id = request.data.get("recipient")

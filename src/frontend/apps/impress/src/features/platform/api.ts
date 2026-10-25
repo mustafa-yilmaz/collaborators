@@ -28,6 +28,8 @@ export interface PlatformPerson {
   suspended: boolean;
   /** The viewer may suspend or remove them (below the viewer's level) */
   can_manage: boolean;
+  /** The levels the viewer may put them at */
+  levels_you_may_give: PlatformRole[];
 }
 
 export interface PlatformPeopleParams {
@@ -109,6 +111,31 @@ export const useReinstatePerson = () => {
     { id: string }
   >({
     mutationFn: ({ id }) => post(`platform/people/${id}/reinstate/`),
+    onSuccess: refresh,
+  });
+};
+
+/** Put someone at a level one may give; they are told by email. */
+export const useAppointPerson = () => {
+  const refresh = useRefreshPeople();
+  return useMutation<
+    { platform_role: PlatformRole },
+    APIError,
+    { id: string; role: PlatformRole }
+  >({
+    mutationFn: async ({ id, role }) => {
+      const response = await fetchAPI(`platform/people/${id}/level/`, {
+        method: 'POST',
+        body: JSON.stringify({ role }),
+      });
+      if (!response.ok) {
+        throw new APIError(
+          'The level was not changed',
+          await errorCauses(response),
+        );
+      }
+      return response.json() as Promise<{ platform_role: PlatformRole }>;
+    },
     onSuccess: refresh,
   });
 };

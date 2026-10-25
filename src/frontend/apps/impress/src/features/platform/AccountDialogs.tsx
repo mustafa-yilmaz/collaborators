@@ -16,16 +16,18 @@ import { css } from 'styled-components';
 import { useDebounce } from 'use-debounce';
 
 import { Box, Loading, Text } from '@/components';
-import { hasPlatformLevel, useAuth } from '@/features/auth';
+import { PlatformRole, hasPlatformLevel, useAuth } from '@/features/auth';
 
 import {
   PlatformPerson,
   SignInServerOutcome,
+  useAppointPerson,
   usePlatformPeople,
   useRemovalPreview,
   useRemovePerson,
   useSuspendPerson,
 } from './api';
+import { usePlatformWords } from './words';
 
 const errorCss = css`
   color: var(--c--contextuals--content--semantic--error--primary);
@@ -423,6 +425,110 @@ export const RemoveDialog = ({
       {remove.error && (
         <Text $size="sm" $css={errorCss}>
           {remove.error.cause?.[0]}
+        </Text>
+      )}
+    </Dialog>
+  );
+};
+
+/** Give someone another level: those one may give, each explained. */
+export const LevelDialog = ({
+  person,
+  onClose,
+}: {
+  person: PlatformPerson;
+  onClose: () => void;
+}) => {
+  const { t } = useTranslation();
+  const { toast } = useToastProvider();
+  const { levels } = usePlatformWords();
+  const appoint = useAppointPerson();
+  const [role, setRole] = useState<PlatformRole>(person.platform_role);
+  const name = person.full_name || person.email;
+  const help: Record<PlatformRole, string> = {
+    collaborator: t('Anyone with an account.', {
+      description: 'What the collaborator level does',
+    }),
+    manager: t('Approves new registrations and sees everyone.', {
+      description: 'What the manager level does',
+    }),
+    administrator: t(
+      'Also suspends and removes accounts, and appoints managers.',
+      { description: 'What the administrator level does' },
+    ),
+    owner: t(
+      'Also appoints administrators and owners, blocks emails, and has full rights in the admin site.',
+      { description: 'What the owner level does' },
+    ),
+  };
+
+  return (
+    <Dialog
+      title={t('Change {{name}}’s level', {
+        description: 'Title of the dialog changing someone’s level',
+        name,
+      })}
+      onClose={onClose}
+      confirm={
+        <Button
+          fullWidth
+          disabled={appoint.isPending || role === person.platform_role}
+          onClick={() =>
+            appoint.mutate(
+              { id: person.id, role },
+              {
+                onSuccess: () => {
+                  toast(
+                    t('{{name}} is now: {{level}}.', {
+                      description: 'Toast after changing someone’s level',
+                      name,
+                      level: levels[role],
+                    }),
+                    VariantType.SUCCESS,
+                  );
+                  onClose();
+                },
+              },
+            )
+          }
+        >
+          {t('Change the level', {
+            description: 'Button confirming a new level',
+          })}
+        </Button>
+      }
+    >
+      <Text $variation="secondary">
+        {t(
+          'Each level has the rights of the levels below it. They are told by email.',
+          {
+            description: 'Explanation in the dialog changing someone’s level',
+          },
+        )}
+      </Text>
+      <RadioGroup>
+        {person.levels_you_may_give.map((level) => (
+          <Box key={level} $gap="4xs">
+            <Radio
+              name={`level-${person.id}`}
+              value={level}
+              checked={role === level}
+              onChange={() => setRole(level)}
+              label={levels[level]}
+            />
+            <Text
+              $size="xs"
+              $variation="secondary"
+              $margin={{ left: '1.6rem' }}
+            >
+              {help[level]}
+            </Text>
+          </Box>
+        ))}
+      </RadioGroup>
+      {appoint.error && (
+        <Text $size="sm" $css={errorCss}>
+          {appoint.error.cause?.[0]}
         </Text>
       )}
     </Dialog>

@@ -29,6 +29,9 @@ const person = {
   last_login: null,
   workspaces: 2,
   pages: 5,
+  suspended: false,
+  can_manage: false,
+  levels_you_may_give: [],
 };
 
 describe('Manage Collaborators', () => {

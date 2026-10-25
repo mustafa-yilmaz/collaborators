@@ -189,6 +189,10 @@ urlpatterns = [
                     "platform/people/<uuid:user_id>/remove/",
                     platform.AccountActionView.as_view(action="remove"),
                 ),
+                path(
+                    "platform/people/<uuid:user_id>/level/",
+                    platform.AccountActionView.as_view(action="level"),
+                ),
                 path("platform/blocked/", platform.BlockedEmailListView.as_view()),
                 path(
                     "platform/blocked/<uuid:blocked_id>/",

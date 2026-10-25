@@ -7,7 +7,9 @@ core.platform_roles for the levels):
 - **remove** an account: from the platform and the sign-in server, the pages
   and workspaces it alone owns handed over to someone, or its pages deleted;
 - **block** an email (owners only): nobody signs in with it, whether or not
-  it has an account yet; an account with it is suspended.
+  it has an account yet; an account with it is suspended;
+- **appoint**: administrators make collaborators managers (or managers
+  collaborators again); owners give any level, owner included.
 
 One acts only on people below one's own level, never on oneself. Every
 action goes to the platform log; the people suspended, reinstated or removed
@@ -26,6 +28,7 @@ from django.utils.translation import gettext_lazy as _
 from core import models, platform_roles, registrations
 from core.choices import (
     PlatformLogActionChoices,
+    PlatformRoleChoices,
     RoleChoices,
     WorkspaceRoleChoices,
 )
@@ -54,6 +57,39 @@ def can_manage(actor, target):
         and platform_roles.has_level(actor, platform_roles.ADMINISTRATOR)
         and platform_roles.rank(actor.platform_level)
         > platform_roles.rank(target.platform_level)
+    )
+
+
+def levels_one_may_give(actor, target):
+    """
+    The levels the actor may put the target at: up to manager for an
+    administrator, any for an owner; none for a suspended account or one not
+    let in yet.
+    """
+    if (
+        not can_manage(actor, target)
+        or target.suspended_at
+        or target.registration_status != registrations.APPROVED
+    ):
+        return []
+    if platform_roles.has_level(actor, platform_roles.OWNER):
+        return list(platform_roles.LEVELS)
+    return [platform_roles.COLLABORATOR, platform_roles.MANAGER]
+
+
+def appoint(target, actor, role):
+    """Put someone at a level one may give; logged, and they are told."""
+    if role not in levels_one_may_give(actor, target):
+        raise AccountError(_("You can't give this level to this person."))
+    if not platform_roles.set_role(target, role, actor=actor):
+        raise AccountError(_("They are already at this level."))
+    level = PlatformRoleChoices(role).label
+    registrations.send_email(
+        target,
+        _("Your level on Collaborators changed"),
+        _("You are now: {level}.").format(level=level),
+        "/",
+        _("Open Collaborators"),
     )
 
 

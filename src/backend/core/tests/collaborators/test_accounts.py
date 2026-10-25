@@ -447,3 +447,97 @@ def test_the_keycloak_client_disables_signs_out_and_deletes(settings):
         ("put", "/users/kc-1", {"enabled": True}),
         ("delete", "/users/kc-1", None),
     ]
+
+
+def test_administrators_appoint_managers_and_owners_any_level():
+    """Up to manager for an administrator, any level for an owner."""
+    administrator = _administrator()
+    owner = _owner()
+    collaborator = factories.UserFactory()
+    manager = factories.UserFactory(platform_role="manager")
+
+    assert accounts.levels_one_may_give(administrator, collaborator) == [
+        "collaborator",
+        "manager",
+    ]
+    assert accounts.levels_one_may_give(administrator, manager) == [
+        "collaborator",
+        "manager",
+    ]
+    assert accounts.levels_one_may_give(administrator, _administrator()) == []
+    assert accounts.levels_one_may_give(owner, administrator) == [
+        "collaborator",
+        "manager",
+        "administrator",
+        "owner",
+    ]
+    assert accounts.levels_one_may_give(owner, _owner()) == []
+    assert accounts.levels_one_may_give(owner, owner) == []
+
+
+@pytest.mark.usefixtures("sign_in_server")
+def test_no_level_for_a_suspended_or_waiting_account():
+    """Reinstated or let in first."""
+    owner = _owner()
+    suspended = factories.UserFactory()
+    accounts.suspend(suspended, owner)
+    waiting = factories.UserFactory(registration_status="pending")
+    assert accounts.levels_one_may_give(owner, suspended) == []
+    assert accounts.levels_one_may_give(owner, waiting) == []
+
+
+def test_appointing_through_the_api_is_logged_and_told():
+    """The level changes, the log says who did it, they get an email."""
+    administrator = _administrator()
+    collaborator = factories.UserFactory()
+    client = _client(administrator)
+    url = f"{PEOPLE}{collaborator.id}/level/"
+
+    response = client.post(url, {"role": "manager"}, format="json")
+
+    assert response.status_code == 200
+    assert response.json() == {"platform_role": "manager"}
+    collaborator.refresh_from_db()
+    assert collaborator.platform_role == "manager"
+    entry = models.PlatformLog.objects.get(action="role_changed", target=collaborator)
+    assert entry.actor == administrator
+    assert entry.details["source"] == "app"
+    assert mail.outbox[-1].to == [collaborator.email]
+    assert "Manager" in mail.outbox[-1].body
+
+    # Not above what one may give, nor the same level again
+    assert client.post(url, {"role": "administrator"}, format="json").status_code == 400
+    assert client.post(url, {"role": "manager"}, format="json").status_code == 400
+    assert (
+        _client(factories.UserFactory(platform_role="manager"))
+        .post(url, {"role": "collaborator"}, format="json")
+        .status_code
+        == 403
+    )
+
+
+def test_an_owner_appoints_another_owner():
+    """An owner opens /admin/ too."""
+    owner = _owner()
+    administrator = _administrator()
+    response = _client(owner).post(
+        f"{PEOPLE}{administrator.id}/level/", {"role": "owner"}, format="json"
+    )
+    assert response.status_code == 200
+    administrator.refresh_from_db()
+    assert administrator.is_superuser and administrator.platform_level == "owner"
+
+
+def test_the_list_says_which_levels_one_may_give():
+    """Each row carries the levels the viewer may give."""
+    administrator = _administrator()
+    collaborator = factories.UserFactory()
+    results = {
+        item["id"]: item
+        for item in _client(administrator).get(PEOPLE).json()["results"]
+    }
+    assert results[str(collaborator.id)]["levels_you_may_give"] == [
+        "collaborator",
+        "manager",
+    ]
+    assert results[str(administrator.id)]["levels_you_may_give"] == []

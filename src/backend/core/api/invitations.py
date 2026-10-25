@@ -50,8 +50,20 @@ DOCUMENT = "d"
 
 
 def make_token(kind, invitation):
-    """A signed token naming the invitation, for the link of its email."""
-    return signing.dumps({"k": kind, "i": str(invitation.id)}, salt=SALT)
+    """
+    A signed token naming the invitation, for the link of its email.
+    Collaborators: and what it is to, so the link still leads there once
+    the invitation was used (a newcomer's account takes their invitations
+    when it is made, before they come back to the link).
+    """
+    return signing.dumps(
+        {
+            "k": kind,
+            "i": str(invitation.id),
+            "t": str(item_of(kind, invitation).id),
+        },
+        salt=SALT,
+    )
 
 
 def invite_link(kind, invitation):
@@ -74,6 +86,41 @@ def find_invitation(token):
     if invitation is None:
         raise drf.exceptions.NotFound()
     return data["k"], invitation
+
+
+def accepted_item(token, user):
+    """
+    Collaborators: what a used invitation was to, when the user may open it
+    now (they accepted it, or their account took it when it was made).
+    """
+    if not user.is_authenticated:
+        return None
+    try:
+        data = signing.loads(token, salt=SALT)
+    except signing.BadSignature:
+        return None
+    item_id = data.get("t")
+    if not item_id:
+        return None
+    try:
+        if data.get("k") == WORKSPACE:
+            return models.Workspace.objects.filter(
+                id=item_id, accesses__user=user
+            ).first()
+        document = models.Document.objects.filter(
+            id=item_id, ancestors_deleted_at__isnull=True
+        ).first()
+    except DjangoValidationError:
+        return None
+    return document if document and document.get_role(user) else None
+
+
+def accepted_answer(item, **fields):
+    """Collaborators: what a used invitation's link answers."""
+    is_workspace = isinstance(item, models.Workspace)
+    return drf.response.Response(
+        {"kind": kind_label(WORKSPACE if is_workspace else DOCUMENT, item), **fields}
+    )
 
 
 def item_of(kind, invitation):
@@ -144,11 +191,29 @@ class InvitationView(APIView):
 
     def get(self, request, token):
         """Name, kind, who invites, and whether it is still valid."""
-        kind, invitation = find_invitation(token)
+        try:
+            kind, invitation = find_invitation(token)
+        except drf.exceptions.NotFound:
+            # Collaborators: used, by one who may open what it was to
+            item = accepted_item(token, request.user)
+            if item is None:
+                raise
+            is_workspace = isinstance(item, models.Workspace)
+            return accepted_answer(
+                item,
+                name=item.name if is_workspace else item.title or "",
+                description=item.description if is_workspace else "",
+                issuer="",
+                email=request.user.email,
+                has_logo=False,
+                is_expired=False,
+                is_accepted=True,
+            )
         item = item_of(kind, invitation)
         issuer = invitation.issuer
         return drf.response.Response(
             {
+                "is_accepted": False,
                 "kind": kind_label(kind, item),
                 "name": item.name if kind == WORKSPACE else item.title or "",
                 "description": item.description if kind == WORKSPACE else "",
@@ -188,7 +253,15 @@ class AcceptInvitationView(APIView):
 
     def post(self, request, token):
         """Become a member (workspace) or get the role (space, page)."""
-        kind, invitation = find_invitation(token)
+        try:
+            kind, invitation = find_invitation(token)
+        except drf.exceptions.NotFound:
+            # Collaborators: already in (accepted, or taken by the account
+            # when it was made): it opens what it was to
+            item = accepted_item(token, request.user)
+            if item is None:
+                raise
+            return accepted_answer(item, id=str(item.id))
         if invitation.is_expired:
             raise drf.exceptions.ValidationError(
                 {"token": _("This invitation has expired: ask for a new one.")}

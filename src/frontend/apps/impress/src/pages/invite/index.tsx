@@ -91,14 +91,17 @@ const Page: NextPageWithLayout = () => {
         ),
     });
 
-  // Back from signing in for this invitation: accept it straight away
+  // Back from signing in for this invitation: accept it straight away.
+  // Collaborators: already used by the one signed in (a newcomer's account
+  // takes their invitations when it is made): open what it was to
   useEffect(() => {
     if (
       tried.current ||
       !authenticated ||
       !info ||
       info.is_expired ||
-      safeSessionStorage.getItem(ACCEPT_AFTER_SIGN_IN) !== token
+      (!info.is_accepted &&
+        safeSessionStorage.getItem(ACCEPT_AFTER_SIGN_IN) !== token)
     ) {
       return;
     }

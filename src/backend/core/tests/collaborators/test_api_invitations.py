@@ -119,6 +119,49 @@ def test_page_invitation_email_leads_to_the_invite_page(mailoutbox):
     assert page.get_role(existing) == "editor"
 
 
+def test_a_newcomers_link_opens_what_their_account_already_took(mailoutbox):
+    """
+    Signing up takes one's invitations: back to the link, the newcomer is
+    led to the page (it said the invitation could no longer be used).
+    """
+    owner = factories.UserFactory(full_name="Ada")
+    page = factories.DocumentFactory(title="Plan", users=[(owner, "owner")])
+    workspace = workspace_of(owner)
+    for url in (
+        f"/api/v1.0/documents/{page.id}/invitations/",
+        f"/api/v1.0/workspaces/{workspace.id}/invitations/",
+    ):
+        response = client_for(owner).post(
+            url, {"email": "new@example.com"}, format="json"
+        )
+        assert response.status_code == 201
+    page_token, workspace_token = (token_in(mail) for mail in mailoutbox)
+
+    # Signing up with the invited email: the account takes both invitations
+    newcomer = factories.UserFactory(email="new@example.com")
+    assert page.get_role(newcomer) is not None
+    assert not models.Invitation.objects.exists()
+
+    for token, kind, item in (
+        (page_token, "page", page),
+        (workspace_token, "workspace", workspace),
+    ):
+        info = client_for(newcomer).get(f"/api/v1.0/invitations/{token}/")
+        assert info.status_code == 200
+        assert info.json()["is_accepted"] is True
+        assert info.json()["kind"] == kind
+        accepted = client_for(newcomer).post(f"/api/v1.0/invitations/{token}/accept/")
+        assert accepted.status_code == 200
+        assert accepted.json() == {"kind": kind, "id": str(item.id)}
+        # Nobody else, nor signed out, learns anything from the link
+        stranger = factories.UserFactory()
+        assert (
+            client_for(stranger).get(f"/api/v1.0/invitations/{token}/").status_code
+            == 404
+        )
+        assert client_for().get(f"/api/v1.0/invitations/{token}/").status_code == 404
+
+
 def test_only_administrators_invite_to_a_workspace():
     """Members can't; nor can they see the invitations."""
     admin, member = factories.UserFactory.create_batch(2)

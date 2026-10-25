@@ -4,6 +4,8 @@ import { APIError, baseApiUrl, errorCauses, fetchAPI } from '@/api';
 
 /** What an invitation by email is to, as its page shows it. */
 export interface InvitationInfo {
+  /** Collaborators: already used, by the one signed in: it opens it */
+  is_accepted?: boolean;
   kind: 'workspace' | 'space' | 'page';
   name: string;
   description: string;

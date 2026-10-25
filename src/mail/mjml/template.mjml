@@ -63,10 +63,11 @@
               Collaborators, where teams write, organise and share knowledge together.
             {% endblocktrans %}
           </mj-text>
-          <!-- Signature -->
+          <!-- Signature. Collaborators: the brand's name in its logo's style
+               (plain in the text version, see bin/html-to-plain-text) -->
           <mj-text font-family="Inter, sans-serif">
             <p>
-              {% blocktrans %}
+              {% blocktrans with brandname=brandname|wordmark %}
                 Brought to you by {{brandname}}
               {% endblocktrans %}
             </p>

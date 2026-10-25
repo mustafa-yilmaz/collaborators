@@ -4,6 +4,7 @@ import base64
 
 from django import template
 from django.contrib.staticfiles import finders
+from django.utils.html import format_html
 
 from PIL import ImageFile as PillowImageFile
 
@@ -56,3 +57,16 @@ def base64_static(path):
     if full_path:
         return image_to_base64(full_path, True)
     return ""
+
+
+@register.filter
+def wordmark(name):
+    """
+    Collaborators: the brand's name in the style of its logo (bold italic
+    capitals in indigo), as at the top of HTML emails.
+    """
+    return format_html(
+        '<span style="font-weight:800;font-style:italic;color:#4747A3;'
+        'white-space:nowrap;">{}</span>',
+        name,
+    )

@@ -17,7 +17,7 @@ from rest_framework.authentication import (
     SessionAuthentication as BaseSessionAuthentication,
 )
 
-from core import identities, joining, models, registrations
+from core import accounts, identities, joining, models, registrations
 from core.models import DuplicateEmailError, User
 from core.utils.analytics import PosthogEventName, posthog_capture
 
@@ -112,6 +112,16 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
             return self.UserModel.objects.get_user_by_email(email)
         except DuplicateEmailError as err:
             raise SuspiciousOperation(err.message) from err
+
+    def create_user(self, claims):
+        """
+        Collaborators: nobody signs up with an email platform owners blocked
+        (core.accounts); an account that has it is suspended, so refused as
+        disabled.
+        """
+        if accounts.is_blocked(claims.get("email")):
+            raise SuspiciousOperation(_("This account is blocked."))
+        return super().create_user(claims)
 
     def update_user_if_needed(self, user, claims):
         """Another account's details (its email, name) aren't the user's."""

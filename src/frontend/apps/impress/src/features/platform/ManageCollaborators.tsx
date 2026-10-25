@@ -9,12 +9,26 @@ import { PlatformRole } from '@/features/auth/api';
 import { UserAvatar } from '@/features/auth/components/UserAvatar';
 import { profileHref } from '@/features/profile/api';
 
-import { PlatformPeopleParams, PlatformPerson, usePlatformPeople } from './api';
+import { RemoveDialog, SuspendDialog, useOutcomeToast } from './AccountDialogs';
+import {
+  PlatformPeopleParams,
+  PlatformPerson,
+  usePlatformPeople,
+  useReinstatePerson,
+} from './api';
 
 const rowCss = css`
   border-top: 1px solid var(--c--contextuals--border--surface--primary);
   padding-top: var(--c--globals--spacings--xs);
   flex-wrap: wrap;
+`;
+
+const suspendedCss = css`
+  padding: 0 var(--c--globals--spacings--3xs);
+  border-radius: var(--c--globals--spacings--3xs);
+  white-space: nowrap;
+  color: var(--c--contextuals--content--semantic--error--primary);
+  border: 1px solid currentColor;
 `;
 
 const badgeCss = css`
@@ -52,6 +66,68 @@ const usePlatformWords = () => {
   return { levels, statuses };
 };
 
+/** Suspend or reinstate, and remove: for people below one's level. */
+const PersonActions = ({ person }: { person: PlatformPerson }) => {
+  const { t } = useTranslation();
+  const [dialog, setDialog] = useState<'suspend' | 'remove' | null>(null);
+  const reinstate = useReinstatePerson();
+  const outcomeToast = useOutcomeToast();
+  const name = person.full_name || person.email;
+
+  return (
+    <Box $direction="row" $gap="xs">
+      {person.suspended ? (
+        <Button
+          size="small"
+          variant="secondary"
+          disabled={reinstate.isPending}
+          onClick={() =>
+            reinstate.mutate(
+              { id: person.id },
+              {
+                onSuccess: ({ sign_in_server }) =>
+                  outcomeToast(
+                    t('{{name}} is reinstated.', {
+                      description: 'Toast after reinstating an account',
+                      name,
+                    }),
+                    sign_in_server,
+                  ),
+                onError: (error) =>
+                  outcomeToast(error.cause?.[0] ?? error.message, 'failed'),
+              },
+            )
+          }
+        >
+          {t('Reinstate', { description: 'Button reinstating an account' })}
+        </Button>
+      ) : (
+        <Button
+          size="small"
+          variant="secondary"
+          onClick={() => setDialog('suspend')}
+        >
+          {t('Suspend', { description: 'Button suspending an account' })}
+        </Button>
+      )}
+      <Button
+        size="small"
+        variant="secondary"
+        color="error"
+        onClick={() => setDialog('remove')}
+      >
+        {t('Remove', { description: 'Button removing an account' })}
+      </Button>
+      {dialog === 'suspend' && (
+        <SuspendDialog person={person} onClose={() => setDialog(null)} />
+      )}
+      {dialog === 'remove' && (
+        <RemoveDialog person={person} onClose={() => setDialog(null)} />
+      )}
+    </Box>
+  );
+};
+
 const PersonRow = ({ person }: { person: PlatformPerson }) => {
   const { t, i18n } = useTranslation();
   const { levels, statuses } = usePlatformWords();
@@ -76,6 +152,11 @@ const PersonRow = ({ person }: { person: PlatformPerson }) => {
           {person.platform_role !== 'collaborator' && (
             <Text $size="xs" $weight="600" $css={badgeCss}>
               {levels[person.platform_role]}
+            </Text>
+          )}
+          {person.suspended && (
+            <Text $size="xs" $weight="600" $css={suspendedCss}>
+              {t('Suspended', { description: 'An account suspended' })}
             </Text>
           )}
           {person.registration_status !== 'approved' && (
@@ -126,6 +207,7 @@ const PersonRow = ({ person }: { person: PlatformPerson }) => {
           ].join(' · ')}
         </Text>
       </Box>
+      {person.can_manage && <PersonActions person={person} />}
     </Box>
   );
 };
@@ -171,8 +253,10 @@ export const ManageCollaborators = () => {
   const [debounced] = useDebounce(query.trim(), 250);
   const [role, setRole] = useState<PlatformPeopleParams['role']>('');
   const [status, setStatus] = useState<PlatformPeopleParams['status']>('');
+  const [account, setAccount] =
+    useState<NonNullable<PlatformPeopleParams['account']>>('');
   const { data, isLoading, isError, hasNextPage, fetchNextPage, isFetching } =
-    usePlatformPeople({ q: debounced, role, status });
+    usePlatformPeople({ q: debounced, role, status, account });
   const people = data?.pages.flatMap((page) => page.results) ?? [];
   const count = data?.pages[0]?.count ?? 0;
   const all = t('All', { description: 'Filter choice: no filter' });
@@ -209,6 +293,19 @@ export const ManageCollaborators = () => {
             PlatformPerson['registration_status'],
             string,
           ][]),
+        ]}
+      />
+      <Choice
+        label={t('Account', { description: 'Filter of active or suspended' })}
+        value={account}
+        onChange={setAccount}
+        options={[
+          ['', all],
+          ['active', t('Active', { description: 'An account not suspended' })],
+          [
+            'suspended',
+            t('Suspended', { description: 'An account suspended' }),
+          ],
         ]}
       />
       {isLoading && <Loading />}

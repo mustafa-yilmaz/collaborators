@@ -6,17 +6,20 @@ import { Box } from '@/components';
 import { hasPlatformLevel, useAuth } from '@/features/auth';
 import { PeopleDirectory } from '@/features/people/PeopleDirectory';
 
+import { BlockedEmails } from './BlockedEmails';
 import { ManageCollaborators } from './ManageCollaborators';
 
 /**
  * Collaborators: the screen of "My CO✍️✍️ABORATORS" (its heading spells the
  * logo; the tabs are plain words). Platform managers and the levels above
- * them also find "Manage Collaborators" there: everyone on the platform.
+ * them also find "Manage Collaborators" there: everyone on the platform
+ * (administrators and owners suspend and remove accounts there); owners
+ * also find "Blocked accounts".
  */
 export const CollaboratorsTabs = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [tab, setTab] = useState<'mine' | 'manage'>('mine');
+  const [tab, setTab] = useState<'mine' | 'manage' | 'blocked'>('mine');
 
   if (!hasPlatformLevel(user, 'manager')) {
     return <PeopleDirectory />;
@@ -48,8 +51,23 @@ export const CollaboratorsTabs = () => {
               'Tab listing everyone on the platform, for platform managers',
           })}
         </Button>
+        {hasPlatformLevel(user, 'owner') && (
+          <Button
+            size="small"
+            role="tab"
+            aria-selected={tab === 'blocked'}
+            variant={tab === 'blocked' ? 'primary' : 'tertiary'}
+            onClick={() => setTab('blocked')}
+          >
+            {t('Blocked accounts', {
+              description: 'Tab of the blocked emails, for platform owners',
+            })}
+          </Button>
+        )}
       </Box>
-      {tab === 'mine' ? <PeopleDirectory /> : <ManageCollaborators />}
+      {tab === 'mine' && <PeopleDirectory />}
+      {tab === 'manage' && <ManageCollaborators />}
+      {tab === 'blocked' && <BlockedEmails />}
     </Box>
   );
 };

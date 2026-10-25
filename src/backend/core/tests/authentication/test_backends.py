@@ -480,7 +480,8 @@ def test_authentication_session_tokens(
         status=200,
     )
 
-    with django_assert_num_queries(7):  # Collaborators: + invitations to workspaces
+    # Collaborators: + invitations to workspaces, + blocked emails
+    with django_assert_num_queries(8):
         user = klass.authenticate(
             request,
             code="test-code",

@@ -173,6 +173,27 @@ urlpatterns = [
                     registrations.RegistrationDecisionView.as_view(decision="decline"),
                 ),
                 path("platform/people/", platform.PlatformPeopleView.as_view()),
+                path(
+                    "platform/people/<uuid:user_id>/suspend/",
+                    platform.AccountActionView.as_view(action="suspend"),
+                ),
+                path(
+                    "platform/people/<uuid:user_id>/reinstate/",
+                    platform.AccountActionView.as_view(action="reinstate"),
+                ),
+                path(
+                    "platform/people/<uuid:user_id>/removal/",
+                    platform.AccountActionView.as_view(action="remove"),
+                ),
+                path(
+                    "platform/people/<uuid:user_id>/remove/",
+                    platform.AccountActionView.as_view(action="remove"),
+                ),
+                path("platform/blocked/", platform.BlockedEmailListView.as_view()),
+                path(
+                    "platform/blocked/<uuid:blocked_id>/",
+                    platform.BlockedEmailView.as_view(),
+                ),
                 path("collaborations/", collaborations.CollaborationsView.as_view()),
                 path("search/", search.SearchView.as_view()),
                 path(

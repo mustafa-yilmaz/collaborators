@@ -211,6 +211,11 @@ class PlatformLogActionChoices(TextChoices):
     """What the platform log records."""
 
     ROLE_CHANGED = "role_changed", _("Level changed")
+    SUSPENDED = "suspended", _("Account suspended")
+    REINSTATED = "reinstated", _("Account reinstated")
+    REMOVED = "removed", _("Account removed")
+    BLOCKED = "blocked", _("Email blocked")
+    UNBLOCKED = "unblocked", _("Email unblocked")
 
 
 class SpaceVisibilityChoices(TextChoices):

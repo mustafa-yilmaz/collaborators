@@ -4,8 +4,10 @@ Keycloak holds them, for the in-app "Sign-in methods" page.
 
 The backend talks to Keycloak's admin API with a service client of its own
 (COLLABORATORS_KEYCLOAK_*), which may read users and remove their links to
-providers. Connecting a provider is not done here: the app starts Keycloak's
-"idp_link" action at sign-in, where the person proves the account is theirs.
+providers; it also disables, signs out and deletes the accounts platform
+administrators suspend or remove (core.accounts). Connecting a provider is
+not done here: the app starts Keycloak's "idp_link" action at sign-in, where
+the person proves the account is theirs.
 
 At sign-in, the backend also reads the ID tokens Keycloak stored from the
 providers (with the person's own access token), for the organisation they
@@ -71,7 +73,7 @@ def _token():
     return body["access_token"]
 
 
-def _request(method, path, **kwargs):
+def _request(method, path, missing_ok=False, **kwargs):
     try:
         response = requests.request(
             method,
@@ -82,6 +84,8 @@ def _request(method, path, **kwargs):
         )
     except requests.RequestException as err:
         raise KeycloakError(f"Keycloak unreachable for {path}") from err
+    if missing_ok and response.status_code == 404:
+        return None
     if response.status_code == 401:
         # an expired token kept a little too long: get a new one, once
         cache.delete(TOKEN_CACHE_KEY)
@@ -114,6 +118,21 @@ def sign_in_methods(user_id):
 def unlink(user_id, provider):
     """Remove a provider from the account."""
     _request("delete", f"/users/{user_id}/federated-identity/{provider}")
+
+
+def set_enabled(user_id, enabled):
+    """
+    Let the account sign in, or not; disabled, its sessions end too. An
+    account missing there has nothing to change.
+    """
+    _request("put", f"/users/{user_id}", missing_ok=True, json={"enabled": enabled})
+    if not enabled:
+        _request("post", f"/users/{user_id}/logout", missing_ok=True)
+
+
+def delete_user(user_id):
+    """Delete the account (already gone is fine)."""
+    _request("delete", f"/users/{user_id}", missing_ok=True)
 
 
 def provider_id_token_claims(access_token, provider):

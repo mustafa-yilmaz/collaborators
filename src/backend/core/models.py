@@ -292,6 +292,9 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
         choices=PlatformRoleChoices.choices,
         default=PlatformRoleChoices.COLLABORATOR,
     )
+    # Collaborators: suspended by a platform administrator (core.accounts):
+    # inactive, and disabled at the sign-in server, until reinstated
+    suspended_at = models.DateTimeField(null=True, blank=True)
 
     objects = UserManager()
 
@@ -3639,6 +3642,33 @@ class PlatformLog(BaseModel):
 
     def __str__(self):
         return f"{self.action} {self.target_name}"
+
+
+class BlockedEmail(BaseModel):
+    """
+    Collaborators: an email platform owners blocked (core.accounts). Nobody
+    signs in with it, whether or not it has an account yet.
+    """
+
+    # Kept lower case
+    email = models.EmailField(unique=True)
+    reason = models.CharField(max_length=500, blank=True)
+    blocked_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="blocked_emails",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        db_table = "collaborators_blocked_email"
+        ordering = ("-created_at",)
+        verbose_name = _("Blocked email")
+        verbose_name_plural = _("Blocked emails")
+
+    def __str__(self):
+        return self.email
 
 
 class WorkspaceInvitation(BaseModel):

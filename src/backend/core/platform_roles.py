@@ -48,20 +48,24 @@ def at_level(role):
     )
 
 
-def _name(user):
+def display_name(user):
+    """How the log names someone: "Name <email>", or the email."""
     if user is None:
         return ""
     return f"{user.full_name} <{user.email}>" if user.full_name else user.email or ""
 
 
-def log(action, target, actor=None, **details):
-    """Write one entry of the platform log."""
+def log(action, target, actor=None, target_name=None, **details):
+    """
+    Write one entry of the platform log; `target_name` names what has no
+    account (a blocked email).
+    """
     return models.PlatformLog.objects.create(
         action=action,
         actor=actor,
-        actor_name=_name(actor),
+        actor_name=display_name(actor),
         target=target,
-        target_name=_name(target),
+        target_name=target_name if target_name is not None else display_name(target),
         details=details,
     )
 

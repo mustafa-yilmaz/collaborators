@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
@@ -16,20 +16,46 @@ import { useWorkspaceStore } from '../stores/useWorkspaceStore';
 export const WorkspaceSwitcher = () => {
   const { t } = useTranslation();
   const router = useRouter();
-  const { data: workspaces = [], isFetched, isFetching } = useWorkspaces();
+  const {
+    data: workspaces = [],
+    isFetched,
+    isFetching,
+    refetch,
+  } = useWorkspaces();
   const { currentWorkspaceId, setCurrentWorkspaceId } = useWorkspaceStore();
   const current = workspaces.find((ws) => ws.id === currentWorkspaceId);
+  // Collaborators: the workspace asked again for, before forgetting it
+  const recheckedId = useRef<string | null>(null);
 
-  // Forget a workspace the user left or that was deleted
+  // Forget a workspace the user left or that was deleted. Collaborators: not
+  // one only missing from a list loaded before it was made (opened from
+  // "Recent", say): the list is asked for again first
   useEffect(() => {
-    if (isFetched && !isFetching && currentWorkspaceId && !current) {
-      setCurrentWorkspaceId(null);
+    if (
+      !isFetched ||
+      isFetching ||
+      !currentWorkspaceId ||
+      current ||
+      recheckedId.current === currentWorkspaceId
+    ) {
+      return;
     }
+    const missing = currentWorkspaceId;
+    recheckedId.current = missing;
+    void refetch().then(({ data }) => {
+      if (
+        !data?.some((ws) => ws.id === missing) &&
+        useWorkspaceStore.getState().currentWorkspaceId === missing
+      ) {
+        setCurrentWorkspaceId(null);
+      }
+    });
   }, [
     isFetched,
     isFetching,
     currentWorkspaceId,
     current,
+    refetch,
     setCurrentWorkspaceId,
   ]);
 

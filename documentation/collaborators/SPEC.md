@@ -410,6 +410,8 @@ Moved out of the table v1:
 7. **Input from one's own AI tools** (item 11 below), once the owner has decided its first ways in.
 8. Last: a README of Collaborators for the GitHub repository.
 
+Later (found in the live checks of 2026-10-25): **touch screens.** On a phone, the table's handles and menus (columns, rows, header row) and the press-and-hold dragging of blocks don't work yet; they work with a mouse. Needed for tablets at least, when a real need arises.
+
 Not planned: emailing admins about join requests (see F2). Dropped (2026-10-25): checking a wiki domain's DNS before accepting it, and keeping several fixed versions of a wiki.
 
 ### To do next, in order

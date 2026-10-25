@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import fetchMock from 'fetch-mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -45,5 +45,34 @@ describe('WorkspaceSwitcher', () => {
     fireEvent.click(screen.getByText('My collaborations'));
     expect(useWorkspaceStore.getState().currentWorkspaceId).toBeNull();
     expect(push).toHaveBeenCalledWith('/');
+  });
+
+  test('a workspace made after the list was loaded is asked for again', async () => {
+    // The list loaded before the workspace was made, then with it
+    fetchMock.removeRoutes();
+    let calls = 0;
+    fetchMock.get(`${API}/workspaces/`, () => {
+      calls += 1;
+      return calls === 1
+        ? [{ id: 'w-1', name: 'Acme', slug: 'acme' }]
+        : [
+            { id: 'w-1', name: 'Acme', slug: 'acme' },
+            { id: 'w-2', name: 'New Lab', slug: 'new-lab' },
+          ];
+    });
+    useWorkspaceStore.getState().setCurrentWorkspaceId('w-2');
+    render(<WorkspaceSwitcher />, { wrapper: AppWrapper });
+
+    expect(await screen.findByText('New Lab')).toBeInTheDocument();
+    expect(useWorkspaceStore.getState().currentWorkspaceId).toBe('w-2');
+  });
+
+  test('a workspace still missing once asked for again is forgotten', async () => {
+    useWorkspaceStore.getState().setCurrentWorkspaceId('w-gone');
+    render(<WorkspaceSwitcher />, { wrapper: AppWrapper });
+
+    await waitFor(() =>
+      expect(useWorkspaceStore.getState().currentWorkspaceId).toBeNull(),
+    );
   });
 });

@@ -28,7 +28,10 @@ def fixture_sign_in_server():
         mock.patch.object(keycloak, "is_configured", return_value=True),
         mock.patch.object(keycloak, "set_enabled") as set_enabled,
         mock.patch.object(keycloak, "delete_user") as delete_user,
-        mock.patch.object(keycloak, "find_user_id", return_value=None) as find,
+        # Accounts there are found by email: "kc:<email>"
+        mock.patch.object(
+            keycloak, "find_user_id", side_effect=lambda email: f"kc:{email}"
+        ) as find,
     ):
         yield mock.Mock(set_enabled=set_enabled, delete_user=delete_user, find=find)
 
@@ -89,8 +92,13 @@ def test_only_administrators_and_owners_act_on_accounts():
 def test_suspending_signs_them_out_everywhere(sign_in_server):
     """Inactive here, disabled there (each account), logged and told."""
     administrator = _administrator()
-    target = factories.UserFactory(sub="kc-1", full_name="Tom")
-    models.SignInIdentity.objects.create(user=target, provider="google", sub="kc-2")
+    # Their sub is their email, as on collaborators.community
+    target = factories.UserFactory(
+        email="tom@example.org", sub="tom@example.org", full_name="Tom"
+    )
+    models.SignInIdentity.objects.create(
+        user=target, provider="google", sub="g-2", account="Tom.Work@example.org"
+    )
     target_client = _client(target)
     assert target_client.get("/api/v1.0/users/me/").status_code == 200
 
@@ -103,8 +111,8 @@ def test_suspending_signs_them_out_everywhere(sign_in_server):
     target.refresh_from_db()
     assert not target.is_active and target.suspended_at
     assert sign_in_server.set_enabled.call_args_list == [
-        mock.call("kc-1", False),
-        mock.call("kc-2", False),
+        mock.call("kc:tom@example.org", False),
+        mock.call("kc:tom.work@example.org", False),
     ]
     # Their session no longer counts
     assert target_client.get("/api/v1.0/users/me/").status_code == 401
@@ -121,7 +129,7 @@ def test_suspending_signs_them_out_everywhere(sign_in_server):
 def test_reinstating_lets_them_in_again(sign_in_server):
     """Active again, enabled there, logged and told; never while blocked."""
     administrator = _administrator()
-    target = factories.UserFactory(sub="kc-1")
+    target = factories.UserFactory(email="tom@example.org")
     accounts.suspend(target, administrator)
 
     response = _client(administrator).post(f"{PEOPLE}{target.id}/reinstate/")
@@ -129,7 +137,7 @@ def test_reinstating_lets_them_in_again(sign_in_server):
     assert response.status_code == 200
     target.refresh_from_db()
     assert target.is_active and target.suspended_at is None
-    sign_in_server.set_enabled.assert_called_with("kc-1", True)
+    sign_in_server.set_enabled.assert_called_with("kc:tom@example.org", True)
     assert models.PlatformLog.objects.filter(action="reinstated").count() == 1
 
     accounts.suspend(target, administrator)
@@ -139,10 +147,19 @@ def test_reinstating_lets_them_in_again(sign_in_server):
     assert "blocked" in blocked.json()["detail"]
 
 
+def test_an_account_missing_at_the_sign_in_server_is_nothing_there(sign_in_server):
+    """Not found there by email: done here, nothing to change there."""
+    sign_in_server.find.side_effect = None
+    sign_in_server.find.return_value = None
+    target = factories.UserFactory()
+    assert accounts.suspend(target, _administrator()) == accounts.NONE
+    sign_in_server.set_enabled.assert_not_called()
+
+
 def test_the_sign_in_server_failing_is_told(sign_in_server):
     """The account is suspended here all the same."""
     sign_in_server.set_enabled.side_effect = keycloak.KeycloakError("down")
-    target = factories.UserFactory(sub="kc-1")
+    target = factories.UserFactory()
     assert accounts.suspend(target, _administrator()) == accounts.FAILED
     target.refresh_from_db()
     assert target.suspended_at
@@ -202,7 +219,7 @@ def test_removing_hands_their_pages_over(sign_in_server):
     """The recipient owns what they owned alone; they are gone, there too."""
     administrator = _administrator()
     recipient = factories.UserFactory(full_name="Rita")
-    target = factories.UserFactory(sub="kc-1", full_name="Tom")
+    target = factories.UserFactory(email="tom@example.org", full_name="Tom")
     page, below, shared, workspace = _owned_alone(target)
     email = target.email
 
@@ -223,7 +240,7 @@ def test_removing_hands_their_pages_over(sign_in_server):
         models.WorkspaceAccess.objects.get(workspace=workspace, user=recipient).role
         == "owner"
     )
-    sign_in_server.delete_user.assert_called_once_with("kc-1")
+    sign_in_server.delete_user.assert_called_once_with("kc:tom@example.org")
     entry = models.PlatformLog.objects.get(action="removed")
     assert entry.target is None
     assert entry.target_name == f"Tom <{email}>"
@@ -323,7 +340,6 @@ def test_owners_block_emails_with_or_without_accounts(sign_in_server):
     """No account yet: disabled at the sign-in server; an account: suspended."""
     owner = _owner()
     client = _client(owner)
-    sign_in_server.find.return_value = "kc-new"
 
     newcomer = client.post(
         BLOCKED, {"email": " New@Example.org ", "reason": "Spam"}, format="json"
@@ -331,9 +347,9 @@ def test_owners_block_emails_with_or_without_accounts(sign_in_server):
     assert newcomer.status_code == 201
     assert newcomer.json()["email"] == "new@example.org"
     assert newcomer.json()["has_account"] is False
-    sign_in_server.set_enabled.assert_called_with("kc-new", False)
+    sign_in_server.set_enabled.assert_called_with("kc:new@example.org", False)
 
-    member = factories.UserFactory(email="member@example.org", sub="kc-m")
+    member = factories.UserFactory(email="member@example.org")
     assert client.post(BLOCKED, {"email": member.email}, format="json").status_code == (
         201
     )
@@ -394,10 +410,9 @@ def test_unblocking_lets_the_email_in_but_keeps_a_suspension(sign_in_server):
     assert models.PlatformLog.objects.filter(action="unblocked").count() == 1
 
     # Without an account here, the sign-in server's account is enabled again
-    sign_in_server.find.return_value = "kc-x"
     accounts.block_email("x@example.org", owner)
     accounts.unblock_email(models.BlockedEmail.objects.get(), owner)
-    sign_in_server.set_enabled.assert_called_with("kc-x", True)
+    sign_in_server.set_enabled.assert_called_with("kc:x@example.org", True)
 
 
 def test_a_blocked_email_cannot_sign_in():

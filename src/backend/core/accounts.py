@@ -104,26 +104,35 @@ def is_blocked(email):
     return bool(email) and models.BlockedEmail.objects.filter(email=email).exists()
 
 
-def _sign_in_ids(user):
-    """The accounts of the sign-in server opening this collaborator's."""
-    ids = [user.sub] if user.sub else []
-    ids += list(user.sign_in_identities.values_list("sub", flat=True))
-    return ids
+def _sign_in_emails(user):
+    """
+    The emails of the sign-in server's accounts opening this collaborator's:
+    their own, and those of their other Google or Microsoft accounts. The
+    accounts are found by email there (a collaborator's `sub` may be their
+    email, not the sign-in server's id).
+    """
+    emails = [user.email or ""]
+    emails += list(user.sign_in_identities.values_list("account", flat=True))
+    return list(dict.fromkeys(email.lower() for email in emails if email))
 
 
-def _at_sign_in_server(ids, action):
-    """Do something to each of these accounts of the sign-in server."""
-    if not ids:
+def _at_sign_in_server(emails, action):
+    """Do something to each sign-in server account with these emails."""
+    if not emails:
         return NONE
     if not keycloak.is_configured():
         return NOT_CONFIGURED
+    found = False
     try:
-        for keycloak_id in ids:
-            action(keycloak_id)
+        for email in emails:
+            keycloak_id = keycloak.find_user_id(email)
+            if keycloak_id:
+                action(keycloak_id)
+                found = True
     except keycloak.KeycloakError:
         logger.exception("The sign-in server refused an account change")
         return FAILED
-    return DONE
+    return DONE if found else NONE
 
 
 def _with_reason(message, reason):
@@ -140,7 +149,7 @@ def suspend(target, actor, reason=""):
     target.suspended_at = timezone.now()
     target.save(update_fields=["is_active", "suspended_at", "updated_at"])
     server = _at_sign_in_server(
-        _sign_in_ids(target),
+        _sign_in_emails(target),
         lambda keycloak_id: keycloak.set_enabled(keycloak_id, False),
     )
     platform_roles.log(
@@ -174,7 +183,7 @@ def reinstate(target, actor):
     target.suspended_at = None
     target.save(update_fields=["is_active", "suspended_at", "updated_at"])
     server = _at_sign_in_server(
-        _sign_in_ids(target),
+        _sign_in_emails(target),
         lambda keycloak_id: keycloak.set_enabled(keycloak_id, True),
     )
     platform_roles.log(
@@ -290,7 +299,7 @@ def remove(  # noqa: PLR0913  # pylint: disable=too-many-arguments
         raise AccountError(_("Only owners block emails."))
 
     documents, workspaces = owned_alone(target)
-    sign_in_ids = _sign_in_ids(target)
+    sign_in_emails = _sign_in_emails(target)
     email = target.email
     with transaction.atomic():
         heirs = {}
@@ -331,7 +340,7 @@ def remove(  # noqa: PLR0913  # pylint: disable=too-many-arguments
         target.delete()
         if block:
             block_email(email, actor, reason)
-    server = _at_sign_in_server(sign_in_ids, keycloak.delete_user)
+    server = _at_sign_in_server(sign_in_emails, keycloak.delete_user)
     # The entry in memory still points at the deleted account
     models.PlatformLog.objects.filter(pk=entry.pk).update(
         details={**entry.details, "sign_in_server": server}
@@ -363,7 +372,9 @@ def block_email(email, actor, reason=""):
     server = NONE
     if not users:
         # Someone without an account here may still have one there
-        server = _sign_in_server_by_email(email, enabled=False)
+        server = _at_sign_in_server(
+            [email], lambda keycloak_id: keycloak.set_enabled(keycloak_id, False)
+        )
     platform_roles.log(
         PlatformLogActionChoices.BLOCKED,
         users[0] if users else None,
@@ -386,7 +397,9 @@ def unblock_email(blocked, actor):
     users = models.User.objects.filter(email__iexact=email)
     server = NONE
     if not users.exists():
-        server = _sign_in_server_by_email(email, enabled=True)
+        server = _at_sign_in_server(
+            [email], lambda keycloak_id: keycloak.set_enabled(keycloak_id, True)
+        )
     platform_roles.log(
         PlatformLogActionChoices.UNBLOCKED,
         users.first(),
@@ -394,18 +407,3 @@ def unblock_email(blocked, actor):
         target_name=email,
         sign_in_server=server,
     )
-
-
-def _sign_in_server_by_email(email, enabled):
-    """Enable or disable the sign-in server's account with this email, if any."""
-    if not keycloak.is_configured():
-        return NOT_CONFIGURED
-    try:
-        keycloak_id = keycloak.find_user_id(email)
-        if keycloak_id is None:
-            return NONE
-        keycloak.set_enabled(keycloak_id, enabled)
-    except keycloak.KeycloakError:
-        logger.exception("The sign-in server refused an account change")
-        return FAILED
-    return DONE

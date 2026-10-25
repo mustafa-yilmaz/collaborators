@@ -294,6 +294,10 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
         choices=PlatformRoleChoices.choices,
         default=PlatformRoleChoices.COLLABORATOR,
     )
+    # Collaborators: a protected owner: nobody changes their level in the
+    # app, and they alone change other owners' (set by set_platform_role
+    # --protected on the server, see core.accounts)
+    platform_protected = models.BooleanField(default=False)
     # Collaborators: suspended by a platform administrator (core.accounts):
     # inactive, and disabled at the sign-in server, until reinstated
     suspended_at = models.DateTimeField(null=True, blank=True)

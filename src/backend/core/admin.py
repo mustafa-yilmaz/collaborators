@@ -50,6 +50,7 @@ class UserAdmin(auth_admin.UserAdmin):
                     "is_device",
                     # Collaborators: changed by set_platform_role, which logs it
                     "platform_role",
+                    "platform_protected",
                     "is_staff",
                     "is_superuser",
                     "groups",
@@ -101,6 +102,7 @@ class UserAdmin(auth_admin.UserAdmin):
         "id",
         "sub",
         "platform_role",
+        "platform_protected",
         "email",
         "full_name",
         "short_name",

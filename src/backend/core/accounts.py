@@ -9,7 +9,9 @@ core.platform_roles for the levels):
 - **block** an email (owners only): nobody signs in with it, whether or not
   it has an account yet; an account with it is suspended;
 - **appoint**: administrators make collaborators managers (or managers
-  collaborators again); owners give any level, owner included.
+  collaborators again); owners give any level, owner included, to people
+  below them; protected owners also change other owners' levels, and
+  nobody changes theirs in the app.
 
 One acts only on people below one's own level, never on oneself. Every
 action goes to the platform log; the people suspended, reinstated or removed
@@ -63,18 +65,25 @@ def can_manage(actor, target):
 def levels_one_may_give(actor, target):
     """
     The levels the actor may put the target at: up to manager for an
-    administrator, any for an owner; none for a suspended account or one not
-    let in yet.
+    administrator (to people below them), any for an owner to people below
+    them. Another owner's level is changed by protected owners alone, and a
+    protected owner's by nobody (only on the server). Never one's own, nor
+    that of a suspended account or one not let in yet.
     """
     if (
-        not can_manage(actor, target)
+        actor.pk == target.pk
+        or target.platform_protected
         or target.suspended_at
         or target.registration_status != registrations.APPROVED
     ):
         return []
     if platform_roles.has_level(actor, platform_roles.OWNER):
-        return list(platform_roles.LEVELS)
-    return [platform_roles.COLLABORATOR, platform_roles.MANAGER]
+        if target.platform_level != platform_roles.OWNER or actor.platform_protected:
+            return list(platform_roles.LEVELS)
+        return []
+    if can_manage(actor, target):
+        return [platform_roles.COLLABORATOR, platform_roles.MANAGER]
+    return []
 
 
 def appoint(target, actor, role):

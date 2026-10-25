@@ -107,6 +107,29 @@ describe('Suspending, removing and blocking accounts', () => {
     );
   });
 
+  test('an owner changes another owner’s level, nothing else', async () => {
+    me.current = { id: 'me', platform_role: 'owner' };
+    list([
+      {
+        ...person,
+        platform_role: 'owner',
+        can_manage: false,
+        levels_you_may_give: [
+          'collaborator',
+          'manager',
+          'administrator',
+          'owner',
+        ],
+      },
+    ]);
+    render(<ManageCollaborators />, { wrapper: AppWrapper });
+
+    const row = await screen.findByTestId('platform-person-u-1');
+    expect(row).toHaveTextContent('Level');
+    expect(row).not.toHaveTextContent('Suspend');
+    expect(row).not.toHaveTextContent('Remove');
+  });
+
   test('a suspended person is marked and can be reinstated', async () => {
     list([{ ...person, suspended: true }]);
     fetchMock.post(`${API}/platform/people/u-1/reinstate/`, {

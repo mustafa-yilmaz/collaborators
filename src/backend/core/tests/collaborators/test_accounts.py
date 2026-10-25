@@ -3,10 +3,12 @@ Collaborators: platform administrators suspend, reinstate and remove
 accounts; platform owners block emails (core.accounts).
 """
 
+from io import StringIO
 from unittest import mock
 
 from django.core import mail
 from django.core.exceptions import SuspiciousOperation
+from django.core.management import CommandError, call_command
 
 import pytest
 from rest_framework.test import APIClient
@@ -48,6 +50,15 @@ def _administrator():
 
 def _owner():
     return factories.UserFactory(is_superuser=True, full_name="Olga")
+
+
+def _protected_owner():
+    return factories.UserFactory(
+        platform_role="owner",
+        is_superuser=True,
+        platform_protected=True,
+        full_name="Pia",
+    )
 
 
 def test_one_acts_only_below_ones_level():
@@ -479,15 +490,22 @@ def test_administrators_appoint_managers_and_owners_any_level():
         "collaborator",
         "manager",
     ]
-    assert accounts.levels_one_may_give(administrator, _administrator()) == []
+    assert not accounts.levels_one_may_give(administrator, _administrator())
     assert accounts.levels_one_may_give(owner, administrator) == [
         "collaborator",
         "manager",
         "administrator",
         "owner",
     ]
-    assert accounts.levels_one_may_give(owner, _owner()) == []
-    assert accounts.levels_one_may_give(owner, owner) == []
+    # Another owner: protected owners alone; never oneself
+    assert not accounts.levels_one_may_give(owner, _owner())
+    assert accounts.levels_one_may_give(_protected_owner(), _owner()) == [
+        "collaborator",
+        "manager",
+        "administrator",
+        "owner",
+    ]
+    assert not accounts.levels_one_may_give(owner, owner)
 
 
 @pytest.mark.usefixtures("sign_in_server")
@@ -497,8 +515,8 @@ def test_no_level_for_a_suspended_or_waiting_account():
     suspended = factories.UserFactory()
     accounts.suspend(suspended, owner)
     waiting = factories.UserFactory(registration_status="pending")
-    assert accounts.levels_one_may_give(owner, suspended) == []
-    assert accounts.levels_one_may_give(owner, waiting) == []
+    assert not accounts.levels_one_may_give(owner, suspended)
+    assert not accounts.levels_one_may_give(owner, waiting)
 
 
 def test_appointing_through_the_api_is_logged_and_told():
@@ -556,3 +574,105 @@ def test_the_list_says_which_levels_one_may_give():
         "manager",
     ]
     assert results[str(administrator.id)]["levels_you_may_give"] == []
+
+
+def test_a_protected_owner_makes_another_owner_a_collaborator_again():
+    """The way back down, through the API; no longer superuser; logged."""
+    owner = _protected_owner()
+    other = factories.UserFactory(platform_role="owner", is_superuser=True)
+    client = _client(owner)
+
+    response = client.post(
+        f"{PEOPLE}{other.id}/level/", {"role": "collaborator"}, format="json"
+    )
+
+    assert response.status_code == 200
+    other.refresh_from_db()
+    assert other.platform_level == "collaborator"
+    assert not other.is_superuser and not other.is_staff
+    entry = models.PlatformLog.objects.get(action="role_changed", target=other)
+    assert entry.details["previous"] == "owner"
+    assert entry.actor == owner
+    # Never one's own level, and still no suspending another owner
+    assert (
+        client.post(
+            f"{PEOPLE}{owner.id}/level/", {"role": "manager"}, format="json"
+        ).status_code
+        == 403
+    )
+    third = _owner()
+    assert client.post(f"{PEOPLE}{third.id}/suspend/").status_code == 403
+
+
+def test_the_list_offers_levels_on_another_owners_row():
+    """A protected owner sees Level on another owner's row, not Suspend/Remove."""
+    owner = _protected_owner()
+    other = _owner()
+    row = next(
+        item
+        for item in _client(owner).get(PEOPLE).json()["results"]
+        if item["id"] == str(other.id)
+    )
+    assert row["can_manage"] is False
+    assert row["levels_you_may_give"] == [
+        "collaborator",
+        "manager",
+        "administrator",
+        "owner",
+    ]
+
+
+def test_nobody_changes_a_protected_owners_level_in_the_app():
+    """Not another protected owner, not an owner, not themselves."""
+    first = _protected_owner()
+    second = _protected_owner()
+    owner = _owner()
+    assert not accounts.levels_one_may_give(first, second)
+    assert not accounts.levels_one_may_give(owner, first)
+    assert not accounts.levels_one_may_give(first, first)
+    response = _client(first).post(
+        f"{PEOPLE}{second.id}/level/", {"role": "collaborator"}, format="json"
+    )
+    assert response.status_code == 403
+    second.refresh_from_db()
+    assert second.platform_level == "owner"
+
+
+def test_an_owner_who_is_not_protected_never_lowers_an_owner():
+    """They make owners, but lower none."""
+    owner = _owner()
+    other = _owner()
+    collaborator = factories.UserFactory()
+    client = _client(owner)
+    assert (
+        client.post(
+            f"{PEOPLE}{other.id}/level/", {"role": "collaborator"}, format="json"
+        ).status_code
+        == 403
+    )
+    assert (
+        client.post(
+            f"{PEOPLE}{collaborator.id}/level/", {"role": "owner"}, format="json"
+        ).status_code
+        == 200
+    )
+
+
+def test_set_platform_role_protects_owners():
+    """--protected for owners only; --unprotected takes it back; logged."""
+    user = factories.UserFactory(email="pia@example.org")
+    out = StringIO()
+    call_command("set_platform_role", user.email, "owner", "--protected", stdout=out)
+    user.refresh_from_db()
+    assert user.platform_protected and user.platform_level == "owner"
+    assert "protected" in out.getvalue()
+    assert models.PlatformLog.objects.filter(
+        target=user, details__protected=True
+    ).exists()
+    with pytest.raises(CommandError):
+        call_command("set_platform_role", user.email, "manager", "--protected")
+    call_command(
+        "set_platform_role", user.email, "owner", "--unprotected", stdout=StringIO()
+    )
+    user.refresh_from_db()
+    assert not user.platform_protected

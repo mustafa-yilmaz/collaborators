@@ -191,7 +191,13 @@ class AccountActionView(APIView):
         )
         if target is None:
             raise drf.exceptions.NotFound()
-        if not accounts.can_manage(request.user, target):
+        # Owners give levels to other owners too (core.accounts)
+        if self.action == "level":
+            if not accounts.levels_one_may_give(request.user, target):
+                raise drf.exceptions.PermissionDenied(
+                    "You can't change this person's level."
+                )
+        elif not accounts.can_manage(request.user, target):
             raise drf.exceptions.PermissionDenied(
                 "Only people below your own level, never yourself."
             )

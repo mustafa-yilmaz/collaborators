@@ -44,7 +44,10 @@ const badgeCss = css`
   white-space: nowrap;
 `;
 
-/** Suspend or reinstate, and remove: for people below one's level. */
+/**
+ * Level, suspend or reinstate, and remove: for people below one's level;
+ * an owner also changes another owner's level.
+ */
 const PersonActions = ({ person }: { person: PlatformPerson }) => {
   const { t } = useTranslation();
   const [dialog, setDialog] = useState<'level' | 'suspend' | 'remove' | null>(
@@ -65,7 +68,8 @@ const PersonActions = ({ person }: { person: PlatformPerson }) => {
           {t('Level', { description: 'Button changing someone’s level' })}
         </Button>
       )}
-      {person.suspended ? (
+      {/* Only below one's own level (an owner's row offers its level) */}
+      {person.can_manage && person.suspended && (
         <Button
           size="small"
           variant="secondary"
@@ -90,7 +94,8 @@ const PersonActions = ({ person }: { person: PlatformPerson }) => {
         >
           {t('Reinstate', { description: 'Button reinstating an account' })}
         </Button>
-      ) : (
+      )}
+      {person.can_manage && !person.suspended && (
         <Button
           size="small"
           variant="secondary"
@@ -99,14 +104,16 @@ const PersonActions = ({ person }: { person: PlatformPerson }) => {
           {t('Suspend', { description: 'Button suspending an account' })}
         </Button>
       )}
-      <Button
-        size="small"
-        variant="secondary"
-        color="error"
-        onClick={() => setDialog('remove')}
-      >
-        {t('Remove', { description: 'Button removing an account' })}
-      </Button>
+      {person.can_manage && (
+        <Button
+          size="small"
+          variant="secondary"
+          color="error"
+          onClick={() => setDialog('remove')}
+        >
+          {t('Remove', { description: 'Button removing an account' })}
+        </Button>
+      )}
       {dialog === 'level' && (
         <LevelDialog person={person} onClose={() => setDialog(null)} />
       )}
@@ -199,7 +206,9 @@ const PersonRow = ({ person }: { person: PlatformPerson }) => {
           ].join(' · ')}
         </Text>
       </Box>
-      {person.can_manage && <PersonActions person={person} />}
+      {(person.can_manage || person.levels_you_may_give.length > 0) && (
+        <PersonActions person={person} />
+      )}
     </Box>
   );
 };

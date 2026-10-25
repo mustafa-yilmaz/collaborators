@@ -427,7 +427,7 @@ Moved out of the table v1:
 4. ✅ **Publishing the Google sign-in app** (item 6 below): done 2026-10-25, tried with an account outside the test users.
 5. **Microsoft and LinkedIn sign-in in production:** checked live; the LinkedIn app's settings in its developer portal (linkedin.com/developers) checked or completed.
 5b. **Platform roles** (see section 1, Roles): four levels instead of two. Steps: ✅ the levels and the list of everyone ("Manage Collaborators", 2026-10-25); ✅ suspending, removing and blocking accounts (2026-10-25); ✅ appointing (2026-10-26); ✅ content reports and platform settings (2026-10-26). Done.
-5c. **Notifications, after the roles** (asked for 2026-10-25): the bell at the top of the left panel and the dashboard's Notifications card each get a "See all" leading to the Notifications screen (the panel's "Notifications" item), which shows two tabs: unread notifications and read ones.
+5c. ✅ **Notifications: "See all" and two tabs** (asked for 2026-10-25, built 2026-10-26): the bell shows "See all" at the top of its popup (above the list, however long), and the dashboard's Notifications card at its foot, always (even empty), both leading to the Notifications screen (the panel's "Notifications" item). That screen has two tabs: **Active** (unread notifications, and what is still assigned to one) and **Read** (the notifications read, latest 50; `GET notifications/?unread=true` / `?read=true`). "Mark all as read" shows on the Active tab.
 6. **Grant calls** (items 7–10 below), once the owner has decided where calls come from.
 7. **Input from one's own AI tools** (item 11 below), once the owner has decided its first ways in.
 8. Last: a README of Collaborators for the GitHub repository.

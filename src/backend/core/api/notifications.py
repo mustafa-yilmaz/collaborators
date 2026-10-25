@@ -90,6 +90,9 @@ class NotificationViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         ).select_related("actor", "document", "workspace")
         if self.request.query_params.get("unread") in ("true", "1"):
             queryset = queryset.filter(read_at__isnull=True)
+        # Collaborators: the "Read" tab of the Notifications screen
+        if self.request.query_params.get("read") in ("true", "1"):
+            queryset = queryset.filter(read_at__isnull=False)
         return queryset
 
     def list(self, request, *args, **kwargs):

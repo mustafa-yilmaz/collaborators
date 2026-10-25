@@ -1,4 +1,5 @@
-import { Switch } from '@gouvfr-lasuite/ui-components';
+import { Button, Switch } from '@gouvfr-lasuite/ui-components';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
@@ -61,34 +62,46 @@ export const EmailSwitch = ({ bare = false }: { bare?: boolean }) => {
 /**
  * Mentions, notifications and what is assigned to me (in tables or anywhere
  * in a page, directly or through a group), newest first: a summary on the
- * dashboard's card and in the bell, everything on its own screen.
- * Assignments come from the current list, not from their notifications, so
- * that one done or taken back leaves the list.
+ * dashboard's card and in the bell (with "See all"), everything on its own
+ * screen, in two tabs: "Active" (unread notifications, and what is still
+ * assigned to me) and "Read". Assignments come from the current list, not
+ * from their notifications, so that one done or taken back leaves the list.
  */
 export const ForMeList = ({
   full = false,
   onOpen,
   emailSwitch = true,
+  seeAll = true,
 }: {
   full?: boolean;
   /** Called as an entry or "See all" is opened, e.g. to close a popup. */
   onOpen?: () => void;
   /** Without the email switch, for a popup keeping it below its scroll */
   emailSwitch?: boolean;
+  /** Without "See all", for a popup showing it above its scroll */
+  seeAll?: boolean;
 }) => {
   const { t } = useTranslation();
   const { relativeDate } = useDate();
   const { untitledDocument } = useTrans();
   const textOf = useNotificationText();
   const targetOf = useNotificationTarget();
-  const { data: notifications = [], isLoading } = useNotifications(true);
-  const { data: assigned = [], isLoading: isAssignedLoading } =
-    useAssignedRows(true);
+  const [tab, setTab] = useState<'active' | 'read'>('active');
+  const readTab = full && tab === 'read';
+  const { data: notifications = [], isLoading } = useNotifications(
+    true,
+    full ? (readTab ? 'read' : 'unread') : undefined,
+  );
+  const { data: assignedRows = [], isLoading: isAssignedLoading } =
+    useAssignedRows(!readTab);
+  // What is still assigned is active: never among the read
+  const assigned = readTab ? [] : assignedRows;
   const { markRead, markAllRead } = useNotificationMutations();
 
   const entries = [
     ...notifications
-      .filter((notification) => notification.kind !== 'assignment')
+      // Read assignments show as notifications: their row may be done
+      .filter((notification) => readTab || notification.kind !== 'assignment')
       .map((notification) => ({
         key: `n-${notification.id}`,
         date: notification.created_at,
@@ -105,7 +118,8 @@ export const ForMeList = ({
   const shown = full ? entries : entries.slice(0, FOR_ME_SIZE);
   const unreadCount = notifications.filter((item) => !item.read_at).length;
 
-  const empty = !isLoading && !isAssignedLoading && !entries.length;
+  const empty =
+    !isLoading && (readTab || !isAssignedLoading) && !entries.length;
 
   return (
     <>
@@ -124,7 +138,7 @@ export const ForMeList = ({
           `}
         >
           {emailSwitch && <EmailSwitch bare />}
-          {unreadCount > 0 && (
+          {!readTab && unreadCount > 0 && (
             <BoxButton
               onClick={() => markAllRead.mutate()}
               $padding={{ horizontal: 'xs', vertical: '4xs' }}
@@ -138,13 +152,51 @@ export const ForMeList = ({
           )}
         </Box>
       )}
+      {full && (
+        <Box
+          $direction="row"
+          $gap="xs"
+          $padding={{ horizontal: 'xs' }}
+          role="tablist"
+        >
+          <Button
+            size="small"
+            role="tab"
+            aria-selected={!readTab}
+            variant={readTab ? 'tertiary' : 'primary'}
+            onClick={() => setTab('active')}
+          >
+            {t('Active', {
+              description:
+                'Tab of the unread notifications and what is still assigned',
+            })}
+          </Button>
+          <Button
+            size="small"
+            role="tab"
+            aria-selected={readTab}
+            variant={readTab ? 'primary' : 'tertiary'}
+            onClick={() => setTab('read')}
+          >
+            {t('Read', { description: 'Tab of the read notifications' })}
+          </Button>
+        </Box>
+      )}
       {!full && emailSwitch && <EmailSwitch />}
       {empty && (
         <Empty>
-          {t('No mentions or assignments yet.', {
-            description:
-              'Empty card of mentions, notifications and assignments',
-          })}
+          {readTab
+            ? t('No read notification yet.', {
+                description: 'Empty Read tab of the notifications',
+              })
+            : full
+              ? t('Nothing new: no unread notification, nothing assigned.', {
+                  description: 'Empty Active tab of the notifications',
+                })
+              : t('No mentions or assignments yet.', {
+                  description:
+                    'Empty card of mentions, notifications and assignments',
+                })}
         </Empty>
       )}
       {shown.map(({ key, notification, row }) => {
@@ -219,7 +271,8 @@ export const ForMeList = ({
           />
         );
       })}
-      {!full && !empty && <SeeAll href={NOTIFICATIONS_HREF} onClick={onOpen} />}
+      {/* Always: the screen also holds the read ones */}
+      {!full && seeAll && <SeeAll href={NOTIFICATIONS_HREF} onClick={onOpen} />}
     </>
   );
 };

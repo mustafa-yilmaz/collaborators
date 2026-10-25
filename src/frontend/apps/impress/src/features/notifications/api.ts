@@ -53,10 +53,15 @@ export function useUnreadCount(enabled: boolean) {
   });
 }
 
-export function useNotifications(enabled: boolean) {
+/**
+ * The latest notifications; only the unread or the read ones for the tabs
+ * of the Notifications screen.
+ */
+export function useNotifications(enabled: boolean, only?: 'unread' | 'read') {
   return useQuery<Notification[], APIError>({
-    queryKey: [KEY_NOTIFICATIONS],
-    queryFn: () => request('notifications/'),
+    queryKey: only ? [KEY_NOTIFICATIONS, only] : [KEY_NOTIFICATIONS],
+    queryFn: () =>
+      request(only ? `notifications/?${only}=true` : 'notifications/'),
     enabled,
   });
 }

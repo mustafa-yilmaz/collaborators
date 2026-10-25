@@ -3,11 +3,11 @@ import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
-import { Box, BoxButton, Icon, Text } from '@/components';
+import { Box, BoxButton, Icon, StyledLink, Text } from '@/components';
 import { AnchoredPanel } from '@/components/popover/AnchoredPanel';
 import { useAuth } from '@/features/auth';
 
-import { EmailSwitch, ForMeList } from './ForMeList';
+import { EmailSwitch, ForMeList, NOTIFICATIONS_HREF } from './ForMeList';
 import { useNotificationMutations, useUnreadCount } from './api';
 
 /** The bell of the left panel: unread count and the notification inbox. */
@@ -110,17 +110,30 @@ export const NotificationBell = () => {
                   description: 'Accessible name of the notification bell',
                 })}
               </Text>
-              {count > 0 && (
-                <Button
-                  size="small"
-                  variant="tertiary"
-                  onClick={() => markAllRead.mutate()}
+              <Box $direction="row" $align="center" $gap="xs">
+                {count > 0 && (
+                  <Button
+                    size="small"
+                    variant="tertiary"
+                    onClick={() => markAllRead.mutate()}
+                  >
+                    {t('Mark all as read', {
+                      description: 'Button of the notification inbox',
+                    })}
+                  </Button>
+                )}
+                {/* Above the scroll: seen however long the list is */}
+                <StyledLink
+                  href={NOTIFICATIONS_HREF}
+                  onClick={() => setOpened(false)}
                 >
-                  {t('Mark all as read', {
-                    description: 'Button of the notification inbox',
-                  })}
-                </Button>
-              )}
+                  <Text $size="sm" $theme="brand">
+                    {t('See all', {
+                      description: 'Link from a card to its full list',
+                    })}
+                  </Text>
+                </StyledLink>
+              </Box>
             </Box>
             <Box $padding={{ horizontal: '2xs', bottom: 'xs' }}>
               <EmailSwitch />
@@ -131,7 +144,11 @@ export const NotificationBell = () => {
               $padding={{ horizontal: '2xs', bottom: 'xs' }}
               $css="max-height: min(520px, 70vh); overflow-y: auto;"
             >
-              <ForMeList onOpen={() => setOpened(false)} emailSwitch={false} />
+              <ForMeList
+                onOpen={() => setOpened(false)}
+                emailSwitch={false}
+                seeAll={false}
+              />
             </Box>
           </Box>
         </AnchoredPanel>

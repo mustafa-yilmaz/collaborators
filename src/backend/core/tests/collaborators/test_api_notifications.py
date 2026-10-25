@@ -218,3 +218,23 @@ def test_api_mention_in_the_first_block():
 def test_new_accounts_get_no_notification_emails_until_they_ask():
     """Off by default: the in-app inbox only."""
     assert models.User().collaborator_email_notifications is False
+
+
+def test_api_notifications_unread_and_read_apart():
+    """The Notifications screen's two tabs: unread ones, and read ones."""
+    author, reader = factories.UserFactory.create_batch(2)
+    document = factories.DocumentFactory(users=[(author, "editor"), (reader, "reader")])
+    url = f"/api/v1.0/documents/{document.id}/mention/"
+    for _ in range(2):
+        client_for(author).post(
+            url, {"anchor_id": str(uuid4()), "mentioned_user_id": str(reader.id)}
+        )
+    client = client_for(reader)
+    first, second = client.get("/api/v1.0/notifications/").json()
+    client.post(f"/api/v1.0/notifications/{first['id']}/read/")
+
+    unread = client.get("/api/v1.0/notifications/?unread=true").json()
+    read = client.get("/api/v1.0/notifications/?read=true").json()
+
+    assert [item["id"] for item in unread] == [second["id"]]
+    assert [item["id"] for item in read] == [first["id"]]

@@ -67,5 +67,25 @@ describe('Invite page', () => {
       await screen.findByRole('button', { name: 'Accept and join' }),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('invite-google')).not.toBeInTheDocument();
+    // Signed in as someone else than the one invited: told so
+    expect(screen.getByTestId('invitation-other-email')).toHaveTextContent(
+      'This invitation was sent to new@example.com.',
+    );
+  });
+
+  test('signed in with the invited email: no warning', async () => {
+    fetchMock.get(`${API}/users/me/`, {
+      id: 'u-2',
+      email: 'New@example.com',
+      full_name: 'New',
+      registration_status: 'approved',
+    });
+
+    render(<InvitePage />, { wrapper: AppWrapper });
+
+    expect(
+      await screen.findByRole('button', { name: 'Accept and join' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('invitation-other-email')).toBeNull();
   });
 });

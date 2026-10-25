@@ -243,6 +243,28 @@ const Page: NextPageWithLayout = () => {
                 </Text>
               ) : authenticated ? (
                 <Box $gap="xs" $width="100%" $align="center">
+                  {/* Collaborators: signed in as someone else than the one
+                      invited (the inviter, say, in the same browser) */}
+                  {!info.is_accepted &&
+                    !!info.email &&
+                    !!user?.email &&
+                    info.email.toLowerCase() !== user.email.toLowerCase() && (
+                      <Text
+                        $size="sm"
+                        $textAlign="center"
+                        data-testid="invitation-other-email"
+                      >
+                        <Trans
+                          i18nKey="This invitation was sent to <strong>{{invited}}</strong>. To accept it with that address, use “Not you?” below, then sign in with it."
+                          values={{ invited: info.email }}
+                          tOptions={{
+                            description:
+                              'Invite page, signed in with another email than the invited one',
+                          }}
+                          components={{ strong: <strong /> }}
+                        />
+                      </Text>
+                    )}
                   <Button
                     fullWidth
                     disabled={accept.isPending}

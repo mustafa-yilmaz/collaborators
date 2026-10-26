@@ -222,7 +222,7 @@ def test_add_input_through_mcp_names_the_assistant():
     """Its own name, or the one it registered under at the sign-in server."""
     user = factories.UserFactory()
     page = factories.DocumentFactory(title="Roadmap", users=[(user, "editor")])
-    mcp.client_name.cache_clear()
+    mcp._known_client_name.cache_clear()  # pylint: disable=protected-access
     with (
         mock.patch.object(
             assistants,
@@ -271,7 +271,7 @@ def test_connected_assistants_are_listed_and_disconnected(settings):
     user = factories.UserFactory()
     client = APIClient()
     client.force_login(user)
-    mcp.client_name.cache_clear()
+    mcp._known_client_name.cache_clear()  # pylint: disable=protected-access
     with (
         mock.patch.object(keycloak, "is_configured", return_value=True),
         mock.patch.object(keycloak, "find_user_id", return_value="kc-1"),
@@ -337,3 +337,15 @@ def test_the_collaboration_server_gets_the_update_as_the_person():
     assert "/append-ydoc/v1/" in url and str(page.pk) in url
     assert request.call_args.kwargs["data"] == b"delta"
     assert request.call_args.kwargs["headers"]["X-User-Id"] == str(user.pk)
+
+
+def test_a_failed_name_lookup_is_tried_again():
+    """Keycloak refusing once doesn't leave the assistant nameless for good."""
+    mcp._known_client_name.cache_clear()  # pylint: disable=protected-access
+    with mock.patch.object(
+        keycloak, "client_name", side_effect=[keycloak.KeycloakError("403"), "Claude"]
+    ):
+        assert mcp.client_name("abc") == ""
+        assert mcp.client_name("abc") == "Claude"
+        # found once, kept
+        assert mcp.client_name("abc") == "Claude"

@@ -159,11 +159,21 @@ def person_of(token):
 
 
 @lru_cache(maxsize=256)
+def _known_client_name(client_id):
+    # Only names found are kept: a failed lookup is tried again next time
+    name = keycloak.client_name(client_id)
+    if not name:
+        raise LookupError(client_id)
+    return name
+
+
 def client_name(client_id):
-    """The name an assistant registered under at the sign-in server."""
+    """The name an assistant registered under at the sign-in server, or ""."""
+    if not client_id:
+        return ""
     try:
-        return keycloak.client_name(client_id) or ""
-    except keycloak.KeycloakError:
+        return _known_client_name(client_id)
+    except LookupError, keycloak.KeycloakError:
         return ""
 
 

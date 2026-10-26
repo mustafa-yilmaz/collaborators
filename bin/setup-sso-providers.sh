@@ -114,8 +114,9 @@ if [[ -z "$(kc get clients -r "${REALM}" -q clientId="${BACKEND_CLIENT}" --field
     -s secret="${KEYCLOAK_BACKEND_SECRET:-collaborators-backend-dev-secret}"
 fi
 kc add-roles -r "${REALM}" --uusername "service-account-${BACKEND_CLIENT}" \
-  --cclientid realm-management --rolename view-users --rolename manage-users
-echo "Let the backend read and remove the providers of an account (${BACKEND_CLIENT})"
+  --cclientid realm-management --rolename view-users --rolename manage-users \
+  --rolename view-clients
+echo "Let the backend read and remove the providers of an account, and read the names of assistants (${BACKEND_CLIENT})"
 
 # Joining by organisation: Keycloak keeps the Google and Microsoft tokens of
 # each sign-in (storeToken, below), and everyone may read their own, which

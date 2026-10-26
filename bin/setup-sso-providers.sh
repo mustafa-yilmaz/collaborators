@@ -153,7 +153,53 @@ kc create "client-scopes/${MCP_SCOPE_ID}/protocol-mappers/models" -r "${REALM}" 
   -s "config.\"included.custom.audience\"=${MCP_RESOURCE}" \
   -s 'config."access.token.claim"=true' \
   -s 'config."id.token.claim"=false'
-kc update "realms/${REALM}/default-default-client-scopes/${MCP_SCOPE_ID}" -r "${REALM}"
+if [[ -z "$(kc get "realms/${REALM}/default-default-client-scopes" --fields name --format csv --noquotes | awk -v n="${MCP_SCOPE}" '$1==n')" ]]; then
+  kc update "realms/${REALM}/default-default-client-scopes/${MCP_SCOPE_ID}" -r "${REALM}"
+fi
+# Claude asks for the "basic" scope newer Keycloak realms have, which this
+# realm (made from an older export) lacks, and a client asking for scopes
+# gets only those. So "basic" carries what the MCP server needs: the email,
+# also as "sub" (as everywhere in this realm, not Keycloak's user id), and
+# the MCP server as audience
+if [[ -z "$(kc get client-scopes -r "${REALM}" --fields name --format csv --noquotes | awk '$1=="basic"')" ]]; then
+  kc create client-scopes -r "${REALM}" \
+    -s name=basic \
+    -s protocol=openid-connect \
+    -s 'attributes."include.in.token.scope"=false' \
+    -s 'attributes."display.on.consent.screen"=false'
+fi
+BASIC_SCOPE_ID="$(kc get client-scopes -r "${REALM}" --fields id,name --format csv --noquotes | awk -F, '$2=="basic"{print $1}')"
+for MAPPER in mcp-audience email email-as-sub; do
+  OLD="$(kc get "client-scopes/${BASIC_SCOPE_ID}/protocol-mappers/models" -r "${REALM}" --fields id,name --format csv --noquotes | awk -F, -v n="${MAPPER}" '$2==n{print $1}')"
+  if [[ -n "${OLD}" ]]; then
+    kc delete "client-scopes/${BASIC_SCOPE_ID}/protocol-mappers/models/${OLD}" -r "${REALM}"
+  fi
+done
+kc create "client-scopes/${BASIC_SCOPE_ID}/protocol-mappers/models" -r "${REALM}" \
+  -s name=mcp-audience -s protocol=openid-connect -s protocolMapper=oidc-audience-mapper \
+  -s "config.\"included.custom.audience\"=${MCP_RESOURCE}" \
+  -s 'config."access.token.claim"=true' -s 'config."id.token.claim"=false'
+for CLAIM in email sub; do
+  NAME=$([[ "${CLAIM}" == sub ]] && echo email-as-sub || echo email)
+  kc create "client-scopes/${BASIC_SCOPE_ID}/protocol-mappers/models" -r "${REALM}" \
+    -s name="${NAME}" -s protocol=openid-connect -s protocolMapper=oidc-usermodel-property-mapper \
+    -s 'config."user.attribute"=email' -s "config.\"claim.name\"=${CLAIM}" \
+    -s 'config."jsonType.label"=String' -s 'config."access.token.claim"=true' \
+    -s 'config."id.token.claim"=true' -s 'config."userinfo.token.claim"=true'
+done
+if [[ -z "$(kc get "realms/${REALM}/default-optional-client-scopes" --fields name --format csv --noquotes | awk '$1=="basic"')" ]]; then
+  kc update "realms/${REALM}/default-optional-client-scopes/${BASIC_SCOPE_ID}" -r "${REALM}"
+fi
+# "openid" too, which assistants ask for and Keycloak keeps as no scope
+ALLOWED_SCOPES_ID="$(kc get components -r "${REALM}" \
+  -q type=org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy | python3 -c '
+import json, sys
+print(next(c["id"] for c in json.load(sys.stdin)
+           if c.get("providerId") == "allowed-client-templates" and c.get("subType") == "anonymous"))
+')"
+kc update "components/${ALLOWED_SCOPES_ID}" -r "${REALM}" \
+  -s 'config."allow-default-scopes"=["true"]' \
+  -s 'config."allowed-client-scopes"=["openid","basic"]'
 # Only Claude, ChatGPT and Gemini (its command-line tool signs in through
 # localhost) may register; more later, on request
 TRUSTED_HOSTS_ID="$(kc get components -r "${REALM}" \

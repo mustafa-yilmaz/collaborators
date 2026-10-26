@@ -371,6 +371,64 @@ export const api = [
       },
     },
   }),
+  // Collaborators: POST /collaboration/append-ydoc/v1/{org}/{docid} — add to a
+  // document's content a RAW binary update computed against its current state
+  // (what the converter's `append-toggle` returns: one block added at the end).
+  // The backend's admin token only (a browser has no grant on this endpoint),
+  // and the content is credited to the user named in `X-User-Id`, as in
+  // create-ydoc, which this follows except for being no strict create: it is
+  // how a person's input from their own AI assistant reaches a page.
+  createApiEndpoint('append-ydoc', {
+    post: {
+      handler: async (req) => {
+        checkPermissions(
+          req.permissions,
+          createDocumentPermissions({ ydoc: '--u-' }),
+        );
+        const authInfo = req.authInfo as AppAuthInfo | null;
+        if (authInfo?.admin !== true) {
+          return jsonResponse(403, { error: 'Backend only' });
+        }
+        if (req.org !== ORG) {
+          return jsonResponse(400, { error: 'Unknown org' });
+        }
+        if (!UUID4.test(req.docid)) {
+          return jsonResponse(400, { error: 'Room name is invalid' });
+        }
+        if (req.branch !== 'main') {
+          return jsonResponse(400, { error: 'Unknown branch' });
+        }
+        const body = await req.bytes();
+        const update = new Uint8Array(
+          body.buffer,
+          body.byteOffset,
+          body.byteLength,
+        );
+        if (update.byteLength > MAX_CREATE_BYTES) {
+          return jsonResponse(413, { error: 'Update too large' });
+        }
+        if (update.byteLength <= EMPTY_UPDATE_MAX_BYTES) {
+          return jsonResponse(400, { error: 'Empty update' });
+        }
+        const userid = req.headers['x-user-id'] || authInfo.userid;
+        let contentids: Y.ContentIds;
+        try {
+          contentids = Y.createContentIdsFromUpdate(update);
+        } catch {
+          return jsonResponse(400, { error: 'Invalid Yjs update' });
+        }
+        if (contentids.inserts.clients.size === 0) {
+          return jsonResponse(400, { error: 'Empty update' });
+        }
+        await req.yhub.stream.addMessage(req.docRef, {
+          type: 'ydoc:update:v1',
+          contentmap: attributeTo(contentids, userid),
+          update,
+        });
+        return jsonResponse(201, { message: 'Content added' });
+      },
+    },
+  }),
   // POST /collaboration/restore-ydoc/v1/{org}/{docid} — undo the deletion of a
   // document, putting back what `DELETE .../ydoc/` took away.
   //

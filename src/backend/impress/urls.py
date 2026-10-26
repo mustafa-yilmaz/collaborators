@@ -12,8 +12,21 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 
+from core.api import mcp
+
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # Collaborators: the MCP server for people's own AI assistants
+    path("mcp", mcp.mcp_endpoint, name="mcp"),
+    path(
+        ".well-known/oauth-protected-resource",
+        mcp.protected_resource_metadata,
+        name="mcp-resource-metadata",
+    ),
+    path(
+        ".well-known/oauth-protected-resource/mcp",
+        mcp.protected_resource_metadata,
+    ),
     path("", include("core.urls")),
 ]
 

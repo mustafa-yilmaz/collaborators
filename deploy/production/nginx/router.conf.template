@@ -39,7 +39,7 @@ server {
 
     location = /robots.txt {
         default_type text/plain;
-        return 200 "User-agent: *\nDisallow: /api/\nDisallow: /admin/\nDisallow: /media/\nDisallow: /account/\nDisallow: /registrations/\nDisallow: /invite/\nDisallow: /join/\nDisallow: /signin/\nDisallow: /login/\nDisallow: /profile/\nDisallow: /labels/\nDisallow: /workspaces/\nDisallow: /workspace/\nDisallow: /user-reconciliations/\n";
+        return 200 "User-agent: *\nDisallow: /api/\nDisallow: /admin/\nDisallow: /media/\nDisallow: /account/\nDisallow: /registrations/\nDisallow: /invite/\nDisallow: /join/\nDisallow: /signin/\nDisallow: /login/\nDisallow: /profile/\nDisallow: /labels/\nDisallow: /workspaces/\nDisallow: /workspace/\nDisallow: /user-reconciliations/\nDisallow: /mcp\n";
     }
 
     location @proxy_to_docs_backend {
@@ -72,6 +72,16 @@ server {
     }
 
     location /external_api {
+        try_files $uri @proxy_to_docs_backend;
+    }
+
+    # Collaborators: the MCP server people's own AI assistants connect to,
+    # and where it says to sign in (core/api/mcp.py)
+    location = /mcp {
+        try_files $uri @proxy_to_docs_backend;
+    }
+
+    location /.well-known/oauth-protected-resource {
         try_files $uri @proxy_to_docs_backend;
     }
 

@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/node';
 import express from 'express';
 
 import { CONVERSION_FILE_MAX_SIZE } from '@/env';
-import { convertHandler } from '@/handlers';
+import { appendToggleHandler, convertHandler } from '@/handlers';
 import { corsMiddleware, httpSecurity } from '@/middlewares';
 import { routes } from '@/routes';
 import { logger } from '@/utils';
@@ -28,6 +28,16 @@ export const initApp = () => {
       type: '*/*',
     }),
     convertHandler,
+  );
+
+  /**
+   * Collaborators: the update adding a titled toggle at the end of a page
+   */
+  app.post(
+    routes.APPEND_TOGGLE,
+    httpSecurity,
+    express.json({ limit: CONVERSION_FILE_MAX_SIZE }),
+    appendToggleHandler,
   );
 
   Sentry.setupExpressErrorHandler(app);

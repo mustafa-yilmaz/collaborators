@@ -299,6 +299,23 @@ class YHubService:
             },
         )
 
+    def append_ydoc(self, document, update):
+        """
+        Collaborators: add to a document's content an update computed against
+        its current state (the converter's `append_toggle`), credited to the
+        user the service is bound to. The custom `append-ydoc` endpoint, admin
+        token only: how input from one's own AI assistant reaches a page.
+        """
+        return self.request(
+            "post",
+            self.build_url("append-ydoc", document),
+            data=update,
+            headers={
+                "Content-Type": "application/octet-stream",
+                **self.build_user_header(self.user_id),
+            },
+        )
+
     def delete_ydoc(self, document):
         """
         Delete a document on the collaboration server.

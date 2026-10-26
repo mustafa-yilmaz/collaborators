@@ -8,6 +8,7 @@ from lasuite.oidc_resource_server.urls import urlpatterns as oidc_resource_serve
 from rest_framework.routers import DefaultRouter
 
 from core.api import (
+    assistants,
     collaborations,
     dashboard,
     invitations,
@@ -119,6 +120,11 @@ urlpatterns = [
                     signin_methods.SignInAccountView.as_view(),
                 ),
                 path("users/me/merge/", signin_methods.MergeView.as_view()),
+                path("users/me/assistants/", assistants.AssistantsView.as_view()),
+                path(
+                    "users/me/assistants/<str:client_id>/",
+                    assistants.AssistantView.as_view(),
+                ),
                 path("users/me/hints/", signin_methods.HintsView.as_view()),
                 path(
                     "documents/<uuid:pk>/space-links/",

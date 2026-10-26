@@ -126,3 +126,6 @@ COLLABORATORS_KEYCLOAK_URL=http://nginx:8083
 COLLABORATORS_KEYCLOAK_REALM=impress
 COLLABORATORS_KEYCLOAK_CLIENT_ID=collaborators-backend
 COLLABORATORS_KEYCLOAK_CLIENT_SECRET=collaborators-backend-dev-secret
+
+# Collaborators: the MCP server people's own AI assistants connect to
+COLLABORATORS_MCP_RESOURCE=http://localhost:8071/mcp

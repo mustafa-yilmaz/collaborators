@@ -135,6 +135,25 @@ def delete_user(user_id):
     _request("delete", f"/users/{user_id}", missing_ok=True)
 
 
+def client_name(client_id):
+    """The name a client (an assistant that registered) goes by, or None."""
+    clients = _request("get", "/clients", params={"clientId": client_id}) or []
+    return clients[0].get("name") or clients[0].get("clientId") if clients else None
+
+
+def consents(user_id):
+    """
+    The clients (assistants) the account approved: [{clientId, createdDate,
+    lastUpdatedDate, grantedClientScopes, …}].
+    """
+    return _request("get", f"/users/{user_id}/consents") or []
+
+
+def revoke_consent(user_id, client_id):
+    """Withdraw an approval (and the tokens that came with it)."""
+    _request("delete", f"/users/{user_id}/consents/{client_id}", missing_ok=True)
+
+
 def provider_id_token_claims(access_token, provider):
     """
     The claims of the ID token Keycloak stored at the person's last sign-in

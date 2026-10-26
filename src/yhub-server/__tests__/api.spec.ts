@@ -264,3 +264,58 @@ describe('create-ydoc', () => {
     expect(yhub.stream.addMessage).not.toHaveBeenCalled();
   });
 });
+
+// Collaborators: input from one's own AI assistant, added to a page.
+describe('append-ydoc', () => {
+  const appendYdoc = async (): Promise<Handler> => {
+    const { api } = await import('../src/api.js');
+    const endpoint = (
+      api as unknown as Array<{
+        name: string;
+        opts: { post: { handler: Handler } };
+      }>
+    ).find((e) => e.name === 'append-ydoc');
+    if (endpoint == null) throw new Error('append-ydoc is not mounted');
+    return endpoint.opts.post.handler;
+  };
+
+  it('adds to a document that has content, credited to X-User-Id', async () => {
+    const handler = await appendYdoc();
+    // the room already holds content: no 409, unlike create-ydoc
+    const yhub = makeYhub(makeUpdate('already there'));
+    const update = makeUpdate('added');
+
+    const res = await handler(makeReq(update, { yhub }));
+
+    expect(res.status).toBe(201);
+    expect(yhub.getDoc).not.toHaveBeenCalled();
+    const [, message] = yhub.stream.addMessage.mock.calls[0] as unknown as [
+      unknown,
+      { update: Uint8Array; contentmap: Uint8Array },
+    ];
+    expect(Array.from(message.update)).toEqual(Array.from(update));
+    expect(insertAttributes(message.contentmap).get('insert')).toBe('user-1');
+  });
+
+  it('is for the backend’s admin token only', async () => {
+    const handler = await appendYdoc();
+    const yhub = makeYhub();
+
+    const res = await handler(
+      makeReq(makeUpdate(), { yhub, authInfo: { userid: 'user-2' } }),
+    );
+
+    expect(res.status).toBe(403);
+    expect(yhub.stream.addMessage).not.toHaveBeenCalled();
+  });
+
+  it('refuses an update it cannot read, or an empty one', async () => {
+    const handler = await appendYdoc();
+    const garbage = await handler(
+      makeReq(new Uint8Array([7, 7, 7, 7, 7, 7, 7, 7, 7, 7])),
+    );
+    expect(garbage.status).toBe(400);
+    const empty = await handler(makeReq(new Uint8Array([0, 0])));
+    expect(empty.status).toBe(400);
+  });
+});

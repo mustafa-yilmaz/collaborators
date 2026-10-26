@@ -13,6 +13,11 @@
 
 {$AUTH_HOST} {
 	encode gzip
+	# Collaborators: the realm's metadata also at the address RFC 8414 builds
+	# from the issuer, which AI assistants connecting to the MCP server ask
+	# first (Keycloak serves it under /realms/<realm>/ only)
+	@realm_metadata path_regexp realm_metadata ^/\.well-known/(oauth-authorization-server|openid-configuration)/realms/([^/]+)$
+	rewrite @realm_metadata /realms/{re.realm_metadata.2}/.well-known/{re.realm_metadata.1}
 	reverse_proxy keycloak:8080
 }
 

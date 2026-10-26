@@ -1,5 +1,6 @@
 """Y-Provider API services."""
 
+import base64
 import logging
 import typing
 
@@ -161,6 +162,35 @@ class YdocConverter:
             )
         response.raise_for_status()
         return response
+
+    def append_toggle(self, document_update, title, markdown):
+        """
+        Collaborators: the Yjs update adding, at the end of a document (its
+        current state given), a closed toggle titled `title` holding the
+        Markdown. Computed by the converter's `append-toggle` route.
+        """
+        url = f"{settings.Y_PROVIDER_API_BASE_URL}append-toggle/"
+        try:
+            with outgoing_request("y-provider", "append-toggle") as observed:
+                response = requests.post(
+                    url,
+                    json={
+                        "doc": base64.b64encode(document_update or b"").decode(),
+                        "title": title,
+                        "markdown": markdown,
+                    },
+                    headers={"Authorization": self.auth_header},
+                    timeout=settings.CONVERSION_API_TIMEOUT,
+                    verify=settings.CONVERSION_API_SECURE,
+                )
+                observed.status = response.status_code
+            response.raise_for_status()
+        except requests.RequestException as err:
+            logger.exception("Y-Provider service error: url=%s", url)
+            raise ServiceUnavailableError(
+                "Failed to build the input for the page"
+            ) from err
+        return response.content
 
     def convert(self, data, content_type=mime_types.MARKDOWN, accept=mime_types.YJS):
         """

@@ -125,6 +125,49 @@ kc add-roles -r "${REALM}" --rname "default-roles-${REALM}" \
   --cclientid broker --rolename read-token
 echo "Let everyone read the provider tokens of their own sign-ins"
 
+# People's own AI assistants (Claude, ChatGPT, Gemini) connect to the app's
+# MCP server (src/backend/core/api/mcp.py). An assistant registers here on
+# its own (dynamic client registration), then the person signs in and
+# approves it (Keycloak's consent screen, required for such clients); its
+# tokens are meant for the MCP server (an audience every new client gets).
+MCP_RESOURCE="${MCP_RESOURCE:-http://localhost:8071/mcp}"
+MCP_SCOPE="collaborators-mcp"
+MCP_SCOPE_ID="$(kc get client-scopes -r "${REALM}" --fields id,name --format csv --noquotes | awk -F, -v n="${MCP_SCOPE}" '$2==n{print $1}')"
+if [[ -z "${MCP_SCOPE_ID}" ]]; then
+  kc create client-scopes -r "${REALM}" \
+    -s name="${MCP_SCOPE}" \
+    -s protocol=openid-connect \
+    -s 'attributes."include.in.token.scope"=false' \
+    -s 'attributes."display.on.consent.screen"=true' \
+    -s 'attributes."consent.screen.text"=Add your input to Collaborators pages you can edit'
+  MCP_SCOPE_ID="$(kc get client-scopes -r "${REALM}" --fields id,name --format csv --noquotes | awk -F, -v n="${MCP_SCOPE}" '$2==n{print $1}')"
+fi
+MAPPER_ID="$(kc get "client-scopes/${MCP_SCOPE_ID}/protocol-mappers/models" -r "${REALM}" --fields id,name --format csv --noquotes | awk -F, '$2=="mcp-audience"{print $1}')"
+if [[ -n "${MAPPER_ID}" ]]; then
+  kc delete "client-scopes/${MCP_SCOPE_ID}/protocol-mappers/models/${MAPPER_ID}" -r "${REALM}"
+fi
+kc create "client-scopes/${MCP_SCOPE_ID}/protocol-mappers/models" -r "${REALM}" \
+  -s name=mcp-audience \
+  -s protocol=openid-connect \
+  -s protocolMapper=oidc-audience-mapper \
+  -s "config.\"included.custom.audience\"=${MCP_RESOURCE}" \
+  -s 'config."access.token.claim"=true' \
+  -s 'config."id.token.claim"=false'
+kc update "realms/${REALM}/default-default-client-scopes/${MCP_SCOPE_ID}" -r "${REALM}"
+# Only Claude, ChatGPT and Gemini (its command-line tool signs in through
+# localhost) may register; more later, on request
+TRUSTED_HOSTS_ID="$(kc get components -r "${REALM}" \
+  -q type=org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy | python3 -c '
+import json, sys
+print(next(c["id"] for c in json.load(sys.stdin)
+           if c.get("providerId") == "trusted-hosts" and c.get("subType") == "anonymous"))
+')"
+kc update "components/${TRUSTED_HOSTS_ID}" -r "${REALM}" \
+  -s 'config."trusted-hosts"=["claude.ai","claude.com","chatgpt.com","openai.com","gemini.google.com","localhost","127.0.0.1"]' \
+  -s 'config."host-sending-registration-request-must-match"=["false"]' \
+  -s 'config."client-uris-must-match"=["true"]'
+echo "Let Claude, ChatGPT and Gemini register and be approved for the MCP server (${MCP_RESOURCE})"
+
 if [[ ! -f "${ENV_FILE}" ]]; then
   echo "No ${ENV_FILE} yet: copy ${ENV_FILE}.dist and fill in the client ids and secrets to add the providers." >&2
   exit 0

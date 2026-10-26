@@ -823,6 +823,11 @@ class Base(Configuration):
     COLLABORATORS_PLATFORM_ADMIN_EMAILS = values.ListValue(
         [], environ_name="COLLABORATORS_PLATFORM_ADMIN_EMAILS", environ_prefix=None
     )
+    # The MCP server's address, which the tokens of assistants are meant for
+    # (core.api.mcp); empty, the app's address followed by /mcp
+    COLLABORATORS_MCP_RESOURCE = values.Value(
+        "", environ_name="COLLABORATORS_MCP_RESOURCE", environ_prefix=None
+    )
     # Invitations by email to workspaces, spaces and pages: their email leads
     # to a page to sign up (with the sign-in providers) and accept them
     COLLABORATORS_EMAIL_INVITATIONS = values.BooleanValue(

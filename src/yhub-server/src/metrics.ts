@@ -138,6 +138,7 @@ const KNOWN_ENDPOINTS = new Set([
   'reset-connections',
   'migrate',
   'create-ydoc',
+  'append-ydoc',
   'restore-ydoc',
   'reset-ydoc',
 ]);

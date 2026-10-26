@@ -24,7 +24,7 @@ interface ErrorResponse {
 
 type ConversionResponseBody = Uint8Array | string | object | ErrorResponse;
 
-type DocsPartialBlock = PartialBlock<
+export type DocsPartialBlock = PartialBlock<
   DocsBlockSchema,
   DocsInlineContentSchema,
   DocsStyleSchema
@@ -58,7 +58,8 @@ const commentsThreadStore = new YjsThreadStore(
   new DefaultThreadStoreAuth('y-provider', 'editor'),
 );
 
-const editor = ServerBlockNoteEditor.create<
+// Collaborators: also used by appendToggleHandler
+export const editor = ServerBlockNoteEditor.create<
   DocsBlockSchema,
   DocsInlineContentSchema,
   DocsStyleSchema

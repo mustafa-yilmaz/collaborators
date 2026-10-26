@@ -21,6 +21,8 @@ export PRODUCTION=1
 export KEYCLOAK_ADMIN=admin
 export KEYCLOAK_ADMIN_PASSWORD
 export KEYCLOAK_BACKEND_SECRET
+# The MCP server people's own AI assistants connect to
+export MCP_RESOURCE="https://collaborators.community/mcp"
 SMTP_HOST="$(smtp DJANGO_EMAIL_HOST)"
 if [[ "${SMTP_HOST}" == "<"* ]]; then SMTP_HOST=""; fi
 export SMTP_HOST

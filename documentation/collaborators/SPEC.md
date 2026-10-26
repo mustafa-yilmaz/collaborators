@@ -432,6 +432,7 @@ Moved out of the table v1:
 6. ✅ **Input from one's own AI tools** (item 11 below; moved before grant calls and built 2026-10-26).
 7. **Grant calls** (items 7–10 below), once the owner has decided where calls come from.
 8. Last: a README of Collaborators for the GitHub repository.
+   - **Animated product demo** (2026-10-26): `demo.html` at the repository's root, published at https://collaborators.community/demo (its copy `src/frontend/apps/impress/public/demo/index.html`; keep the two the same). A 40-second animation with fictional people: writing together live, Claude adding a person's input through the MCP server, what an assistant may do.
 
 Later (found in the live checks of 2026-10-25): **touch screens.** On a phone, the table's handles and menus (columns, rows, header row) and the press-and-hold dragging of blocks don't work yet; they work with a mouse. Needed for tablets at least, when a real need arises.
 

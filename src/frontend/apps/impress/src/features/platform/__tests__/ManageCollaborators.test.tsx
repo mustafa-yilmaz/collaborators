@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import fetchMock from 'fetch-mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -66,9 +67,7 @@ describe('Manage Collaborators', () => {
     render(<CollaboratorsTabs />, { wrapper: AppWrapper });
 
     expect(screen.getByTestId('people-directory')).toBeInTheDocument();
-    expect(
-      screen.queryByRole('tab', { name: 'Manage Collaborators' }),
-    ).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Manage' })).toBeNull();
   });
 
   test('a platform manager opens Manage Collaborators', async () => {
@@ -80,7 +79,7 @@ describe('Manage Collaborators', () => {
     });
     render(<CollaboratorsTabs />, { wrapper: AppWrapper });
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Manage Collaborators' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Manage' }));
 
     const row = await screen.findByTestId('platform-person-u-1');
     expect(row).toHaveTextContent('Zoë Zeta');
@@ -101,10 +100,19 @@ describe('Manage Collaborators', () => {
     render(<ManageCollaborators />, { wrapper: AppWrapper });
     await screen.findByText('0 people');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Waiting for approval' }),
-    );
+    // Three drop-down lists, "All" chosen at first
+    expect(screen.getAllByRole('combobox')).toHaveLength(3);
+    const choose = async (list: RegExp, option: string) => {
+      await userEvent.click(screen.getByRole('combobox', { name: list }));
+      await userEvent.click(
+        await screen.findByRole('option', { name: option }),
+      );
+    };
+    await choose(/Level/, 'Owner');
+    await choose(/Registration/, 'Waiting for approval');
+    expect(
+      screen.getByRole('combobox', { name: /Status/ }),
+    ).toBeInTheDocument();
 
     await waitFor(() =>
       expect(

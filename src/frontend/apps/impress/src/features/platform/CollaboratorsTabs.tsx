@@ -25,7 +25,7 @@ interface TabItem {
 /**
  * Collaborators: the screen of "My CO✍️✍️ABORATORS" (its heading spells the
  * logo; the tabs are plain words). Platform managers and the levels above
- * them also find "Manage Collaborators" there: everyone on the platform
+ * them also find "Manage" there: everyone on the platform
  * (administrators and owners suspend and remove accounts there);
  * administrators and owners find "Reports"; owners "Blocked accounts" and
  * "Settings". `?tab=` opens one (a report's notification opens Reports).
@@ -46,7 +46,7 @@ export const CollaboratorsTabs = () => {
     {
       id: 'manage',
       level: 'manager',
-      label: t('Manage Collaborators', {
+      label: t('Manage', {
         description:
           'Tab listing everyone on the platform, for platform managers',
       }),

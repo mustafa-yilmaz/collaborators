@@ -1,4 +1,4 @@
-import { Button, Input } from '@gouvfr-lasuite/ui-components';
+import { Button, Input, Select } from '@gouvfr-lasuite/ui-components';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
@@ -22,6 +22,9 @@ import {
   useReinstatePerson,
 } from './api';
 import { usePlatformWords } from './words';
+
+/** The value of "All" in the filters (no filter) */
+const ALL = 'all';
 
 const rowCss = css`
   border-top: 1px solid var(--c--contextuals--border--surface--primary);
@@ -213,8 +216,8 @@ const PersonRow = ({ person }: { person: PlatformPerson }) => {
   );
 };
 
-/** A row of buttons choosing one value, "All" first. */
-const Choice = <T extends string>({
+/** A drop-down list choosing one value, "All" (no filter) first. */
+const Filter = <T extends string>({
   label,
   value,
   options,
@@ -222,30 +225,37 @@ const Choice = <T extends string>({
 }: {
   label: string;
   value: T | '';
-  options: [T | '', string][];
+  options: [T, string][];
   onChange: (value: T | '') => void;
-}) => (
-  <Box $direction="row" $align="center" $gap="3xs" $wrap="wrap">
-    <Text $size="sm" $variation="secondary" $margin={{ right: '3xs' }}>
-      {label}
-    </Text>
-    {options.map(([option, text]) => (
-      <Button
-        key={option || 'all'}
-        size="small"
-        variant={value === option ? 'primary' : 'tertiary'}
-        aria-pressed={value === option}
-        onClick={() => onChange(option)}
-      >
-        {text}
-      </Button>
-    ))}
-  </Box>
-);
+}) => {
+  const { t } = useTranslation();
+  return (
+    <Box $flex={1} $css="min-width: 180px;">
+      <Select
+        fullWidth
+        label={label}
+        clearable={false}
+        options={[
+          {
+            value: ALL,
+            label: t('All', { description: 'Filter choice: no filter' }),
+          },
+          ...options.map(([option, text]) => ({ value: option, label: text })),
+        ]}
+        value={value || ALL}
+        onChange={(event) => {
+          const chosen = event.target.value as string;
+          onChange(chosen === ALL ? '' : (chosen as T));
+        }}
+      />
+    </Box>
+  );
+};
 
 /**
- * "Manage Collaborators": everyone with an account, for platform managers
- * and the levels above them, found by name or email, level or registration.
+ * "Manage": everyone with an account, for platform managers and the levels
+ * above them, found by name or email, and filtered by level, registration
+ * and account (three drop-down lists).
  */
 export const ManageCollaborators = () => {
   const { t } = useTranslation();
@@ -260,7 +270,6 @@ export const ManageCollaborators = () => {
     usePlatformPeople({ q: debounced, role, status, account });
   const people = data?.pages.flatMap((page) => page.results) ?? [];
   const count = data?.pages[0]?.count ?? 0;
-  const all = t('All', { description: 'Filter choice: no filter' });
 
   return (
     <Box $gap="sm" data-testid="manage-collaborators">
@@ -273,42 +282,44 @@ export const ManageCollaborators = () => {
         onChange={(event) => setQuery(event.target.value)}
         icon={<Icon iconName="search" $size="20px" />}
       />
-      <Choice
-        label={t('Level', { description: 'Filter of the platform level' })}
-        value={role}
-        onChange={setRole}
-        options={[
-          ['', all],
-          ...(Object.entries(levels) as [PlatformRole, string][]),
-        ]}
-      />
-      <Choice
-        label={t('Registration', {
-          description: 'Filter of the registration status',
-        })}
-        value={status}
-        onChange={setStatus}
-        options={[
-          ['', all],
-          ...(Object.entries(statuses) as [
-            PlatformPerson['registration_status'],
-            string,
-          ][]),
-        ]}
-      />
-      <Choice
-        label={t('Account', { description: 'Filter of active or suspended' })}
-        value={account}
-        onChange={setAccount}
-        options={[
-          ['', all],
-          ['active', t('Active', { description: 'An account not suspended' })],
-          [
-            'suspended',
-            t('Suspended', { description: 'An account suspended' }),
-          ],
-        ]}
-      />
+      <Box $direction="row" $gap="sm" $wrap="wrap">
+        <Filter
+          label={t('Level', { description: 'Filter of the platform level' })}
+          value={role}
+          onChange={setRole}
+          options={Object.entries(levels) as [PlatformRole, string][]}
+        />
+        <Filter
+          label={t('Registration', {
+            description: 'Filter of the registration status',
+          })}
+          value={status}
+          onChange={setStatus}
+          options={
+            Object.entries(statuses) as [
+              PlatformPerson['registration_status'],
+              string,
+            ][]
+          }
+        />
+        <Filter
+          label={t('Status', {
+            description: 'Filter of active or suspended',
+          })}
+          value={account}
+          onChange={setAccount}
+          options={[
+            [
+              'active',
+              t('Active', { description: 'An account not suspended' }),
+            ],
+            [
+              'suspended',
+              t('Suspended', { description: 'An account suspended' }),
+            ],
+          ]}
+        />
+      </Box>
       {isLoading && <Loading />}
       {isError && (
         <Text $variation="secondary">

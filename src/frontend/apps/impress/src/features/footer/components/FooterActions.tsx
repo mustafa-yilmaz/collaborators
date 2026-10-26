@@ -65,21 +65,6 @@ export const FooterActions = ({
     </Button>
   ) : undefined;
 
-  // Collaborators: one's own AI assistants, connected to add input to pages
-  const assistants = user ? (
-    <Button
-      size="small"
-      variant="tertiary"
-      color="neutral"
-      href="/account/assistants/"
-      icon={<Icon iconName="smart_toy" $size="18px" $color="inherit" />}
-    >
-      {t('Connected assistants', {
-        description: 'Link to the page about one’s own AI assistants',
-      })}
-    </Button>
-  ) : undefined;
-
   // Collaborators: platform managers (and those above) let newcomers in
   const registrations = hasPlatformLevel(user, 'manager') ? (
     <Button
@@ -122,14 +107,12 @@ export const FooterActions = ({
                 <>
                   {myProfile}
                   {signInMethods}
-                  {assistants}
                   {registrations}
                 </>
               ) : (
                 <>
                   {myProfile}
                   {signInMethods}
-                  {assistants}
                   {registrations}
                   <LanguagePicker />
                 </>

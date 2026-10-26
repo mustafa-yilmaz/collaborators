@@ -20,13 +20,14 @@ from functools import lru_cache
 
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
+from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 import jwt
 
-from core import assistants, merging, registrations
+from core import assistants, merging, models, registrations
 from core.services import keycloak
 from core.services.converter_services import ServiceUnavailableError
 from core.services.yhub_services import YHubError
@@ -290,6 +291,17 @@ def mcp_endpoint(request):
         message = json.loads(request.body or b"")
     except ValueError:
         return JsonResponse(_error(None, -32700, "Parse error"), status=400)
+    # When this assistant last did something for the person
+    if (
+        isinstance(message, dict)
+        and message.get("method") == "tools/call"
+        and claims.get("azp")
+    ):
+        models.AssistantUse.objects.update_or_create(
+            user=user,
+            client_id=claims["azp"],
+            defaults={"last_used_at": timezone.now()},
+        )
     answer = _handle(user, claims, message)
     if answer is None:
         return HttpResponse(status=202)

@@ -135,10 +135,22 @@ def delete_user(user_id):
     _request("delete", f"/users/{user_id}", missing_ok=True)
 
 
+def client_info(client_id):
+    """A client's name and sign-in return addresses, or None."""
+    clients = _request("get", "/clients", params={"clientId": client_id}) or []
+    if not clients:
+        return None
+    return {
+        "id": clients[0].get("id"),
+        "name": clients[0].get("name") or clients[0].get("clientId") or "",
+        "redirect_uris": clients[0].get("redirectUris") or [],
+    }
+
+
 def client_name(client_id):
     """The name a client (an assistant that registered) goes by, or None."""
-    clients = _request("get", "/clients", params={"clientId": client_id}) or []
-    return clients[0].get("name") or clients[0].get("clientId") if clients else None
+    info = client_info(client_id)
+    return info["name"] if info else None
 
 
 def consents(user_id):
@@ -147,6 +159,21 @@ def consents(user_id):
     lastUpdatedDate, grantedClientScopes, …}].
     """
     return _request("get", f"/users/{user_id}/consents") or []
+
+
+def has_session(user_id, client_uuid):
+    """
+    Whether the account has a live session with this client: an offline one
+    (its refresh tokens), or an online one. An assistant revoking its tokens
+    when its connector is removed ends it; so does a long idle time.
+    """
+    offline = _request(
+        "get", f"/users/{user_id}/offline-sessions/{client_uuid}", missing_ok=True
+    )
+    if offline:
+        return True
+    online = _request("get", f"/users/{user_id}/sessions") or []
+    return any(client_uuid in (session.get("clients") or {}) for session in online)
 
 
 def revoke_consent(user_id, client_id):

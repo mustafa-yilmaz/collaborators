@@ -3688,6 +3688,33 @@ class BlockedEmail(BaseModel):
         return self.email
 
 
+class AssistantUse(BaseModel):
+    """
+    Collaborators: when an AI assistant (a client of the sign-in server)
+    last did something for a collaborator through the MCP server
+    (core.api.mcp), shown with the assistants connected.
+    """
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="assistant_uses"
+    )
+    client_id = models.CharField(max_length=255)
+    last_used_at = models.DateTimeField()
+
+    class Meta:
+        db_table = "collaborators_assistant_use"
+        verbose_name = _("Assistant use")
+        verbose_name_plural = _("Assistant uses")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "client_id"], name="unique_assistant_use"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.client_id} for {self.user!s}"
+
+
 class ContentReport(BaseModel):
     """
     Collaborators: someone reported a page; platform administrators dismiss

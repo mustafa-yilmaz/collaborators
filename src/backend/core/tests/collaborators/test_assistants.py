@@ -12,7 +12,7 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from rest_framework.test import APIClient
 
-from core import assistants, factories
+from core import assistants, factories, models
 from core.api import mcp
 from core.services import keycloak
 from core.services.converter_services import YdocConverter
@@ -265,13 +265,28 @@ def test_add_input_errors_reach_the_model():
     assert "can't edit" in result["content"][0]["text"]
 
 
-def test_connected_assistants_are_listed_and_disconnected(settings):
-    """Approvals at the sign-in server, the app's own clients left out."""
+def test_assistants_are_sorted_into_the_three_with_their_state(settings):
+    """Claude, ChatGPT, Gemini, each with its approvals; others apart."""
     settings.OIDC_RP_CLIENT_ID = "collaborators"
     user = factories.UserFactory()
+    models.AssistantUse.objects.create(
+        user=user, client_id="c-claude", last_used_at="2026-10-26T10:00:00Z"
+    )
+    infos = {
+        "c-claude": {"id": "u1", "name": "Claude", "redirect_uris": []},
+        "c-cli": {
+            "id": "u2",
+            "name": "Some CLI",
+            "redirect_uris": ["http://localhost:7777/oauth/callback"],
+        },
+        "c-odd": {
+            "id": "u3",
+            "name": "Odd tool",
+            "redirect_uris": ["https://x.example"],
+        },
+    }
     client = APIClient()
     client.force_login(user)
-    mcp._known_client_name.cache_clear()  # pylint: disable=protected-access
     with (
         mock.patch.object(keycloak, "is_configured", return_value=True),
         mock.patch.object(keycloak, "find_user_id", return_value="kc-1"),
@@ -280,22 +295,46 @@ def test_connected_assistants_are_listed_and_disconnected(settings):
             "consents",
             return_value=[
                 {"clientId": "collaborators", "createdDate": 1},
-                {"clientId": "abc-123", "createdDate": 2, "lastUpdatedDate": 3},
+                {"clientId": "c-claude", "createdDate": 2},
+                {"clientId": "c-cli", "createdDate": 3},
+                {"clientId": "c-odd", "createdDate": 4},
             ],
         ),
-        mock.patch.object(keycloak, "client_name", return_value="Claude"),
+        mock.patch.object(keycloak, "client_info", side_effect=infos.get),
+        mock.patch.object(
+            keycloak, "has_session", side_effect=lambda _u, uuid: uuid == "u1"
+        ),
+    ):
+        body = client.get("/api/v1.0/users/me/assistants/").json()
+
+    assert body["mcp_url"] == f"{APP}/mcp"
+    tools = {tool["id"]: tool for tool in body["tools"]}
+    assert [tool["id"] for tool in body["tools"]] == ["claude", "chatgpt", "gemini"]
+    claude = tools["claude"]["approvals"][0]
+    assert claude["name"] == "Claude"
+    assert claude["connected"] is True
+    assert claude["last_used_at"].startswith("2026-10-26")
+    assert tools["chatgpt"]["approvals"] == []
+    # recognised by where its sign-in returns; no live session: not in use
+    gemini = tools["gemini"]["approvals"][0]
+    assert gemini["client_id"] == "c-cli" and gemini["connected"] is False
+    assert [item["client_id"] for item in body["others"]] == ["c-odd"]
+
+
+def test_disconnecting_withdraws_the_approval_and_forgets_its_use(settings):
+    """The approval goes at the sign-in server; never the app's own client."""
+    settings.OIDC_RP_CLIENT_ID = "collaborators"
+    user = factories.UserFactory()
+    models.AssistantUse.objects.create(
+        user=user, client_id="abc-123", last_used_at="2026-10-26T10:00:00Z"
+    )
+    client = APIClient()
+    client.force_login(user)
+    with (
+        mock.patch.object(keycloak, "is_configured", return_value=True),
+        mock.patch.object(keycloak, "find_user_id", return_value="kc-1"),
         mock.patch.object(keycloak, "revoke_consent") as revoke,
     ):
-        listed = client.get("/api/v1.0/users/me/assistants/").json()
-        assert listed["mcp_url"] == f"{APP}/mcp"
-        assert listed["assistants"] == [
-            {
-                "client_id": "abc-123",
-                "name": "Claude",
-                "approved_at": 2,
-                "last_updated_at": 3,
-            }
-        ]
         assert (
             client.delete("/api/v1.0/users/me/assistants/abc-123/").status_code == 204
         )
@@ -304,6 +343,32 @@ def test_connected_assistants_are_listed_and_disconnected(settings):
             client.delete("/api/v1.0/users/me/assistants/collaborators/").status_code
             == 404
         )
+    assert not models.AssistantUse.objects.exists()
+
+
+def test_using_a_tool_records_when():
+    """A tool called through MCP records the assistant's last use."""
+    user = factories.UserFactory()
+    factories.DocumentFactory(users=[(user, "editor")])
+    _rpc(_token(user.email), "tools/call", {"name": "find_pages", "arguments": {}})
+    _rpc(_token(user.email), "tools/list")
+    use = models.AssistantUse.objects.get()
+    assert (use.user, use.client_id) == (user, "claude-client")
+
+
+def test_a_session_is_live_offline_or_online(settings):
+    """The assistant's refresh tokens, or a session naming it."""
+    settings.COLLABORATORS_KEYCLOAK_URL = "http://keycloak.test"
+    settings.COLLABORATORS_KEYCLOAK_REALM = "collaborators"
+    settings.COLLABORATORS_KEYCLOAK_CLIENT_ID = "collaborators-backend"
+    settings.COLLABORATORS_KEYCLOAK_CLIENT_SECRET = "secret"
+    with mock.patch.object(keycloak, "_request") as request:
+        request.side_effect = [[{"id": "s"}]]
+        assert keycloak.has_session("kc-1", "u1") is True
+        request.side_effect = [None, [{"clients": {"u1": "c-claude"}}]]
+        assert keycloak.has_session("kc-1", "u1") is True
+        request.side_effect = [[], [{"clients": {"u9": "x"}}]]
+        assert keycloak.has_session("kc-1", "u1") is False
 
 
 def test_the_converter_builds_the_toggle_update(settings):

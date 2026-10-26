@@ -1,3 +1,6 @@
 next-env.d.ts
 service-worker.js
 public/assets/fonts/*
+
+# Collaborators: the product demo, kept as it was made (a copy of demo.html at the repository root)
+public/demo/

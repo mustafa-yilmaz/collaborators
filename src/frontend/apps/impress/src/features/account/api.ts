@@ -18,9 +18,12 @@ export interface SignInMethod {
 
 /** What happened to the account last added, said once */
 export interface AddedAccountNotice {
-  outcome: 'added' | 'already' | 'separate';
+  /** "merge": it has its own account, and merging it is offered */
+  outcome: 'added' | 'already' | 'separate' | 'merge';
   provider: string;
   account: string;
+  /** Why it can't be merged, when separate */
+  reason?: string;
 }
 
 export interface SignInMethods {
@@ -169,21 +172,10 @@ export interface MergeProposal {
   groups: number;
 }
 
-/** Why the account just signed in with wasn't proposed, said once. */
-export interface MergeNotice {
-  outcome: 'same' | 'no_account' | 'refused';
-  account: string;
-  provider: string;
-  reason?: string;
-}
-
 export const KEY_MERGE = 'account-merge';
 
 export function useMergeProposal() {
-  return useQuery<
-    { proposal: MergeProposal | null; notice: MergeNotice | null },
-    APIError
-  >({
+  return useQuery<{ proposal: MergeProposal | null }, APIError>({
     queryKey: [KEY_MERGE],
     queryFn: async () => {
       const response = await fetchAPI('users/me/merge/');
@@ -193,36 +185,7 @@ export function useMergeProposal() {
           await errorCauses(response),
         );
       }
-      return response.json() as Promise<{
-        proposal: MergeProposal | null;
-        notice: MergeNotice | null;
-      }>;
-    },
-    // The notice is said once: never asked twice by itself
-    staleTime: Infinity,
-    refetchOnWindowFocus: false,
-  });
-}
-
-/**
- * Start merging another account of one's own: the browser signs in with
- * it (the sign-in server's sign-out first) and comes back to this page.
- */
-export function useStartMerge() {
-  return useMutation<void, APIError, string>({
-    mutationFn: async (provider) => {
-      const response = await fetchAPI('users/me/merge/start/', {
-        method: 'POST',
-        body: JSON.stringify({ provider, next: window.location.href }),
-      });
-      if (!response.ok) {
-        throw new APIError(
-          'Failed to start the merge',
-          await errorCauses(response),
-        );
-      }
-      const { url } = (await response.json()) as { url: string };
-      window.location.assign(url);
+      return response.json() as Promise<{ proposal: MergeProposal | null }>;
     },
   });
 }
@@ -246,7 +209,7 @@ export function useDecideMerge() {
         : (response.json() as Promise<{ merged: string }>);
     },
     onSuccess: () => {
-      queryClient.setQueryData([KEY_MERGE], { proposal: null, notice: null });
+      queryClient.setQueryData([KEY_MERGE], { proposal: null });
       void queryClient.invalidateQueries({ queryKey: [KEY_SIGN_IN_METHODS] });
     },
   });

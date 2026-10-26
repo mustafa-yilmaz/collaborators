@@ -118,7 +118,6 @@ urlpatterns = [
                     "users/me/sign-in-methods/<slug:provider>/accounts/<uuid:identity_id>/",
                     signin_methods.SignInAccountView.as_view(),
                 ),
-                path("users/me/merge/start/", signin_methods.StartMergeView.as_view()),
                 path("users/me/merge/", signin_methods.MergeView.as_view()),
                 path("users/me/hints/", signin_methods.HintsView.as_view()),
                 path(

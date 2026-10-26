@@ -3,7 +3,6 @@ import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Box, SCREEN_MAX_WIDTH, Text } from '@/components';
-import { MergeAccounts } from '@/features/account/MergeAccounts';
 import { SignInMethods } from '@/features/account/SignInMethods';
 import { HeaderFloatingBar } from '@/features/header/components/HeaderFloatingBar';
 import { MainLayout } from '@/layouts';
@@ -44,7 +43,6 @@ const Page: NextPageWithLayout = () => {
             )}
           </Text>
           <SignInMethods />
-          <MergeAccounts />
         </Box>
       </Box>
     </>

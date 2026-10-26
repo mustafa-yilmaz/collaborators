@@ -9,7 +9,8 @@ Adding one, from the sign-in methods page: the Keycloak session ends (the
 app's stays), then sign-in starts with that provider, whose account chooser
 lets the person pick the other account. Back in the app, the account signed
 in with is recorded as theirs, unless it already opens a separate
-Collaborators account.
+Collaborators account: then merging that account into this one is offered
+(signing in with it proved it is theirs, see core.merging).
 """
 
 import time
@@ -18,7 +19,7 @@ from urllib.parse import urlencode
 from django.conf import settings
 from django.urls import reverse
 
-from core import models
+from core import merging, models
 
 # Providers whose several accounts may open one collaborator's account
 MULTI_ACCOUNT_PROVIDERS = ("google", "microsoft")
@@ -31,6 +32,8 @@ ADDING_TIMEOUT_SECONDS = 15 * 60
 ADDED = "added"
 ALREADY = "already"
 SEPARATE = "separate"
+# Separate, and merging it into this account is offered
+MERGE = "merge"
 
 
 class CantAddError(Exception):
@@ -90,6 +93,19 @@ def finish_adding(request, adding, sub, email):
     elif identity or models.User.objects.filter(sub=sub).exists():
         outcome = SEPARATE
         identity = None
+        other = merging.account_of(sub, email)
+        if other is not None and other.pk != user.pk:
+            reason = merging.refusal(user, other)
+            if reason:
+                request.session[NOTICE_SESSION_KEY] = {
+                    "outcome": SEPARATE,
+                    "provider": provider,
+                    "account": email or "",
+                    "reason": str(reason),
+                }
+                return user, None, SEPARATE
+            merging.propose(request, user, other, provider)
+            outcome = MERGE
     else:
         identity = models.SignInIdentity.objects.create(
             user=user, provider=provider, sub=sub, account=email or ""

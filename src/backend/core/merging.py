@@ -2,12 +2,10 @@
 Collaborators: one person with two accounts merges them into one.
 
 From the sign-in methods page, the person signed in (the account kept)
-signs in with the other account, which proves it is theirs: the Keycloak
-session ends (the app's stays), and sign-in starts with the provider that
-opens the other account, its account chooser letting them pick it (as when
-adding an account, see core.identities). Back in the app they are still in
-the account kept, and asked to confirm; then everything of the other
-account moves over and the other account goes:
+adds another Google or Microsoft account (core.identities); when that
+account already opens a separate Collaborators account, signing in with it
+proved it is theirs, and merging it is offered. Once they confirm,
+everything of the other account moves over and the other account goes:
 
 - page and space accesses (the higher role kept where both had one), pages
   made, favourites, comments, reactions, mentions, assignments;
@@ -22,69 +20,21 @@ than the one kept isn't merged (merge the other way). Logged.
 """
 
 import time
-from urllib.parse import urlencode
 
-from django.conf import settings
 from django.db import transaction
-from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from core import models, platform_roles
 from core.choices import PlatformLogActionChoices, RoleChoices, WorkspaceRoleChoices
 from core.tasks.access import reset_service_connections_on_commit
 
-MERGE_PROVIDERS = ("google", "microsoft", "linkedin")
-STARTING_SESSION_KEY = "collaborators_merging"
 PROPOSAL_SESSION_KEY = "collaborators_merge_proposal"
-NOTICE_SESSION_KEY = "collaborators_merge_notice"
-# Time to pick the account at the provider, then to confirm
+# Time to confirm
 TIMEOUT_SECONDS = 15 * 60
-
-SAME = "same"
-NO_ACCOUNT = "no_account"
-REFUSED = "refused"
 
 
 class MergeError(Exception):
     """A merge that can't be done, with why, to show."""
-
-
-def start(request, provider, next_url):
-    """
-    Remember that the signed-in collaborator merges another account, and
-    return where to send them: Keycloak's sign-out, which comes back to sign
-    in with that provider.
-    """
-    logout_endpoint = settings.OIDC_OP_LOGOUT_ENDPOINT
-    id_token = request.session.get("oidc_id_token")
-    if not logout_endpoint or not id_token:
-        raise MergeError(_("Sign out and in again, then merge the account."))
-    request.session.pop(PROPOSAL_SESSION_KEY, None)
-    request.session[STARTING_SESSION_KEY] = {
-        "user": str(request.user.pk),
-        "provider": provider,
-        "at": time.time(),
-    }
-    sign_in = (
-        request.build_absolute_uri(reverse("oidc_authentication_init"))
-        + "?"
-        + urlencode({"kc_idp_hint": provider, "next": next_url})
-    )
-    return (
-        logout_endpoint
-        + "?"
-        + urlencode({"id_token_hint": id_token, "post_logout_redirect_uri": sign_in})
-    )
-
-
-def pending(request):
-    """The merge starting in this browser, if any (once)."""
-    if request is None or not hasattr(request, "session"):
-        return None
-    starting = request.session.pop(STARTING_SESSION_KEY, None)
-    if not starting or time.time() - starting.get("at", 0) > TIMEOUT_SECONDS:
-        return None
-    return starting
 
 
 def account_of(sub, email):
@@ -116,32 +66,14 @@ def refusal(keep, gone):
     return None
 
 
-def found(request, starting, sub, email):
-    """
-    Back from signing in with the other account: propose merging it, or say
-    why not. Return the account kept, still the one signed in.
-    """
-    keep = models.User.objects.filter(pk=starting["user"], is_active=True).first()
-    if keep is None:
-        return None
-    gone = account_of(sub, email)
-    notice = {"account": email or "", "provider": starting["provider"]}
-    if gone is None:
-        notice["outcome"] = NO_ACCOUNT
-    elif gone.pk == keep.pk:
-        notice["outcome"] = SAME
-    elif refusal(keep, gone):
-        notice.update(outcome=REFUSED, reason=str(refusal(keep, gone)))
-    else:
-        request.session[PROPOSAL_SESSION_KEY] = {
-            "keep": str(keep.pk),
-            "gone": str(gone.pk),
-            "provider": starting["provider"],
-            "at": time.time(),
-        }
-        return keep
-    request.session[NOTICE_SESSION_KEY] = notice
-    return keep
+def propose(request, keep, gone, provider):
+    """Offer, in this browser, to merge the other account into the one kept."""
+    request.session[PROPOSAL_SESSION_KEY] = {
+        "keep": str(keep.pk),
+        "gone": str(gone.pk),
+        "provider": provider,
+        "at": time.time(),
+    }
 
 
 def proposal(request):
@@ -157,11 +89,6 @@ def proposal(request):
     if gone is None:
         return None
     return proposed, gone
-
-
-def pop_notice(request):
-    """Why the last account signed in with wasn't proposed, to say it once."""
-    return request.session.pop(NOTICE_SESSION_KEY, None)
 
 
 def summary(gone):

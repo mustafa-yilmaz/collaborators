@@ -17,7 +17,7 @@ from rest_framework.authentication import (
     SessionAuthentication as BaseSessionAuthentication,
 )
 
-from core import accounts, identities, joining, merging, models, registrations
+from core import accounts, identities, joining, models, registrations
 from core.models import DuplicateEmailError, User
 from core.utils.analytics import PosthogEventName, posthog_capture
 
@@ -77,14 +77,6 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
         """
         user_info = self.get_userinfo(access_token, id_token, payload)
         sub = user_info.get("sub")
-        # Collaborators: signing in with another account to merge it into
-        # the one signed in (core.merging), who stays signed in
-        starting = merging.pending(getattr(self, "request", None))
-        if sub and starting:
-            user = merging.found(self.request, starting, sub, user_info.get("email"))
-            if user is not None:
-                self.collaborators_identity = None
-                return user
         adding = identities.pending_addition(getattr(self, "request", None))
         if sub and adding:
             user, identity, outcome = identities.finish_adding(
@@ -93,7 +85,8 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
             if user is not None:
                 # Not added: the account signed in with opens another
                 # Collaborators account, whose details aren't this one's
-                if outcome != identities.SEPARATE:
+                # (nor one merging is offered for, until confirmed)
+                if outcome not in (identities.SEPARATE, identities.MERGE):
                     self.collaborators_after_sign_in(user, identity)
                 return user
         self.collaborators_identity = None

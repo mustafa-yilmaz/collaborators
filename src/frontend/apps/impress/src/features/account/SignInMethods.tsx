@@ -13,6 +13,7 @@ import {
   HintCard,
   hasUnconnectedProviders,
 } from './AccountHints';
+import { MergeProposal } from './MergeAccounts';
 import {
   AddedAccountNotice,
   useAddSignInAccount,
@@ -44,13 +45,18 @@ const AddedNotice = ({ notice }: { notice: AddedAccountNotice }) => {
               description: 'The account added was already connected',
               ...values,
             })
-          : t(
-              '{{account}} already opens a separate Collaborators account, so it wasn’t added.',
-              {
-                description: 'The account added has its own account',
-                ...values,
-              },
-            )}
+          : [
+              t(
+                '{{account}} already opens a separate Collaborators account, so it wasn’t added.',
+                {
+                  description: 'The account added has its own account',
+                  ...values,
+                },
+              ),
+              notice.reason,
+            ]
+              .filter(Boolean)
+              .join(' ')}
     </Text>
   );
 };
@@ -105,7 +111,11 @@ export const SignInMethods = () => {
 
   return (
     <Box $gap="sm">
-      {data.notice && <AddedNotice notice={data.notice} />}
+      {/* A merge offered says it in its own box */}
+      {data.notice && data.notice.outcome !== 'merge' && (
+        <AddedNotice notice={data.notice} />
+      )}
+      <MergeProposal />
       {hasUnconnectedProviders(data) && (
         <HintCard icon="warning" tone="warning" testId="hint-connect-accounts">
           <ConnectAccountsText onSignInMethodsPage />
@@ -268,7 +278,7 @@ export const SignInMethods = () => {
       )}
       <Text $size="sm" $variation="secondary">
         {t(
-          'Connecting a method asks you to sign in with it once. Then any connected method signs you in to this same account. You can add several Google and Microsoft accounts: their account chooser lets you pick which one.',
+          'Connecting a method asks you to sign in with it once. Then any connected method signs you in to this same account. You can add several Google and Microsoft accounts: their account chooser lets you pick which one. If one you add already has its own Collaborators account, you can merge it into this one.',
           { description: 'Explanation on the sign-in methods page' },
         )}
       </Text>

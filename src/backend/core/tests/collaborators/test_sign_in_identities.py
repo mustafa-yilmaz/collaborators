@@ -11,7 +11,7 @@ from django.test import RequestFactory
 import pytest
 from rest_framework.test import APIClient
 
-from core import factories, identities, joining, models
+from core import factories, identities, joining, merging, models
 from core.authentication.backends import OIDCAuthenticationBackend
 from core.services import keycloak
 
@@ -113,10 +113,13 @@ def test_the_added_account_opens_the_collaborators_account(configured):  # pylin
     assert models.User.objects.count() == 1
 
 
-def test_an_account_with_its_own_collaborators_account_isnt_added(configured):  # pylint: disable=unused-argument
-    """An account that already opens a separate Collaborators account stays so."""
+def test_an_account_with_its_own_collaborators_account_is_offered_to_merge(configured):  # pylint: disable=unused-argument
+    """
+    Collaborators: an account that already opens a separate Collaborators
+    account isn't added; merging it into this one is offered instead.
+    """
     user = factories.UserFactory(sub="kc-ada")
-    factories.UserFactory(sub="kc-other")
+    other = factories.UserFactory(sub="kc-other", email="other@contoso.com")
     client = client_for(user)
     client.post("/api/v1.0/users/me/sign-in-methods/microsoft/add/", format="json")
 
@@ -124,7 +127,29 @@ def test_an_account_with_its_own_collaborators_account_isnt_added(configured):  
 
     assert signed_in == user
     assert not models.SignInIdentity.objects.exists()
-    assert session[identities.NOTICE_SESSION_KEY]["outcome"] == "separate"
+    assert session[identities.NOTICE_SESSION_KEY]["outcome"] == "merge"
+    proposal = session[merging.PROPOSAL_SESSION_KEY]
+    assert proposal["keep"] == str(user.pk)
+    assert proposal["gone"] == str(other.pk)
+    assert proposal["provider"] == "microsoft"
+    # Nothing of the other account was taken before confirming
+    user.refresh_from_db()
+    assert user.collaborator_organizations == []
+
+
+def test_an_account_that_cant_be_merged_stays_separate(configured):  # pylint: disable=unused-argument
+    """At a higher level: separate, with why (merge the other way)."""
+    user = factories.UserFactory(sub="kc-ada")
+    factories.UserFactory(sub="kc-other", platform_role="administrator")
+    client = client_for(user)
+    client.post("/api/v1.0/users/me/sign-in-methods/microsoft/add/", format="json")
+
+    _signed_in, session = sign_in(client, "kc-other", "other@contoso.com")
+
+    notice = session[identities.NOTICE_SESSION_KEY]
+    assert notice["outcome"] == "separate"
+    assert "higher level" in notice["reason"]
+    assert merging.PROPOSAL_SESSION_KEY not in session
 
 
 def test_sign_in_methods_list_and_remove_more_accounts(configured):  # pylint: disable=unused-argument

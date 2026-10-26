@@ -155,3 +155,99 @@ export function useDismissHint() {
     onSuccess: (data) => queryClient.setQueryData([KEY_HINTS], data),
   });
 }
+
+/** What another account of one's own brings, before merging it. */
+export interface MergeProposal {
+  id: string;
+  full_name: string;
+  email: string;
+  /** Pages it owns */
+  pages: number;
+  /** Pages shared with it */
+  shared_with_it: number;
+  workspaces: number;
+  groups: number;
+}
+
+/** Why the account just signed in with wasn't proposed, said once. */
+export interface MergeNotice {
+  outcome: 'same' | 'no_account' | 'refused';
+  account: string;
+  provider: string;
+  reason?: string;
+}
+
+export const KEY_MERGE = 'account-merge';
+
+export function useMergeProposal() {
+  return useQuery<
+    { proposal: MergeProposal | null; notice: MergeNotice | null },
+    APIError
+  >({
+    queryKey: [KEY_MERGE],
+    queryFn: async () => {
+      const response = await fetchAPI('users/me/merge/');
+      if (!response.ok) {
+        throw new APIError(
+          'Failed to read the merge',
+          await errorCauses(response),
+        );
+      }
+      return response.json() as Promise<{
+        proposal: MergeProposal | null;
+        notice: MergeNotice | null;
+      }>;
+    },
+    // The notice is said once: never asked twice by itself
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  });
+}
+
+/**
+ * Start merging another account of one's own: the browser signs in with
+ * it (the sign-in server's sign-out first) and comes back to this page.
+ */
+export function useStartMerge() {
+  return useMutation<void, APIError, string>({
+    mutationFn: async (provider) => {
+      const response = await fetchAPI('users/me/merge/start/', {
+        method: 'POST',
+        body: JSON.stringify({ provider, next: window.location.href }),
+      });
+      if (!response.ok) {
+        throw new APIError(
+          'Failed to start the merge',
+          await errorCauses(response),
+        );
+      }
+      const { url } = (await response.json()) as { url: string };
+      window.location.assign(url);
+    },
+  });
+}
+
+/** Merge the account waiting into this one, or forget it. */
+export function useDecideMerge() {
+  const queryClient = useQueryClient();
+  return useMutation<{ merged?: string }, APIError, 'merge' | 'cancel'>({
+    mutationFn: async (decision) => {
+      const response = await fetchAPI('users/me/merge/', {
+        method: decision === 'merge' ? 'POST' : 'DELETE',
+      });
+      if (!response.ok) {
+        throw new APIError(
+          'The accounts were not merged',
+          await errorCauses(response),
+        );
+      }
+      return response.status === 204
+        ? {}
+        : (response.json() as Promise<{ merged: string }>);
+    },
+    onSuccess: () => {
+      queryClient.setQueryData([KEY_MERGE], { proposal: null, notice: null });
+      void queryClient.invalidateQueries({ queryKey: [KEY_SIGN_IN_METHODS] });
+    },
+  });
+}

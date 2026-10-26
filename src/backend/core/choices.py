@@ -220,6 +220,7 @@ class PlatformLogActionChoices(TextChoices):
     TAKEN_DOWN = "taken_down", _("Page taken down")
     PUT_BACK = "put_back", _("Page put back")
     SETTINGS_CHANGED = "settings_changed", _("Platform settings changed")
+    MERGED = "merged", _("Accounts merged")
 
 
 class ReportReasonChoices(TextChoices):

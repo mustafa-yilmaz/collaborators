@@ -2,7 +2,8 @@
 The in-app "Sign-in methods" page: the providers a collaborator signs in
 with, and removing one. Connecting another provider goes through sign-in
 (Keycloak's "idp_link" action, started by the frontend). More Google or
-Microsoft accounts can be added (see `core.identities`).
+Microsoft accounts can be added (see `core.identities`), and another
+account of one's own merged into this one (see `core.merging`).
 
 Also the dashboard hints about them, closed for good one by one: the
 welcome note of a new account, and the suggestion to connect another
@@ -16,7 +17,7 @@ import rest_framework as drf
 from rest_framework import status
 from rest_framework.views import APIView
 
-from core import identities, joining
+from core import identities, joining, merging
 from core.api import permissions
 from core.services import keycloak
 
@@ -135,6 +136,73 @@ class AddSignInAccountView(APIView):
                 {"provider": _("Sign out and in again, then add the account.")}
             ) from err
         return drf.response.Response({"url": url})
+
+
+class StartMergeView(APIView):
+    """
+    POST /users/me/merge/start/ {"provider", "next"} — start merging another
+    account of one's own: returns {"url"} to go to, to sign in with it.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        """Start a merge."""
+        provider = request.data.get("provider")
+        if (
+            provider not in merging.MERGE_PROVIDERS
+            or provider not in settings.COLLABORATORS_SIGNIN_PROVIDERS
+        ):
+            raise drf.exceptions.ValidationError(
+                {"provider": _("Choose how you sign in with the other account.")}
+            )
+        try:
+            url = merging.start(request, provider, str(request.data.get("next") or "/"))
+        except merging.MergeError as err:
+            raise drf.exceptions.ValidationError({"detail": str(err)}) from err
+        return drf.response.Response({"url": url})
+
+
+class MergeView(APIView):
+    """
+    GET    /users/me/merge/ — the merge waiting for confirmation (what the
+           other account brings), and, once, why one wasn't proposed;
+    POST   /users/me/merge/ — merge it into this one;
+    DELETE /users/me/merge/ — don't.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """What waits, if anything."""
+        waiting = merging.proposal(request)
+        return drf.response.Response(
+            {
+                "proposal": merging.summary(waiting[1]) if waiting else None,
+                "notice": merging.pop_notice(request),
+            }
+        )
+
+    def post(self, request):
+        """Merge the other account into this one; it goes."""
+        waiting = merging.proposal(request)
+        if waiting is None:
+            raise drf.exceptions.ValidationError(
+                {"detail": _("Sign in with the other account again to merge it.")}
+            )
+        proposed, gone = waiting
+        name = gone.full_name or gone.email
+        try:
+            merging.merge(request.user, gone, proposed["provider"])
+        except merging.MergeError as err:
+            raise drf.exceptions.ValidationError({"detail": str(err)}) from err
+        request.session.pop(merging.PROPOSAL_SESSION_KEY, None)
+        return drf.response.Response({"merged": name})
+
+    def delete(self, request):
+        """Forget the merge waiting."""
+        request.session.pop(merging.PROPOSAL_SESSION_KEY, None)
+        return drf.response.Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class SignInAccountView(APIView):

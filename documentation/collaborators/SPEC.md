@@ -429,8 +429,8 @@ Moved out of the table v1:
 5. **Microsoft and LinkedIn sign-in in production:** checked live; the LinkedIn app's settings in its developer portal (linkedin.com/developers) checked or completed. 2026-10-26: Microsoft works. LinkedIn worked, but the first try ended on an empty dashboard: a second return from the sign-in server for the same sign-in ("authentication_expired") signed the person out right after signing them in (it happened once with Microsoft too, in the other order). Such a return now changes nothing (`core/authentication/views.py`).
 5b. **Platform roles** (see section 1, Roles): four levels instead of two. Steps: ✅ the levels and the list of everyone ("Manage", 2026-10-25); ✅ suspending, removing and blocking accounts (2026-10-25); ✅ appointing (2026-10-26); ✅ content reports and platform settings (2026-10-26). Done.
 5c. ✅ **Notifications: "See all" and two tabs** (asked for 2026-10-25, built 2026-10-26): the bell shows "See all" at the top of its popup (above the list, however long), and the dashboard's Notifications card at its foot, always (even empty), both leading to the Notifications screen (the panel's "Notifications" item). That screen has two tabs: **Active** (unread notifications, and what is still assigned to one) and **Read** (the notifications read, latest 50; `GET notifications/?unread=true` / `?read=true`). "Mark all as read" shows on the Active tab.
-6. **Grant calls** (items 7–10 below), once the owner has decided where calls come from.
-7. **Input from one's own AI tools** (item 11 below), once the owner has decided its first ways in.
+6. **Input from one's own AI tools** (item 11 below), once the owner has decided its first ways in (moved before grant calls, 2026-10-26).
+7. **Grant calls** (items 7–10 below), once the owner has decided where calls come from.
 8. Last: a README of Collaborators for the GitHub repository.
 
 Later (found in the live checks of 2026-10-25): **touch screens.** On a phone, the table's handles and menus (columns, rows, header row) and the press-and-hold dragging of blocks don't work yet; they work with a mouse. Needed for tablets at least, when a real need arises.

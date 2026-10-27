@@ -225,6 +225,14 @@ tr:last-child td{border-bottom:0}
 .gh{display:flex;align-items:center;gap:12px;margin-top:22px;font-size:24px;color:var(--ink-2);font-weight:500;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:10px 24px 10px 18px}
 .gh svg.i{width:24px;height:24px;color:var(--ink)}
 
+/* ---------- Portrait hint (outside the stage) ---------- */
+.turn{position:fixed;left:50%;bottom:max(24px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:none;align-items:center;gap:10px;
+  background:rgba(29,27,44,.88);color:#fff;font:600 15px/1 var(--font);padding:12px 18px;border-radius:999px;z-index:120;transition:opacity .6s ease;white-space:nowrap}
+.turn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+body.phone #stage{position:fixed}
+body.portrait .turn{display:flex}
+body.portrait .turn.gone{opacity:0}
+
 /* ---------- Controls (outside the stage) ---------- */
 .ctrls{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:max(20px,env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:12px;z-index:100;transition:opacity .4s ease}
 body.idle .ctrls{opacity:0}
@@ -414,6 +422,8 @@ body.idle .ctrls{opacity:0}
 </div>
 
 
+<div class="turn" id="turn" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/><path d="M3.5 9a8.5 8.5 0 0 1 3-5.5M2.5 5.5l1 3.5 3.5-1"/></svg>Turn your phone sideways</div>
+
 <script>
 (()=>{
 const DUR=40;
@@ -455,8 +465,14 @@ const E={};['heroStroke','tag1','tag2','sideBrand','sideLabel','wsHead','sideFoo
 const ALAN_TXT=' The beta opens to pilot teams on 18 November.';
 const PROMPT='Add a summary of today’s meeting to my ‘Q4 Roadmap’ page in Collaborators.';
 
-/* positions relative to an overlay (works through any CSS transform) */
-function at(ov,el,ax=.5,ay=.5,dx=0,dy=0){return ()=>{const r=el.getBoundingClientRect(),o=ov.getBoundingClientRect(),s=o.width/ov.offsetWidth||1;
+/* positions relative to an overlay (works through any CSS transform, the
+   stage turned a quarter on portrait screens included: then the screen's x
+   runs along the stage's y) */
+let ROT=false;
+function at(ov,el,ax=.5,ay=.5,dx=0,dy=0){return ()=>{const r=el.getBoundingClientRect(),o=ov.getBoundingClientRect();
+  if(ROT){const s=o.height/ov.offsetWidth||1;
+    return {x:(r.top-o.top+r.height*ax)/s+dx,y:(o.right-r.right+r.width*ay)/s+dy};}
+  const s=o.width/ov.offsetWidth||1;
   return {x:(r.left-o.left+r.width*ax)/s+dx,y:(r.top-o.top+r.height*ay)/s+dy};};}
 const fx=(x,y)=>()=>({x,y});
 function follow(t,keys){
@@ -581,8 +597,21 @@ function render(t){
 
 /* ---- clock, controls ---- */
 const stage=$('stage');
-function fit(){const s=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform=`translate(-50%,-50%) scale(${s})`;}
-addEventListener('resize',fit); fit();
+/* Desktop: the original fit, unchanged. Phones only (a touch screen): the
+   stage is sized from the layout viewport (innerWidth grows when a phone's
+   browser zooms out), pinned so it doesn't widen the page, and on a portrait
+   screen (held upright) turned a quarter to fill it: tilting the phone, with
+   rotation locked, shows it full size */
+const PHONE=matchMedia('(pointer: coarse)').matches;
+function fit(){
+  if(!PHONE){const s=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform=`translate(-50%,-50%) scale(${s})`;return;}
+  const W=document.documentElement.clientWidth||innerWidth, H=document.documentElement.clientHeight||innerHeight;
+  ROT=H>W;
+  const s=ROT?Math.min(W/1080,H/1920):Math.min(W/1920,H/1080);
+  stage.style.transform=`translate(-50%,-50%)${ROT?' rotate(90deg)':''} scale(${s})`;
+  document.body.classList.add('phone');
+  document.body.classList.toggle('portrait',ROT);}
+addEventListener('resize',fit); addEventListener('orientationchange',fit); visualViewport?.addEventListener('resize',fit); fit();
 
 let t=0,playing=true,last=0,started=false;
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -610,6 +639,7 @@ if(reduce){playing=false;t=27.5;}
 ui();poke();render(t);requestAnimationFrame(tick);
 const go=()=>{if(!started){started=true;last=0;}};
 (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(go);setTimeout(go,1500);
+setTimeout(()=>$('turn').classList.add('gone'),5000);
 })();
 </script>
 </body>

@@ -225,13 +225,104 @@ tr:last-child td{border-bottom:0}
 .gh{display:flex;align-items:center;gap:12px;margin-top:22px;font-size:24px;color:var(--ink-2);font-weight:500;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:10px 24px 10px 18px}
 .gh svg.i{width:24px;height:24px;color:var(--ink)}
 
-/* ---------- Portrait hint (outside the stage) ---------- */
-.turn{position:fixed;left:50%;bottom:max(24px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:none;align-items:center;gap:10px;
-  background:rgba(29,27,44,.88);color:#fff;font:600 15px/1 var(--font);padding:12px 18px;border-radius:999px;z-index:120;transition:opacity .6s ease;white-space:nowrap}
-.turn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+/* ================= Portrait: phones held upright only =================
+   The same story on a tall 1080×1920 stage (body.portrait, set in fit()):
+   the page fills the app window (no side panel), Claude's chat rises from
+   below, cards stack. Nothing here applies to the desktop view. */
 body.phone #stage{position:fixed}
-body.portrait .turn{display:flex}
-body.portrait .turn.gone{opacity:0}
+body.portrait #stage{width:1080px;height:1920px;
+  background:radial-gradient(900px 700px at 50% -10%,#EDEAFB 0%,rgba(237,234,251,0) 62%),var(--bg)}
+body.portrait .hero{font-size:103px}
+body.portrait .stroke{width:860px}
+body.portrait .tag{font-size:64px;text-align:center;line-height:1.25;margin-top:40px}
+body.portrait .tag span{display:block}
+
+body.portrait #app{left:36px;top:52px;width:1008px;height:1816px;border-radius:22px;transform-origin:50% 50%}
+body.portrait .chrome{height:64px}
+body.portrait .dots i{width:14px;height:14px}
+body.portrait .url{font-size:21px;height:40px;min-width:0;max-width:640px;padding:0 20px;overflow:hidden;white-space:nowrap}
+body.portrait .appbody{top:64px}
+body.portrait .side{display:none}
+body.portrait .topbar{height:96px;padding:0 36px;gap:20px}
+body.portrait .crumbs{font-size:23px;gap:12px}
+body.portrait .live{font-size:21px}
+body.portrait .presence .av{width:44px;height:44px;font-size:15px}
+body.portrait .share{font-size:21px;padding:12px 22px;border-radius:12px}
+body.portrait .home,body.portrait .page{width:900px;margin-left:-450px}
+body.portrait .home{padding-top:60px}
+body.portrait .home h1{font-size:74px}
+body.portrait .home .sub{font-size:28px;margin-bottom:44px}
+body.portrait .grid{grid-template-columns:1fr;gap:22px}
+body.portrait .fcard{padding:28px;gap:22px}
+body.portrait .fcard .ft{width:72px;height:72px;border-radius:16px}
+body.portrait .fcard .ft svg.i{width:36px;height:36px}
+body.portrait .fcard b{font-size:32px}
+body.portrait .fcard span{font-size:25px}
+body.portrait .page{padding-top:56px}
+body.portrait .p-title{font-size:88px}
+body.portrait .p-meta{font-size:24px}
+body.portrait .p-meta .stack .av{width:38px;height:38px;font-size:13px}
+body.portrait .page p{font-size:36px;line-height:1.5;max-width:none}
+body.portrait .page h2{font-size:50px;margin-top:44px}
+body.portrait .tbl-bar{font-size:24px;padding:16px 22px}
+body.portrait .tbl-bar svg.i{width:26px;height:26px}
+body.portrait .tbl-bar .hint{font-size:20px}
+body.portrait table{font-size:28px}
+body.portrait th{font-size:17px;padding:14px 18px}
+body.portrait td{padding:16px 18px}
+body.portrait .chip{font-size:25px;gap:10px}
+body.portrait .chip .av{width:36px;height:36px;font-size:12px}
+body.portrait .lbl{font-size:24px;padding:6px 14px}
+body.portrait .tg-head{font-size:31px;white-space:normal;align-items:flex-start;line-height:1.35;padding:16px 18px}
+body.portrait .tri{width:30px;height:30px;margin-top:5px}
+body.portrait .tg-inner{padding:16px 18px 6px 62px}
+body.portrait .tg-inner h3{font-size:34px}
+body.portrait .tg-inner ul{font-size:31px}
+body.portrait .mini-tbl table{font-size:25px}
+body.portrait .toast{top:120px;right:30px;padding:14px 22px 14px 14px}
+body.portrait .toast .av{width:44px;height:44px;font-size:15px}
+body.portrait .toast b{font-size:22px}
+body.portrait .toast span{font-size:19px}
+body.portrait .cur svg{width:36px;height:36px}
+body.portrait .cur .nm{left:24px;top:30px;font-size:20px;padding:6px 13px}
+
+body.portrait #chat{left:36px;right:36px;top:auto;bottom:52px;width:auto;height:1180px;border-radius:26px}
+body.portrait .chat-head{padding:24px 30px}
+body.portrait .ai-badge{font-size:24px;padding:7px 20px}
+body.portrait .chat-sub{font-size:22px}
+body.portrait .conn{font-size:20px}
+body.portrait .chat-body{padding:36px 32px;gap:30px}
+body.portrait .msg-user{font-size:30px;max-width:90%}
+body.portrait .ai-who{font-size:21px}
+body.portrait .think{top:44px}
+body.portrait .think i{width:13px;height:13px}
+body.portrait .tool{padding:22px 24px}
+body.portrait .tool-h{font-size:21px}
+body.portrait .step{font-size:22px;padding:10px 16px}
+body.portrait .step code{font-size:22px}
+body.portrait .ic{width:24px;height:24px}
+body.portrait .tool-r{font-size:22px}
+body.portrait .ai-text{font-size:30px}
+body.portrait .field{font-size:28px;min-height:150px;padding:22px 84px 22px 24px}
+body.portrait .send{width:54px;height:54px}
+
+body.portrait .s5-inner{width:940px}
+body.portrait .eyebrow{font-size:24px}
+body.portrait .s5-title{font-size:78px;margin-bottom:56px}
+body.portrait .cards{grid-template-columns:1fr;gap:28px}
+body.portrait .card{padding:36px 40px;display:grid;grid-template-columns:auto 1fr;column-gap:30px;align-items:start}
+body.portrait .card .ico{grid-row:span 2;margin-bottom:0;width:80px;height:80px}
+body.portrait .card .ico svg.i{width:40px;height:40px}
+body.portrait .card h3{font-size:40px;margin-bottom:10px}
+body.portrait .card p{font-size:28px}
+body.portrait .works{flex-wrap:wrap;justify-content:center;margin-top:50px}
+body.portrait .works .lab{font-size:28px;flex-basis:100%;text-align:center;margin:0 0 6px}
+body.portrait .pill{font-size:32px;padding:14px 32px}
+
+body.portrait .endwm{font-size:100px}
+body.portrait .url-big{font-size:50px}
+body.portrait .gh{font-size:34px;padding:14px 30px 14px 24px}
+body.portrait .gh svg.i{width:34px;height:34px}
 
 /* ---------- Controls (outside the stage) ---------- */
 .ctrls{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:max(20px,env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:12px;z-index:100;transition:opacity .4s ease}
@@ -422,11 +513,13 @@ body.idle .ctrls{opacity:0}
 </div>
 
 
-<div class="turn" id="turn" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/><path d="M3.5 9a8.5 8.5 0 0 1 3-5.5M2.5 5.5l1 3.5 3.5-1"/></svg>Turn your phone sideways</div>
-
 <script>
 (()=>{
 const DUR=40;
+/* Phones (a touch screen) held upright play the portrait version (CSS:
+   body.portrait); every other screen plays the original, unchanged */
+const PHONE=matchMedia('(pointer: coarse)').matches;
+let PORTRAIT=false;
 const $=id=>document.getElementById(id);
 const clamp=(x,a=0,b=1)=>x<a?a:x>b?b:x;
 const lerp=(a,b,k)=>a+(b-a)*k;
@@ -465,14 +558,8 @@ const E={};['heroStroke','tag1','tag2','sideBrand','sideLabel','wsHead','sideFoo
 const ALAN_TXT=' The beta opens to pilot teams on 18 November.';
 const PROMPT='Add a summary of today’s meeting to my ‘Q4 Roadmap’ page in Collaborators.';
 
-/* positions relative to an overlay (works through any CSS transform, the
-   stage turned a quarter on portrait screens included: then the screen's x
-   runs along the stage's y) */
-let ROT=false;
-function at(ov,el,ax=.5,ay=.5,dx=0,dy=0){return ()=>{const r=el.getBoundingClientRect(),o=ov.getBoundingClientRect();
-  if(ROT){const s=o.height/ov.offsetWidth||1;
-    return {x:(r.top-o.top+r.height*ax)/s+dx,y:(o.right-r.right+r.width*ay)/s+dy};}
-  const s=o.width/ov.offsetWidth||1;
+/* positions relative to an overlay (works through any CSS transform) */
+function at(ov,el,ax=.5,ay=.5,dx=0,dy=0){return ()=>{const r=el.getBoundingClientRect(),o=ov.getBoundingClientRect(),s=o.width/ov.offsetWidth||1;
   return {x:(r.left-o.left+r.width*ax)/s+dx,y:(r.top-o.top+r.height*ay)/s+dy};};}
 const fx=(x,y)=>()=>({x,y});
 function follow(t,keys){
@@ -491,6 +578,14 @@ const alanAt=at(cov,E.alanMark,0,1,-4,12), alanB2=at(cov,E.tgB2,.62,.55), alanRo
 const ALAN=[[9.2,fx(1470,430)],[9.9,alanAt],[24.3,alanAt],[25.4,alanB2],[26.3,alanB2],[27.2,alanRowA],[28.6,alanRowB]];
 const graceSt=at(cov,E.st3,.5,.6), graceRest=at(cov,E.st3,.5,.6,90,46), graceTri=at(cov,E.tri,.55,.55), graceAway=at(cov,E.tgHead,1,.5,70,24);
 const GRACE=[[9.45,fx(1300,900)],[10.35,graceSt],[10.9,graceSt],[11.7,graceRest],[21.9,graceRest],[22.65,graceTri],[23.2,graceTri],[24.1,graceAway]];
+/* portrait: no side panel, so Ada opens the Product space from its card;
+   Alan and Grace come in from points on the narrower page */
+const adaCard=at(ov,document.querySelector('#home .fcard'),.3,.5);
+const ADA_P=[[6.4,fx(700,1250)],[6.85,fx(700,1250)],[7.3,adaCard],[7.85,adaCard],[8.25,adaCard],[8.9,adaCard],[9.5,fx(560,1500)]];
+const ALAN_P=[[9.2,fx(860,520)],...ALAN.slice(1)];
+// Grace waits left of the label, her name tag kept on screen
+const graceRestP=at(cov,E.st3,.5,.6,-150,52);
+const GRACE_P=[[9.45,fx(760,1400)],[10.35,graceSt],[10.9,graceSt],[11.7,graceRestP],[21.9,graceRestP],[22.65,graceTri],[23.2,graceTri],[24.1,graceAway]];
 
 function render(t){
   /* ---- 1 · title ---- */
@@ -503,7 +598,9 @@ function render(t){
   /* ---- 2–4 · app ---- */
   const ain=P(t,4.9,5.8),aout=P(t,29.2,30.0),shr=P(t,12.0,12.9)*(1-P(t,19.9,20.7));
   app.style.opacity=ain*(1-aout);
-  app.style.transform=`translate(${lerp(0,-60,shr)}px,${(1-ain)*26}px) scale(${lerp(1,.8,shr)*lerp(.975,1,ain)*lerp(1,.985,aout)})`;
+  app.style.transform=PORTRAIT
+    ?`translate(0px,${(1-ain)*26}px) scale(${lerp(1,.97,shr)*lerp(.975,1,ain)*lerp(1,.985,aout)})`
+    :`translate(${lerp(0,-60,shr)}px,${(1-ain)*26}px) scale(${lerp(1,.8,shr)*lerp(.975,1,ain)*lerp(1,.985,aout)})`;
   if(ain>0&&aout<1){
     rise(E.sideBrand,t,5.25); navItems.forEach((n,i)=>rise(n,t,5.35+i*.08,.5,10));
     rise(E.sideLabel,t,5.8); rise(E.wsHead,t,5.9); spaces.forEach((s,i)=>rise(s,t,6.0+i*.08,.5,10)); rise(E.sideFoot,t,5.6);
@@ -546,7 +643,7 @@ function render(t){
     E.toast.style.opacity=tt; E.toast.style.transform=`translateY(${(1-tt)*-12}px)`;
 
     /* cursors: read all positions first, then write */
-    const pA=follow(t,ADA),pL=follow(t,ALAN),pG=follow(t,GRACE);
+    const pA=follow(t,PORTRAIT?ADA_P:ADA),pL=follow(t,PORTRAIT?ALAN_P:ALAN),pG=follow(t,PORTRAIT?GRACE_P:GRACE);
     E.curAda.style.opacity=win(t,6.4,6.75,9.0,9.5);
     E.curAda.style.transform=`translate(${pA.x}px,${pA.y}px) scale(${1-.12*bump(t,7.35,7.55)-.12*bump(t,8.3,8.5)})`;
     ring(E.curAda,t,[7.35,8.3]);
@@ -560,7 +657,7 @@ function render(t){
   /* ---- 3 · assistant chat ---- */
   const cin=P(t,12.15,13.0,eout),cout=P(t,19.9,20.6);
   chat.style.opacity=cin*(1-cout);
-  chat.style.transform=`translateX(${(1-cin)*680+cout*120}px)`;
+  chat.style.transform=PORTRAIT?`translateY(${(1-cin)*1300+cout*160}px)`:`translateX(${(1-cin)*680+cout*120}px)`;
   if(cin>0&&cout<1){
     const n=Math.floor(P(t,13.2,15.8,lin)*PROMPT.length), sent=t>=16;
     setText(E.typed,sent?'':PROMPT.slice(0,n));
@@ -597,21 +694,19 @@ function render(t){
 
 /* ---- clock, controls ---- */
 const stage=$('stage');
-/* Desktop: the original fit, unchanged. Phones only (a touch screen): the
-   stage is sized from the layout viewport (innerWidth grows when a phone's
-   browser zooms out), pinned so it doesn't widen the page, and on a portrait
-   screen (held upright) turned a quarter to fill it: tilting the phone, with
-   rotation locked, shows it full size */
-const PHONE=matchMedia('(pointer: coarse)').matches;
 function fit(){
-  if(!PHONE){const s=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform=`translate(-50%,-50%) scale(${s})`;return;}
-  const W=document.documentElement.clientWidth||innerWidth, H=document.documentElement.clientHeight||innerHeight;
-  ROT=H>W;
-  const s=ROT?Math.min(W/1080,H/1920):Math.min(W/1920,H/1080);
-  stage.style.transform=`translate(-50%,-50%)${ROT?' rotate(90deg)':''} scale(${s})`;
-  document.body.classList.add('phone');
-  document.body.classList.toggle('portrait',ROT);}
-addEventListener('resize',fit); addEventListener('orientationchange',fit); visualViewport?.addEventListener('resize',fit); fit();
+  if(PHONE){
+    // the layout viewport: a phone's innerWidth grows when its browser zooms out
+    const W=document.documentElement.clientWidth||innerWidth, H=document.documentElement.clientHeight||innerHeight;
+    PORTRAIT=H>W;
+    document.body.classList.toggle('portrait',PORTRAIT);
+    document.body.classList.add('phone');
+    const s=PORTRAIT?Math.min(W/1080,H/1920):Math.min(W/1920,H/1080);
+    stage.style.transform=`translate(-50%,-50%) scale(${s})`;
+    return;
+  }
+  const s=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform=`translate(-50%,-50%) scale(${s})`;}
+addEventListener('resize',fit); addEventListener('orientationchange',fit); fit();
 
 let t=0,playing=true,last=0,started=false;
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -639,7 +734,6 @@ if(reduce){playing=false;t=27.5;}
 ui();poke();render(t);requestAnimationFrame(tick);
 const go=()=>{if(!started){started=true;last=0;}};
 (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(go);setTimeout(go,1500);
-setTimeout(()=>$('turn').classList.add('gone'),5000);
 })();
 </script>
 </body>
